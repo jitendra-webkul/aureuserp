@@ -24,6 +24,7 @@ class OperationFactory extends Factory
             'time_mode_batch'            => 10,
             'name'                       => fake()->words(3, true),
             'worksheet_type'             => OperationWorksheetType::TEXT,
+            'worksheet'                  => null,
             'worksheet_google_slide_url' => null,
             'time_mode'                  => OperationTimeMode::MANUAL,
             'note'                       => fake()->sentence(),

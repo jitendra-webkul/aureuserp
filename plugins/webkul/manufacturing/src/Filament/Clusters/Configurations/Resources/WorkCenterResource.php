@@ -60,7 +60,7 @@ class WorkCenterResource extends Resource
 {
     protected static ?string $model = WorkCenter::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-wrench-screwdriver';
 
     protected static ?int $navigationSort = 1;
 

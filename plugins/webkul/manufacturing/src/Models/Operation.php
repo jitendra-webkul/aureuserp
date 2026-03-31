@@ -26,6 +26,7 @@ class Operation extends Model
         'time_mode_batch',
         'name',
         'worksheet_type',
+        'worksheet',
         'worksheet_google_slide_url',
         'time_mode',
         'note',

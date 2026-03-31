@@ -1,6 +1,7 @@
 <?php
 
 use Webkul\Manufacturing\Filament\Clusters\Configurations;
+use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\WorkCenterResource;
 
 $basic = ['view_any', 'view', 'create', 'update'];
@@ -12,6 +13,7 @@ $reorder = ['reorder'];
 return [
     'resources' => [
         'manage'  => [
+            OperationResource::class  => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
             WorkCenterResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
         ],
         'exclude' => [],
