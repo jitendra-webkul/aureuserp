@@ -196,6 +196,17 @@ return [
                 ],
             ],
 
+            'specific-capacity' => [
+                'title'   => 'Specific Capacities',
+                'columns' => [
+                    'product'      => 'Product',
+                    'product-uom'  => 'UOM',
+                    'capacity'     => 'Capacity',
+                    'setup-time'   => 'Setup Time',
+                    'cleanup-time' => 'Cleanup Time',
+                ],
+            ],
+
             'record-information' => [
                 'title' => 'Record Information',
 
