@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Manufacturing\Database\Factories\BillOfMaterialFactory;
@@ -103,6 +104,107 @@ class BillOfMaterial extends Model
     public function unbuildOrders(): HasMany
     {
         return $this->hasMany(UnbuildOrder::class, 'bill_of_material_id');
+    }
+
+    public function getMatchedLines(array $selectedAttributeValueIds = []): Collection
+    {
+        return $this->lines
+            ->filter(fn (BillOfMaterialLine $line): bool => $this->matchesSelectedVariant(
+                $line->attributeValues->pluck('id')->all(),
+                $selectedAttributeValueIds,
+            ))
+            ->values();
+    }
+
+    public function getMatchedOperations(array $selectedAttributeValueIds = []): Collection
+    {
+        return $this->operations
+            ->filter(fn (Operation $operation): bool => $this->matchesSelectedVariant(
+                $operation->attributeValues->pluck('id')->all(),
+                $selectedAttributeValueIds,
+            ))
+            ->values();
+    }
+
+    public function getMatchedByproducts(array $selectedAttributeValueIds = []): Collection
+    {
+        return $this->byproducts
+            ->filter(fn (BillOfMaterialByproduct $byproduct): bool => $this->matchesSelectedVariant(
+                $byproduct->attributeValues->pluck('id')->all(),
+                $selectedAttributeValueIds,
+            ))
+            ->values();
+    }
+
+    public function getQuantityMultiplier(float $quantity): float
+    {
+        $baseQuantity = (float) ($this->quantity ?? 1);
+
+        if ($baseQuantity <= 0) {
+            return 1.0;
+        }
+
+        return max($quantity, 0.0001) / $baseQuantity;
+    }
+
+    public function getComponentCost(float $quantity, array $selectedAttributeValueIds = []): float
+    {
+        $quantityMultiplier = $this->getQuantityMultiplier($quantity);
+
+        return (float) $this->getMatchedLines($selectedAttributeValueIds)
+            ->sum(fn (BillOfMaterialLine $line): float => ((float) $line->quantity * $quantityMultiplier) * (float) ($line->product?->cost ?? 0));
+    }
+
+    public function getUnitComponentCost(array $selectedAttributeValueIds = []): float
+    {
+        return (float) $this->getMatchedLines($selectedAttributeValueIds)
+            ->sum(fn (BillOfMaterialLine $line): float => (float) $line->quantity * (float) ($line->product?->cost ?? 0));
+    }
+
+    public function getOperationDuration(float $quantity, array $selectedAttributeValueIds = [], ?Product $product = null): float
+    {
+        return (float) $this->getMatchedOperations($selectedAttributeValueIds)
+            ->sum(fn (Operation $operation): float => $operation->getExpectedDuration($product ?? $this->product, $quantity));
+    }
+
+    public function getOperationCost(float $quantity, array $selectedAttributeValueIds = [], ?Product $product = null): float
+    {
+        return (float) $this->getMatchedOperations($selectedAttributeValueIds)
+            ->sum(fn (Operation $operation): float => $operation->getExpectedCost($product ?? $this->product, $quantity));
+    }
+
+    public function getUnitOperationCost(array $selectedAttributeValueIds = [], ?Product $product = null): float
+    {
+        return (float) $this->getMatchedOperations($selectedAttributeValueIds)
+            ->sum(fn (Operation $operation): float => $operation->getExpectedCost($product ?? $this->product, (float) ($this->quantity ?? 1)));
+    }
+
+    public function getTotalCost(float $quantity, array $selectedAttributeValueIds = [], ?Product $product = null): float
+    {
+        return $this->getComponentCost($quantity, $selectedAttributeValueIds)
+            + $this->getOperationCost($quantity, $selectedAttributeValueIds, $product);
+    }
+
+    public function getUnitCost(array $selectedAttributeValueIds = [], ?Product $product = null): float
+    {
+        return $this->getUnitComponentCost($selectedAttributeValueIds)
+            + $this->getUnitOperationCost($selectedAttributeValueIds, $product);
+    }
+
+    protected function matchesSelectedVariant(array $recordAttributeValueIds, array $selectedAttributeValueIds): bool
+    {
+        $recordAttributeValueIds = array_values(array_filter(array_map('intval', $recordAttributeValueIds)));
+        $selectedAttributeValueIds = array_values(array_filter(array_map('intval', $selectedAttributeValueIds)));
+
+        if ($recordAttributeValueIds === []) {
+            return true;
+        }
+
+        if ($selectedAttributeValueIds === []) {
+            return false;
+        }
+
+        return count(array_intersect($recordAttributeValueIds, $selectedAttributeValueIds)) === count($recordAttributeValueIds);
     }
 
     protected static function newFactory(): BillOfMaterialFactory

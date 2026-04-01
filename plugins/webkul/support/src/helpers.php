@@ -58,3 +58,38 @@ if (! function_exists('money')) {
         }
     }
 }
+
+if (! function_exists('format_float_time')) {
+    function format_float_time(mixed $state, string $unit = 'minutes'): string
+    {
+        $value = (float) ($state ?? 0);
+        $primary = (int) floor($value);
+        $secondary = (int) round(($value - $primary) * 60);
+
+        if ($secondary === 60) {
+            $primary++;
+            $secondary = 0;
+        }
+
+        return sprintf('%02d:%02d', $primary, $secondary);
+    }
+}
+
+if (! function_exists('parse_float_time')) {
+    function parse_float_time(?string $state, string $unit = 'minutes'): string
+    {
+        if (! is_string($state) || ! preg_match('/^(?<primary>\d+):(?<secondary>\d{2})$/', $state, $matches)) {
+            return '60';
+        }
+
+        $secondary = (int) $matches['secondary'];
+
+        if ($secondary > 59) {
+            return '60';
+        }
+
+        $primary = (int) $matches['primary'];
+
+        return (string) ($primary + ($secondary / 60));
+    }
+}

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
@@ -99,6 +100,36 @@ class WorkCenter extends Model implements Sortable
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(WorkCenterTag::class, 'manufacturing_work_center_tag', 'work_center_id', 'tag_id');
+    }
+
+    public function getCapacity(?Product $product = null): float
+    {
+        if (! $product) {
+            return max((float) ($this->default_capacity ?? 1), 0.0001);
+        }
+
+        $capacity = $this->getMatchingCapacities($product)->first();
+
+        return max((float) ($capacity?->capacity ?? $this->default_capacity ?? 1), 0.0001);
+    }
+
+    public function getExpectedDuration(?Product $product = null): float
+    {
+        if (! $product) {
+            return (float) ($this->setup_time ?? 0) + (float) ($this->cleanup_time ?? 0);
+        }
+
+        $capacity = $this->getMatchingCapacities($product)->first();
+
+        return (float) ($capacity?->time_start ?? $this->setup_time ?? 0)
+            + (float) ($capacity?->time_stop ?? $this->cleanup_time ?? 0);
+    }
+
+    protected function getMatchingCapacities(Product $product): Collection
+    {
+        return $this->capacities
+            ->filter(fn (WorkCenterCapacity $capacity): bool => (int) $capacity->product_id === (int) $product->getKey())
+            ->values();
     }
 
     protected static function newFactory(): WorkCenterFactory

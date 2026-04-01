@@ -47,6 +47,9 @@ use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationRes
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource\Pages\EditOperation;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource\Pages\ListOperations;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource\Pages\ViewOperation;
+use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\CreateBillOfMaterial;
+use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\EditBillOfMaterial;
+use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ManageBillsOfMaterials;
 use Webkul\Manufacturing\Models\BillOfMaterial;
 use Webkul\Manufacturing\Models\Operation;
 use Webkul\Product\Models\ProductAttributeValue;
@@ -103,6 +106,11 @@ class OperationResource extends Resource
                                 Select::make('bill_of_material_id')
                                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.form.sections.general.fields.bill-of-material'))
                                     ->relationship('billOfMaterial', 'code')
+                                    ->hiddenOn([
+                                        CreateBillOfMaterial::class,
+                                        EditBillOfMaterial::class,
+                                        ManageBillsOfMaterials::class,
+                                    ])
                                     ->getOptionLabelFromRecordUsing(fn (BillOfMaterial $record): string => static::getBillOfMaterialLabel($record))
                                     ->searchable()
                                     ->preload()
@@ -174,7 +182,6 @@ class OperationResource extends Resource
                                     ->downloadable()
                                     ->openable()
                                     ->visible(fn (Get $get): bool => static::matchesEnumState($get('worksheet_type'), OperationWorksheetType::PDF))
-                                    ->required(fn (Get $get): bool => static::matchesEnumState($get('worksheet_type'), OperationWorksheetType::PDF))
                                     ->columnSpanFull(),
 
                                 TextInput::make('worksheet_google_slide_url')
@@ -182,7 +189,6 @@ class OperationResource extends Resource
                                     ->url()
                                     ->placeholder(__('manufacturing::filament/clusters/configurations/resources/operation.form.sections.worksheet.fields.google-slide-placeholder'))
                                     ->visible(fn (Get $get): bool => static::matchesEnumState($get('worksheet_type'), OperationWorksheetType::GOOGLE_SLIDE))
-                                    ->required(fn (Get $get): bool => static::matchesEnumState($get('worksheet_type'), OperationWorksheetType::GOOGLE_SLIDE))
                                     ->columnSpanFull(),
 
                                 Textarea::make('note')
@@ -190,7 +196,6 @@ class OperationResource extends Resource
                                     ->placeholder(__('manufacturing::filament/clusters/configurations/resources/operation.form.sections.worksheet.fields.description-placeholder'))
                                     ->rows(6)
                                     ->visible(fn (Get $get): bool => static::matchesEnumState($get('worksheet_type'), OperationWorksheetType::TEXT))
-                                    ->required(fn (Get $get): bool => static::matchesEnumState($get('worksheet_type'), OperationWorksheetType::TEXT))
                                     ->columnSpanFull(),
                             ])
                             ->columns(1),
@@ -225,9 +230,9 @@ class OperationResource extends Resource
                                     ->rule('regex:/^\d+:\d{2}$/')
                                     ->placeholder('60:00')
                                     ->afterStateHydrated(function (TextInput $component, mixed $state): void {
-                                        $component->state(static::formatFloatTime($state ?? 60));
+                                        $component->state(format_float_time($state ?? 60, 'minutes'));
                                     })
-                                    ->dehydrateStateUsing(fn (?string $state): string => static::parseFloatTime($state))
+                                    ->dehydrateStateUsing(fn (?string $state): string => parse_float_time($state, 'minutes'))
                                     ->suffix(__('manufacturing::filament/clusters/configurations/resources/operation.form.sections.settings.fields.manual-cycle-time-suffix')),
                             ]),
                     ])
@@ -244,9 +249,9 @@ class OperationResource extends Resource
                 TextColumn::make('name')
                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.table.columns.name'))
                     ->searchable(),
-                TextColumn::make('billOfMaterial.code')
+                TextColumn::make('bill_of_material_id')
                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.table.columns.bill-of-material'))
-                    ->formatStateUsing(function (?string $state, Operation $record): string {
+                    ->formatStateUsing(function (mixed $state, Operation $record): string {
                         return static::getBillOfMaterialLabel($record->billOfMaterial);
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -265,7 +270,7 @@ class OperationResource extends Resource
                     ->badge(),
                 TextColumn::make('manual_cycle_time')
                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.table.columns.manual-cycle-time'))
-                    ->formatStateUsing(fn (mixed $state): string => static::formatFloatTime($state ?? 60))
+                    ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 60, 'minutes'))
                     ->toggleable(),
                 TextColumn::make('worksheet_type')
                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.table.columns.worksheet-type'))
@@ -456,7 +461,7 @@ class OperationResource extends Resource
                                     ->visible(fn (Operation $record): bool => $record->time_mode === OperationTimeMode::AUTO),
                                 TextEntry::make('manual_cycle_time')
                                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.infolist.sections.settings.entries.manual-cycle-time'))
-                                    ->formatStateUsing(fn (mixed $state): string => static::formatFloatTime($state ?? 60).' '.__('manufacturing::filament/clusters/configurations/resources/operation.infolist.sections.settings.entries.manual-cycle-time-suffix'))
+                                    ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 60, 'minutes').' '.__('manufacturing::filament/clusters/configurations/resources/operation.infolist.sections.settings.entries.manual-cycle-time-suffix'))
                                     ->placeholder('—'),
                             ]),
 
@@ -515,35 +520,6 @@ class OperationResource extends Resource
 
         return $billOfMaterial->code
             ?: ($billOfMaterial->product?->name ?? (string) $billOfMaterial->getKey());
-    }
-
-    protected static function formatFloatTime(mixed $state): string
-    {
-        $value = (float) ($state ?? 0);
-        $hours = (int) floor($value);
-        $minutes = (int) round(($value - $hours) * 60);
-
-        if ($minutes === 60) {
-            $hours++;
-            $minutes = 0;
-        }
-
-        return sprintf('%02d:%02d', $hours, $minutes);
-    }
-
-    protected static function parseFloatTime(?string $state): string
-    {
-        if (! is_string($state) || ! preg_match('/^(?<hours>\d+):(?<minutes>\d{2})$/', $state, $matches)) {
-            return '60';
-        }
-
-        $minutes = (int) $matches['minutes'];
-
-        if ($minutes > 59) {
-            return '60';
-        }
-
-        return (string) ((int) $matches['hours'] + ($minutes / 60));
     }
 
     protected static function matchesEnumState(mixed $state, BackedEnum $enum): bool

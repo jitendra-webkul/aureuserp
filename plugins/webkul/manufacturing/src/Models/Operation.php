@@ -93,6 +93,34 @@ class Operation extends Model
         return $this->belongsToMany(self::class, 'manufacturing_operation_dependencies', 'depends_on_operation_id', 'operation_id');
     }
 
+    public function getCycleDuration(): float
+    {
+        return (float) ($this->manual_cycle_time ?? 0);
+    }
+
+    public function getExpectedDuration(?Product $product = null, float $quantity = 1): float
+    {
+        $workCenter = $this->workCenter;
+
+        if (! $workCenter) {
+            return $this->getCycleDuration();
+        }
+
+        $normalizedQuantity = max($quantity, 0);
+        $capacity = $workCenter->getCapacity($product);
+        $cycleNumber = $normalizedQuantity > 0 ? (float) ceil($normalizedQuantity / $capacity) : 0.0;
+        $timeEfficiency = max((float) ($workCenter->time_efficiency ?? 100), 0.0001);
+
+        return $workCenter->getExpectedDuration($product)
+            + ($cycleNumber * $this->getCycleDuration() * 100.0 / $timeEfficiency);
+    }
+
+    public function getExpectedCost(?Product $product = null, float $quantity = 1): float
+    {
+        return ($this->getExpectedDuration($product, $quantity) / 60.0)
+            * (float) ($this->workCenter?->costs_per_hour ?? 0);
+    }
+
     protected static function newFactory(): OperationFactory
     {
         return OperationFactory::new();

@@ -219,18 +219,18 @@ class WorkCenterResource extends Resource
                                             ->rule('regex:/^\d+:\d{2}$/')
                                             ->placeholder('00:00')
                                             ->afterStateHydrated(function (TextInput $component, mixed $state): void {
-                                                $component->state(static::formatMinutesAsTime($state));
+                                                $component->state(format_float_time($state ?? 0, 'minutes'));
                                             })
-                                            ->dehydrateStateUsing(fn (?string $state): string => static::parseTimeToMinutes($state)),
+                                            ->dehydrateStateUsing(fn (?string $state): string => parse_float_time($state, 'minutes')),
                                         TextInput::make('time_stop')
                                             ->label(__('manufacturing::filament/clusters/configurations/resources/work-center.form.sections.specific-capacity.columns.cleanup-time'))
                                             ->default('00:00')
                                             ->rule('regex:/^\d+:\d{2}$/')
                                             ->placeholder('00:00')
                                             ->afterStateHydrated(function (TextInput $component, mixed $state): void {
-                                                $component->state(static::formatMinutesAsTime($state));
+                                                $component->state(format_float_time($state ?? 0, 'minutes'));
                                             })
-                                            ->dehydrateStateUsing(fn (?string $state): string => static::parseTimeToMinutes($state)),
+                                            ->dehydrateStateUsing(fn (?string $state): string => parse_float_time($state, 'minutes')),
                                     ])
                                     ->addActionLabel(__('manufacturing::filament/clusters/configurations/resources/work-center.form.sections.specific-capacity.actions.add'))
                                     ->reorderable(false)
@@ -277,9 +277,9 @@ class WorkCenterResource extends Resource
                                             ->rule('regex:/^\d+:\d{2}$/')
                                             ->placeholder('00:00')
                                             ->afterStateHydrated(function (TextInput $component, mixed $state): void {
-                                                $component->state(static::formatMinutesAsTime($state));
+                                                $component->state(format_float_time($state ?? 0, 'minutes'));
                                             })
-                                            ->dehydrateStateUsing(fn (?string $state): string => static::parseTimeToMinutes($state))
+                                            ->dehydrateStateUsing(fn (?string $state): string => parse_float_time($state, 'minutes'))
                                             ->suffix(__('manufacturing::filament/clusters/configurations/resources/work-center.form.sections.information.fields.time-suffix')),
 
                                         TextInput::make('cleanup_time')
@@ -288,9 +288,9 @@ class WorkCenterResource extends Resource
                                             ->rule('regex:/^\d+:\d{2}$/')
                                             ->placeholder('00:00')
                                             ->afterStateHydrated(function (TextInput $component, mixed $state): void {
-                                                $component->state(static::formatMinutesAsTime($state));
+                                                $component->state(format_float_time($state ?? 0, 'minutes'));
                                             })
-                                            ->dehydrateStateUsing(fn (?string $state): string => static::parseTimeToMinutes($state))
+                                            ->dehydrateStateUsing(fn (?string $state): string => parse_float_time($state, 'minutes'))
                                             ->suffix(__('manufacturing::filament/clusters/configurations/resources/work-center.form.sections.information.fields.time-suffix')),
                                     ])
                                     ->columns(1),
@@ -537,11 +537,11 @@ class WorkCenterResource extends Resource
                                             ->placeholder('—'),
                                         TextEntry::make('time_start')
                                             ->hiddenLabel()
-                                            ->formatStateUsing(fn (mixed $state): string => static::formatMinutesAsTime($state))
+                                            ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 0, 'minutes'))
                                             ->placeholder('—'),
                                         TextEntry::make('time_stop')
                                             ->hiddenLabel()
-                                            ->formatStateUsing(fn (mixed $state): string => static::formatMinutesAsTime($state))
+                                            ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 0, 'minutes'))
                                             ->placeholder('—'),
                                     ]),
                             ])
@@ -569,11 +569,11 @@ class WorkCenterResource extends Resource
                                             ->placeholder('—'),
                                         TextEntry::make('setup_time')
                                             ->label(__('manufacturing::filament/clusters/configurations/resources/work-center.infolist.sections.information.entries.setup-time'))
-                                            ->formatStateUsing(fn (mixed $state): string => static::formatMinutesAsTime($state).' '.__('manufacturing::filament/clusters/configurations/resources/work-center.infolist.sections.information.entries.time-suffix'))
+                                            ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 0, 'minutes').' '.__('manufacturing::filament/clusters/configurations/resources/work-center.infolist.sections.information.entries.time-suffix'))
                                             ->placeholder('—'),
                                         TextEntry::make('cleanup_time')
                                             ->label(__('manufacturing::filament/clusters/configurations/resources/work-center.infolist.sections.information.entries.cleanup-time'))
-                                            ->formatStateUsing(fn (mixed $state): string => static::formatMinutesAsTime($state).' '.__('manufacturing::filament/clusters/configurations/resources/work-center.infolist.sections.information.entries.time-suffix'))
+                                            ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 0, 'minutes').' '.__('manufacturing::filament/clusters/configurations/resources/work-center.infolist.sections.information.entries.time-suffix'))
                                             ->placeholder('—'),
                                     ])
                                     ->columns(1),
@@ -633,27 +633,5 @@ class WorkCenterResource extends Resource
             ViewWorkCenter::class,
             EditWorkCenter::class,
         ]);
-    }
-
-    protected static function formatMinutesAsTime(mixed $state): string
-    {
-        $minutes = max(0, (int) round((float) ($state ?? 0)));
-        $hours = intdiv($minutes, 60);
-        $remainingMinutes = $minutes % 60;
-
-        return sprintf('%02d:%02d', $hours, $remainingMinutes);
-    }
-
-    protected static function parseTimeToMinutes(?string $state): string
-    {
-        if (! is_string($state) || ! preg_match('/^(?<hours>\d+):(?<minutes>\d{2})$/', $state, $matches)) {
-            return '0';
-        }
-
-        if ((int) $matches['minutes'] > 59) {
-            return '0';
-        }
-
-        return (string) (((int) $matches['hours'] * 60) + (int) $matches['minutes']);
     }
 }

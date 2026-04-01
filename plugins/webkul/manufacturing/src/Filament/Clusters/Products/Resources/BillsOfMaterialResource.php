@@ -46,19 +46,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
 use Webkul\Manufacturing\Enums\BillOfMaterialReadyToProduce;
 use Webkul\Manufacturing\Enums\BillOfMaterialType;
 use Webkul\Manufacturing\Enums\OperationTimeMode;
+use Webkul\Manufacturing\Enums\OperationWorksheetType;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource;
-use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\WorkCenterResource;
 use Webkul\Manufacturing\Filament\Clusters\Products;
+use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\BillOfMaterialOverview;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\CreateBillOfMaterial;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\EditBillOfMaterial;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\ListBillsOfMaterial;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\ViewBillOfMaterial;
 use Webkul\Manufacturing\Models\BillOfMaterial;
+use Webkul\Manufacturing\Models\Operation;
 use Webkul\Manufacturing\Models\Product;
+use Webkul\Manufacturing\Models\WorkCenter;
+use Webkul\Product\Models\ProductAttributeValue;
 use Webkul\Support\Filament\Forms\Components\Repeater;
 use Webkul\Support\Filament\Forms\Components\Repeater\TableColumn as RepeaterTableColumn;
 use Webkul\Support\Filament\Infolists\Components\RepeatableEntry;
@@ -328,6 +333,7 @@ class BillsOfMaterialResource extends Resource
                 ViewAction::make()
                     ->hidden(fn (BillOfMaterial $record): bool => $record->trashed()),
                 EditAction::make()
+                    ->modalWidth(Width::SevenExtraLarge)
                     ->hidden(fn (BillOfMaterial $record): bool => $record->trashed()),
                 RestoreAction::make()
                     ->successNotification(
@@ -497,24 +503,49 @@ class BillsOfMaterialResource extends Resource
                                             ->contained(false)
                                             ->table([
                                                 InfolistTableColumn::make('name')
-                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.operation'))
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.operation'))
                                                     ->resizable(),
                                                 InfolistTableColumn::make('workCenter.name')
-                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.work-center'))
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.work-center'))
                                                     ->resizable(),
                                                 InfolistTableColumn::make('time_mode')
-                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.time-mode'))
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode'))
+                                                    ->resizable(),
+                                                InfolistTableColumn::make('time_mode_batch')
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode-batch'))
+                                                    ->toggleable(isToggledHiddenByDefault: true)
+                                                    ->resizable(),
+                                                InfolistTableColumn::make('company.name')
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.company'))
+                                                    ->toggleable(isToggledHiddenByDefault: true)
+                                                    ->resizable(),
+                                                InfolistTableColumn::make('attribute_values')
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.apply-on-variants'))
+                                                    ->toggleable(isToggledHiddenByDefault: true)
                                                     ->resizable(),
                                                 InfolistTableColumn::make('manual_cycle_time')
-                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.duration'))
+                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.duration'))
                                                     ->resizable(),
                                             ])
                                             ->schema([
                                                 TextEntry::make('name')->placeholder('—'),
                                                 TextEntry::make('workCenter.name')->placeholder('—'),
                                                 TextEntry::make('time_mode')->badge(),
+                                                TextEntry::make('time_mode_batch')->placeholder('—'),
+                                                TextEntry::make('company.name')->placeholder('—'),
+                                                TextEntry::make('attribute_values')
+                                                    ->state(function ($record): string {
+                                                        $labels = $record->attributeValues
+                                                            ->map(fn ($value): string => $value->attribute?->name && $value->attributeOption?->name
+                                                                ? "{$value->attribute->name}: {$value->attributeOption->name}"
+                                                                : ($value->attributeOption?->name ?? (string) $value->id))
+                                                            ->filter()
+                                                            ->values();
+
+                                                        return $labels->isNotEmpty() ? $labels->implode(', ') : '—';
+                                                    }),
                                                 TextEntry::make('manual_cycle_time')
-                                                    ->formatStateUsing(fn (mixed $state): string => static::formatFloatTime($state ?? 60)),
+                                                    ->formatStateUsing(fn (mixed $state): string => format_float_time($state ?? 60, 'minutes')),
                                             ]),
                                     ]),
                                 Tab::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.by-products.title'))
@@ -616,10 +647,11 @@ class BillsOfMaterialResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListBillsOfMaterial::route('/'),
-            'create' => CreateBillOfMaterial::route('/create'),
-            'view'   => ViewBillOfMaterial::route('/{record}'),
-            'edit'   => EditBillOfMaterial::route('/{record}/edit'),
+            'index'    => ListBillsOfMaterial::route('/'),
+            'create'   => CreateBillOfMaterial::route('/create'),
+            'overview' => BillOfMaterialOverview::route('/{record}/overview'),
+            'view'     => ViewBillOfMaterial::route('/{record}'),
+            'edit'     => EditBillOfMaterial::route('/{record}/edit'),
         ];
     }
 
@@ -628,6 +660,7 @@ class BillsOfMaterialResource extends Resource
         return $page->generateNavigationItems([
             ViewBillOfMaterial::class,
             EditBillOfMaterial::class,
+            BillOfMaterialOverview::class,
         ]);
     }
 
@@ -745,64 +778,147 @@ class BillsOfMaterialResource extends Resource
             ->defaultItems(0)
             ->compact()
             ->addActionLabel(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.add-action'))
+            ->addAction(function (Action $action): Action {
+                return $action
+                    ->schema(fn (Schema $schema): Schema => OperationResource::form($schema->model(Operation::class)))
+                    ->modalWidth(Width::SevenExtraLarge)
+                    ->fillForm(function (Get $get): array {
+                        return static::getDefaultOperationRepeaterData([
+                            'bill_of_material_id' => $get('../../id'),
+                            'company_id'          => $get('../../company_id'),
+                        ]);
+                    })
+                    ->action(function (array $data, Repeater $component): void {
+                        $state = $component->getState() ?? [];
+                        $state[(string) Str::uuid()] = static::normalizeOperationRepeaterData($data);
+
+                        $component->state($state);
+                    });
+            })
+            ->footerActions([
+                Action::make('copyExistingOperation')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.actions.copy-existing'))
+                    ->link()
+                    ->schema([
+                        Select::make('operation_id')
+                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.actions.copy-existing-fields.operation'))
+                            ->options(fn (): array => Operation::query()
+                                ->with(['billOfMaterial.product', 'workCenter'])
+                                ->orderBy('name')
+                                ->get()
+                                ->mapWithKeys(function (Operation $operation): array {
+                                    $billOfMaterialLabel = static::getBillOfMaterialLabel($operation->billOfMaterial);
+                                    $workCenterName = $operation->workCenter?->name;
+
+                                    $labelParts = array_filter([
+                                        $operation->name,
+                                        $workCenterName,
+                                        $billOfMaterialLabel !== '—' ? $billOfMaterialLabel : null,
+                                    ]);
+
+                                    return [$operation->id => implode(' / ', $labelParts)];
+                                })
+                                ->all())
+                            ->native(false)
+                            ->searchable()
+                            ->preload()
+                            ->wrapOptionLabels(false)
+                            ->required(),
+                    ])
+                    ->modalWidth(Width::ThreeExtraLarge)
+                    ->action(function (array $data, Repeater $component, Get $get): void {
+                        $operation = Operation::query()
+                            ->with(['attributeValues'])
+                            ->find($data['operation_id']);
+
+                        if (! $operation) {
+                            return;
+                        }
+
+                        $state = $component->getState() ?? [];
+                        $state[(string) Str::uuid()] = static::normalizeOperationRepeaterData([
+                            'bill_of_material_id'        => $get('../../id'),
+                            'company_id'                 => $get('../../company_id') ?? $operation->company_id,
+                            'name'                       => $operation->name,
+                            'work_center_id'             => $operation->work_center_id,
+                            'time_mode'                  => $operation->time_mode?->value ?? $operation->time_mode,
+                            'time_mode_batch'            => $operation->time_mode_batch,
+                            'manual_cycle_time'          => (string) $operation->manual_cycle_time,
+                            'worksheet_type'             => $operation->worksheet_type?->value ?? $operation->worksheet_type,
+                            'worksheet'                  => $operation->worksheet,
+                            'worksheet_google_slide_url' => $operation->worksheet_google_slide_url,
+                            'note'                       => $operation->note,
+                            'attributeValues'            => $operation->attributeValues->pluck('id')->all(),
+                        ]);
+
+                        $component->state($state);
+                    }),
+            ])
             ->table([
-                RepeaterTableColumn::make('name')
+                RepeaterTableColumn::make('display_name')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.operation'))
                     ->markAsRequired()
                     ->resizable(),
-                RepeaterTableColumn::make('work_center_id')
+                RepeaterTableColumn::make('display_work_center_id')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.work-center'))
                     ->markAsRequired()
                     ->resizable(),
-                RepeaterTableColumn::make('time_mode')
+                RepeaterTableColumn::make('display_time_mode')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode'))
                     ->markAsRequired()
                     ->resizable(),
-                RepeaterTableColumn::make('time_mode_batch')
+                RepeaterTableColumn::make('display_time_mode_batch')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode-batch'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->resizable(),
-                RepeaterTableColumn::make('company')
+                RepeaterTableColumn::make('display_company')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.company'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->resizable(),
-                RepeaterTableColumn::make('attributeValues')
+                RepeaterTableColumn::make('display_attribute_values')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.apply-on-variants'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->resizable(),
-                RepeaterTableColumn::make('manual_cycle_time')
+                RepeaterTableColumn::make('display_manual_cycle_time')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.duration'))
                     ->markAsRequired()
                     ->resizable(),
             ])
             ->schema([
+                Hidden::make('bill_of_material_id'),
                 Hidden::make('company_id'),
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Select::make('work_center_id')
-                    ->relationship('workCenter', 'name')
-                    ->native(false)
-                    ->searchable()
-                    ->preload()
-                    ->wrapOptionLabels(false)
-                    ->required()
-                    ->createOptionForm(fn (Schema $schema): Schema => WorkCenterResource::form($schema))
-                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge)),
-                Select::make('time_mode')
-                    ->options(OperationTimeMode::class)
-                    ->native(false)
-                    ->default(OperationTimeMode::MANUAL->value)
-                    ->live()
-                    ->wrapOptionLabels(false)
-                    ->required(),
-                TextInput::make('time_mode_batch')
-                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode-batch'))
-                    ->numeric()
-                    ->default(10)
-                    ->minValue(1)
-                    ->step('1'),
-                Placeholder::make('company')
+                Hidden::make('name'),
+                Hidden::make('work_center_id'),
+                Hidden::make('time_mode'),
+                Hidden::make('time_mode_batch'),
+                Hidden::make('manual_cycle_time'),
+                Hidden::make('worksheet_type'),
+                Hidden::make('worksheet'),
+                Hidden::make('worksheet_google_slide_url'),
+                Hidden::make('note'),
+                Placeholder::make('display_name')
+                    ->hiddenLabel()
+                    ->content(fn (Get $get): string => (string) ($get('name') ?? '—')),
+                Placeholder::make('display_work_center_id')
+                    ->hiddenLabel()
+                    ->content(function (Get $get): string {
+                        return WorkCenter::query()->find($get('work_center_id'))?->name ?? '—';
+                    }),
+                Placeholder::make('display_time_mode')
+                    ->hiddenLabel()
+                    ->content(function (Get $get): string {
+                        $state = $get('time_mode');
+
+                        if ($state instanceof OperationTimeMode) {
+                            return $state->getLabel();
+                        }
+
+                        return OperationTimeMode::tryFrom((string) $state)?->getLabel() ?? '—';
+                    }),
+                Placeholder::make('display_time_mode_batch')
+                    ->hiddenLabel()
+                    ->content(fn (Get $get): string => filled($get('time_mode_batch')) ? (string) $get('time_mode_batch') : '—'),
+                Placeholder::make('display_company')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.company'))
                     ->content(function (Get $get): string {
                         $companyId = $get('../../company_id');
@@ -813,6 +929,7 @@ class BillsOfMaterialResource extends Resource
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.apply-on-variants'))
                     ->native(false)
                     ->wrapOptionLabels(false)
+                    ->hidden()
                     ->relationship(
                         'attributeValues',
                         'id',
@@ -832,15 +949,55 @@ class BillsOfMaterialResource extends Resource
                     ->searchable()
                     ->preload()
                     ->multiple(),
-                TextInput::make('manual_cycle_time')
-                    ->default('60:00')
-                    ->rule('regex:/^\d+:\d{2}$/')
-                    ->placeholder('60:00')
-                    ->afterStateHydrated(function (TextInput $component, mixed $state): void {
-                        $component->state(static::formatFloatTime($state ?? 60));
+                Placeholder::make('display_attribute_values')
+                    ->hiddenLabel()
+                    ->content(function (Get $get): string {
+                        $attributeValueIds = $get('attributeValues') ?? [];
+
+                        if (! is_array($attributeValueIds) || $attributeValueIds === []) {
+                            return '—';
+                        }
+
+                        return ProductAttributeValue::query()
+                            ->with(['attribute', 'attributeOption'])
+                            ->whereIn('id', $attributeValueIds)
+                            ->get()
+                            ->map(fn ($record): string => $record->attribute?->name && $record->attributeOption?->name ? "{$record->attribute->name}: {$record->attributeOption->name}" : ($record->attributeOption?->name ?? (string) $record->id))
+                            ->implode(', ');
+                    }),
+                Placeholder::make('display_manual_cycle_time')
+                    ->hiddenLabel()
+                    ->content(function (Get $get): string {
+                        return format_float_time($get('manual_cycle_time') ?? 60, 'minutes');
+                    }),
+            ])
+            ->mutateRelationshipDataBeforeCreateUsing(fn (array $data): array => static::normalizeOperationRepeaterData($data))
+            ->mutateRelationshipDataBeforeSaveUsing(fn (array $data): array => static::normalizeOperationRepeaterData($data))
+            ->extraItemActions([
+                Action::make('editOperation')
+                    ->icon('heroicon-o-pencil-square')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.actions.edit'))
+                    ->tooltip(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.actions.edit'))
+                    ->extraAttributes(['data-row-click-action' => 'true'])
+                    ->schema(fn (Schema $schema): Schema => OperationResource::form($schema->model(Operation::class)))
+                    ->modalWidth(Width::SevenExtraLarge)
+                    ->fillForm(function (array $arguments, Repeater $component, Get $get): array {
+                        return array_replace(
+                            static::getDefaultOperationRepeaterData([
+                                'bill_of_material_id' => $get('../../id'),
+                                'company_id'          => $get('../../company_id'),
+                            ]),
+                            static::normalizeOperationRepeaterData(
+                                $component->getRawItemState($arguments['item'])
+                            ),
+                        );
                     })
-                    ->dehydrateStateUsing(fn (?string $state): string => static::parseFloatTime($state))
-                    ->required(),
+                    ->action(function (array $arguments, array $data, Repeater $component): void {
+                        $state = $component->getState() ?? [];
+                        $state[$arguments['item']] = static::normalizeOperationRepeaterData($data);
+
+                        $component->state($state);
+                    }),
             ]);
     }
 
@@ -909,33 +1066,43 @@ class BillsOfMaterialResource extends Resource
             ]);
     }
 
-    protected static function formatFloatTime(mixed $state): string
+    protected static function getBillOfMaterialLabel(?BillOfMaterial $billOfMaterial): string
     {
-        $value = (float) ($state ?? 0);
-        $hours = (int) floor($value);
-        $minutes = (int) round(($value - $hours) * 60);
-
-        if ($minutes === 60) {
-            $hours++;
-            $minutes = 0;
+        if (! $billOfMaterial) {
+            return '—';
         }
 
-        return sprintf('%02d:%02d', $hours, $minutes);
+        return filled($billOfMaterial->code)
+            ? (string) $billOfMaterial->code
+            : ($billOfMaterial->product?->name ?? '—');
     }
 
-    protected static function parseFloatTime(?string $state): string
+    protected static function getDefaultOperationRepeaterData(array $overrides = []): array
     {
-        if (! is_string($state) || ! preg_match('/^(?<hours>\d+):(?<minutes>\d{2})$/', $state, $matches)) {
-            return '60';
-        }
+        return static::normalizeOperationRepeaterData([
+            'bill_of_material_id'        => null,
+            'time_mode'                  => OperationTimeMode::MANUAL->value,
+            'time_mode_batch'            => 10,
+            'manual_cycle_time'          => '60:00',
+            'worksheet_type'             => OperationWorksheetType::TEXT->value,
+            'worksheet'                  => null,
+            'worksheet_google_slide_url' => null,
+            'note'                       => null,
+            'company_id'                 => Auth::user()?->default_company_id,
+            'attributeValues'            => [],
+            ...$overrides,
+        ]);
+    }
 
-        $minutes = (int) $matches['minutes'];
+    protected static function normalizeOperationRepeaterData(array $data): array
+    {
+        $data['company_id'] ??= Auth::user()?->default_company_id;
+        $data['attributeValues'] = array_values($data['attributeValues'] ?? []);
+        $data['time_mode'] ??= OperationTimeMode::MANUAL->value;
+        $data['time_mode_batch'] ??= 10;
+        $data['manual_cycle_time'] ??= '60';
 
-        if ($minutes > 59) {
-            return '60';
-        }
-
-        return (string) ((int) $matches['hours'] + ($minutes / 60));
+        return $data;
     }
 
     protected static function matchesEnumState(mixed $state, BackedEnum $enum): bool

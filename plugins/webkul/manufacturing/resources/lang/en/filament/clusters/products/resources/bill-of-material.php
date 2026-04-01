@@ -58,6 +58,13 @@ return [
             'operations' => [
                 'title'      => 'Operations',
                 'add-action' => 'Add a line',
+                'actions'    => [
+                    'edit'                 => 'Edit Operation',
+                    'copy-existing'        => 'Copy Existing Operations',
+                    'copy-existing-fields' => [
+                        'operation' => 'Operation',
+                    ],
+                ],
                 'columns'    => [
                     'operation'        => 'Operation',
                     'work-center'      => 'Work Center',
