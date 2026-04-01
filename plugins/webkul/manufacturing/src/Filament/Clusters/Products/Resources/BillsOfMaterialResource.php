@@ -232,9 +232,13 @@ class BillsOfMaterialResource extends Resource
                                     ->columnSpanFull(),
                                 Select::make('operation_type_id')
                                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.miscellaneous.fields.routing'))
-                                    ->relationship('operationType', 'name', fn (Builder $query) => $query->withTrashed())
+                                    ->relationship('operationType', 'name', fn (Builder $query) => $query
+                                        ->withTrashed()
+                                        ->where('type', 'manufacturing'))
                                     ->searchable()
                                     ->preload()
+                                    ->native(false)
+                                    ->wrapOptionLabels(false)
                                     ->visible(fn (Get $get): bool => ! static::matchesEnumState($get('type'), BillOfMaterialType::PHANTOM))
                                     ->columnSpanFull(),
                                 Select::make('consumption')
@@ -712,7 +716,13 @@ class BillsOfMaterialResource extends Resource
             ->schema([
                 Hidden::make('company_id'),
                 Select::make('product_id')
-                    ->relationship('product', 'name', fn (Builder $query) => $query->withTrashed())
+                    ->relationship('product', 'name', fn (Builder $query) => $query
+                        ->withTrashed()
+                        ->where(function (Builder $productQuery): void {
+                            $productQuery
+                                ->where('is_configurable', false)
+                                ->orWhereNull('is_configurable');
+                        }))
                     ->searchable()
                     ->preload()
                     ->required()
