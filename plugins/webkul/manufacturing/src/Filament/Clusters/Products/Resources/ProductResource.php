@@ -10,6 +10,7 @@ use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pa
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\EditProduct;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ListProducts;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ManageAttributes;
+use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ManageBillsOfMaterials;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ManageMoves;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ManageQuantities;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\ProductResource\Pages\ManageVariants;
@@ -48,6 +49,7 @@ class ProductResource extends BaseProductResource
             EditProduct::class,
             ManageAttributes::class,
             ManageVariants::class,
+            ManageBillsOfMaterials::class,
             ManageQuantities::class,
             ManageMoves::class,
         ]);
@@ -60,6 +62,7 @@ class ProductResource extends BaseProductResource
             'create'     => CreateProduct::route('/create'),
             'view'       => ViewProduct::route('/{record}'),
             'edit'       => EditProduct::route('/{record}/edit'),
+            'boms'       => ManageBillsOfMaterials::route('/{record}/boms'),
             'attributes' => ManageAttributes::route('/{record}/attributes'),
             'variants'   => ManageVariants::route('/{record}/variants'),
             'moves'      => ManageMoves::route('/{record}/moves'),

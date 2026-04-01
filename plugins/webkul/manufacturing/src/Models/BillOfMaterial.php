@@ -13,7 +13,6 @@ use Webkul\Manufacturing\Database\Factories\BillOfMaterialFactory;
 use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
 use Webkul\Manufacturing\Enums\BillOfMaterialReadyToProduce;
 use Webkul\Manufacturing\Enums\BillOfMaterialType;
-use Webkul\Product\Models\Product;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\UOM;

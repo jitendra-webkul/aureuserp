@@ -3,6 +3,7 @@
 namespace Webkul\Manufacturing\Filament\Clusters\Products\Resources;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
@@ -34,6 +36,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -102,6 +105,16 @@ class BillsOfMaterialResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->live()
+                                    ->afterStateHydrated(function (Set $set, ?string $state): void {
+                                        $product = Product::query()->find($state);
+
+                                        if (! $product?->parent_id) {
+                                            return;
+                                        }
+
+                                        $set('product_variant_id', $product->id);
+                                        $set('product_id', $product->parent_id);
+                                    })
                                     ->afterStateUpdated(function (Set $set, ?string $state): void {
                                         $product = Product::query()->find($state);
 
@@ -109,14 +122,32 @@ class BillsOfMaterialResource extends Resource
                                             return;
                                         }
 
+                                        $set('product_variant_id', null);
                                         $set('uom_id', $product->uom_id);
                                         $set('company_id', $product->company_id);
                                     })
                                     ->required()
                                     ->columnSpanFull(),
-                                Placeholder::make('product_variant')
+                                Select::make('product_variant_id')
                                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.sections.general.fields.product-variant'))
-                                    ->content('—')
+                                    ->options(fn (Get $get): array => Product::query()
+                                        ->where('parent_id', $get('product_id'))
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all())
+                                    ->native(false)
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateUpdated(function (Set $set, ?string $state): void {
+                                        $variant = Product::query()->find($state);
+
+                                        if (! $variant) {
+                                            return;
+                                        }
+
+                                        $set('uom_id', $variant->uom_id);
+                                        $set('company_id', $variant->company_id);
+                                    })
                                     ->columnSpanFull(),
                                 FusedGroup::make([
                                     TextInput::make('quantity')
@@ -375,43 +406,96 @@ class BillsOfMaterialResource extends Resource
     {
         return $schema
             ->components([
-                Section::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.title'))
+                Group::make()
                     ->schema([
-                        Grid::make(2)
+                        Section::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.title'))
                             ->schema([
-                                Group::make()
+                                TextEntry::make('product.name')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.product'))
+                                    ->size(TextSize::Large)
+                                    ->placeholder('—')
+                                    ->columnSpanFull(),
+                                TextEntry::make('product_variant')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.product-variant'))
+                                    ->state(fn (BillOfMaterial $record): string => $record->product?->parent_id ? $record->product->name : '—')
+                                    ->columnSpanFull(),
+                                Grid::make(2)
                                     ->schema([
-                                        TextEntry::make('product.name')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.product'))
-                                            ->size(TextSize::Large)
-                                            ->placeholder('—'),
-                                        TextEntry::make('product_variant')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.product-variant'))
-                                            ->state('—'),
-                                        Grid::make(2)
-                                            ->schema([
-                                                TextEntry::make('quantity')
-                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.quantity'))
-                                                    ->numeric(decimalPlaces: 4),
-                                                TextEntry::make('uom.name')
-                                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.uom'))
-                                                    ->placeholder('—'),
-                                            ]),
-                                    ]),
-                                Group::make()
-                                    ->schema([
-                                        TextEntry::make('code')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.reference'))
-                                            ->placeholder('—'),
-                                        TextEntry::make('type')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.type'))
-                                            ->badge(),
-                                        TextEntry::make('company.name')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.company'))
+                                        TextEntry::make('quantity')
+                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.quantity'))
+                                            ->numeric(decimalPlaces: 4),
+                                        TextEntry::make('uom.name')
+                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.uom'))
                                             ->placeholder('—'),
                                     ]),
+                                TextEntry::make('code')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.reference'))
+                                    ->placeholder('—'),
+                                TextEntry::make('type')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.type'))
+                                    ->badge(),
+                                TextEntry::make('company.name')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.general.entries.company'))
+                                    ->placeholder('—'),
+                            ])
+                            ->columns(2),
+                    ])
+                    ->columnSpan(['lg' => 2]),
+                Group::make()
+                    ->schema([
+                        Section::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.title'))
+                            ->schema([
+                                TextEntry::make('kit_information')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.kit-information'))
+                                    ->state(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.kit-information-content'))
+                                    ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::PHANTOM)
+                                    ->columnSpanFull(),
+                                TextEntry::make('ready_to_produce')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.ready-to-produce'))
+                                    ->badge()
+                                    ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::NORMAL)
+                                    ->columnSpanFull(),
+                                TextEntry::make('operationType.name')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.routing'))
+                                    ->placeholder('—')
+                                    ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::NORMAL)
+                                    ->columnSpanFull(),
+                                TextEntry::make('consumption')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.consumption'))
+                                    ->badge()
+                                    ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::NORMAL)
+                                    ->columnSpanFull(),
+                                IconEntry::make('allow_operation_dependencies')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.operation-dependencies'))
+                                    ->boolean()
+                                    ->columnSpanFull(),
+                                TextEntry::make('produce_delay')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.manufacturing-lead-time'))
+                                    ->suffix(' '.__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.days-suffix'))
+                                    ->columnSpanFull(),
+                                TextEntry::make('days_to_prepare_mo')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.days-to-prepare-manufacturing-order'))
+                                    ->suffix(' '.__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.days-suffix'))
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(1),
+                        Section::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.title'))
+                            ->schema([
+                                TextEntry::make('creator.name')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.entries.created-by'))
+                                    ->placeholder('—')
+                                    ->icon('heroicon-o-user'),
+                                TextEntry::make('created_at')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.entries.created-at'))
+                                    ->dateTime()
+                                    ->icon('heroicon-m-calendar'),
+                                TextEntry::make('updated_at')
+                                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.entries.last-updated'))
+                                    ->dateTime()
+                                    ->icon('heroicon-m-clock'),
                             ]),
-                    ]),
+                    ])
+                    ->columnSpan(['lg' => 1]),
                 Tabs::make('bom-details')
                     ->tabs([
                         Tab::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.components.title'))
@@ -420,20 +504,39 @@ class BillsOfMaterialResource extends Resource
                                     ->hiddenLabel()
                                     ->contained(false)
                                     ->table([
-                                        InfolistTableColumn::make('product')
+                                        InfolistTableColumn::make('product.name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.components.entries.component')),
-                                        InfolistTableColumn::make('operation')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.components.entries.operation')),
                                         InfolistTableColumn::make('quantity')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.components.entries.quantity')),
-                                        InfolistTableColumn::make('uom')
+                                        InfolistTableColumn::make('uom.name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.components.entries.uom')),
+                                        InfolistTableColumn::make('attribute_values')
+                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.apply-on-variants'))
+                                            ->toggleable(isToggledHiddenByDefault: true),
+                                        InfolistTableColumn::make('operation.name')
+                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.consumed-in-operation'))
+                                            ->toggleable(isToggledHiddenByDefault: true),
+                                        InfolistTableColumn::make('is_manual_consumption')
+                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.highlight-consumption'))
+                                            ->toggleable(isToggledHiddenByDefault: true),
                                     ])
                                     ->schema([
                                         TextEntry::make('product.name')->placeholder('—'),
-                                        TextEntry::make('operation.name')->placeholder('—'),
                                         TextEntry::make('quantity')->numeric(decimalPlaces: 4),
                                         TextEntry::make('uom.name')->placeholder('—'),
+                                        TextEntry::make('attribute_values')
+                                            ->state(function ($record): string {
+                                                $labels = $record->attributeValues
+                                                    ->map(fn ($value): string => $value->attribute?->name && $value->attributeOption?->name
+                                                        ? "{$value->attribute->name}: {$value->attributeOption->name}"
+                                                        : ($value->attributeOption?->name ?? (string) $value->id))
+                                                    ->filter()
+                                                    ->values();
+
+                                                return $labels->isNotEmpty() ? $labels->implode(', ') : '—';
+                                            }),
+                                        TextEntry::make('operation.name')->placeholder('—'),
+                                        IconEntry::make('is_manual_consumption')->boolean(),
                                     ]),
                             ]),
                         Tab::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.title'))
@@ -444,11 +547,11 @@ class BillsOfMaterialResource extends Resource
                                     ->table([
                                         InfolistTableColumn::make('name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.operation')),
-                                        InfolistTableColumn::make('work-center')
+                                        InfolistTableColumn::make('workCenter.name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.work-center')),
-                                        InfolistTableColumn::make('time-mode')
+                                        InfolistTableColumn::make('time_mode')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.time-mode')),
-                                        InfolistTableColumn::make('duration')
+                                        InfolistTableColumn::make('manual_cycle_time')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.operations.entries.duration')),
                                     ])
                                     ->schema([
@@ -465,13 +568,13 @@ class BillsOfMaterialResource extends Resource
                                     ->hiddenLabel()
                                     ->contained(false)
                                     ->table([
-                                        InfolistTableColumn::make('product')
+                                        InfolistTableColumn::make('product.name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.by-products.entries.product')),
                                         InfolistTableColumn::make('quantity')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.by-products.entries.quantity')),
-                                        InfolistTableColumn::make('uom')
+                                        InfolistTableColumn::make('uom.name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.by-products.entries.uom')),
-                                        InfolistTableColumn::make('operation')
+                                        InfolistTableColumn::make('operation.name')
                                             ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.by-products.entries.operation')),
                                     ])
                                     ->schema([
@@ -481,56 +584,10 @@ class BillsOfMaterialResource extends Resource
                                         TextEntry::make('operation.name')->placeholder('—'),
                                     ]),
                             ]),
-                        Tab::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.title'))
-                            ->schema([
-                                Grid::make(2)
-                                    ->schema([
-                                        TextEntry::make('kit_information')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.kit-information'))
-                                            ->state(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.kit-information-content'))
-                                            ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::PHANTOM)
-                                            ->columnSpanFull(),
-                                        TextEntry::make('ready_to_produce')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.ready-to-produce'))
-                                            ->badge()
-                                            ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::NORMAL),
-                                        TextEntry::make('operationType.name')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.routing'))
-                                            ->placeholder('—')
-                                            ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::NORMAL),
-                                        TextEntry::make('consumption')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.consumption'))
-                                            ->badge()
-                                            ->visible(fn (BillOfMaterial $record): bool => $record->type === BillOfMaterialType::NORMAL),
-                                        TextEntry::make('produce_delay')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.manufacturing-lead-time'))
-                                            ->suffix(' '.__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.days-suffix')),
-                                        IconEntry::make('allow_operation_dependencies')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.operation-dependencies'))
-                                            ->boolean(),
-                                        TextEntry::make('days_to_prepare_mo')
-                                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.days-to-prepare-manufacturing-order'))
-                                            ->suffix(' '.__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.tabs.miscellaneous.entries.days-suffix')),
-                                    ]),
-                            ]),
-                    ]),
-                Section::make(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.title'))
-                    ->schema([
-                        TextEntry::make('creator.name')
-                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.entries.created-by'))
-                            ->placeholder('—')
-                            ->icon('heroicon-o-user'),
-                        TextEntry::make('created_at')
-                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.entries.created-at'))
-                            ->dateTime()
-                            ->icon('heroicon-m-calendar'),
-                        TextEntry::make('updated_at')
-                            ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.infolist.sections.record-information.entries.last-updated'))
-                            ->dateTime()
-                            ->icon('heroicon-m-clock'),
-                    ]),
+                    ])
+                    ->columnSpanFull(),
             ])
-            ->columns(1);
+            ->columns(3);
     }
 
     public static function getEloquentQuery(): Builder
@@ -559,6 +616,17 @@ class BillsOfMaterialResource extends Resource
         ]);
     }
 
+    public static function normalizeProductVariantData(array $data): array
+    {
+        if (! empty($data['product_variant_id'])) {
+            $data['product_id'] = $data['product_variant_id'];
+        }
+
+        unset($data['product_variant_id']);
+
+        return $data;
+    }
+
     protected static function getComponentsRepeater(): Repeater
     {
         return Repeater::make('lines')
@@ -572,9 +640,6 @@ class BillsOfMaterialResource extends Resource
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.component'))
                     ->markAsRequired()
                     ->resizable(),
-                RepeaterTableColumn::make('operation_id')
-                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.operation'))
-                    ->resizable(),
                 RepeaterTableColumn::make('quantity')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.quantity'))
                     ->markAsRequired()
@@ -582,6 +647,18 @@ class BillsOfMaterialResource extends Resource
                 RepeaterTableColumn::make('uom_id')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.uom'))
                     ->markAsRequired()
+                    ->resizable(),
+                RepeaterTableColumn::make('attributeValues')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.apply-on-variants'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->resizable(),
+                RepeaterTableColumn::make('operation_id')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.consumed-in-operation'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->resizable(),
+                RepeaterTableColumn::make('is_manual_consumption')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.highlight-consumption'))
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->resizable(),
             ])
             ->schema([
@@ -591,6 +668,8 @@ class BillsOfMaterialResource extends Resource
                     ->searchable()
                     ->preload()
                     ->required()
+                    ->createOptionForm(fn (Schema $schema): Schema => ProductResource::form($schema))
+                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge))
                     ->live()
                     ->afterStateUpdated(function (Set $set, Get $get, ?string $state): void {
                         $product = Product::query()->find($state);
@@ -602,10 +681,28 @@ class BillsOfMaterialResource extends Resource
                         $set('uom_id', $product->uom_id);
                         $set('company_id', $get('../../company_id'));
                     }),
+                Select::make('attributeValues')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.apply-on-variants'))
+                    ->relationship(
+                        name: 'attributeValues',
+                        titleAttribute: 'id',
+                        modifyQueryUsing: function (Builder $query, Get $get) {
+                            $bomProductId = $get('../../product_id');
+
+                            return $query->where('product_id', $bomProductId);
+                        },
+                    )
+                    ->getOptionLabelFromRecordUsing(fn ($record): string => $record->attribute?->name && $record->attributeOption?->name ? "{$record->attribute->name}: {$record->attributeOption->name}" : ($record->attributeOption?->name ?? (string) $record->id))
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
                 Select::make('operation_id')
                     ->relationship('operation', 'name')
                     ->searchable()
                     ->preload(),
+                Checkbox::make('is_manual_consumption')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.highlight-consumption'))
+                    ->default(false),
                 TextInput::make('quantity')
                     ->numeric()
                     ->minValue(0.0001)

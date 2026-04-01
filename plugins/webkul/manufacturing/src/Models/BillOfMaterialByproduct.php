@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Auth;
-use Webkul\Product\Models\Product;
 use Webkul\Product\Models\ProductAttributeValue;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;

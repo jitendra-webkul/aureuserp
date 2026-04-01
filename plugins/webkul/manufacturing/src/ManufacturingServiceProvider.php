@@ -52,6 +52,7 @@ class ManufacturingServiceProvider extends PackageServiceProvider
                 '2026_03_31_064271_create_manufacturing_work_center_tag_table',
                 '2026_03_31_064272_create_manufacturing_work_order_dependencies_table',
                 '2026_03_31_180000_add_worksheet_to_manufacturing_operations_table',
+                '2026_04_01_000001_add_lead_time_fields_to_manufacturing_bills_of_materials_table',
             ])
             ->runsMigrations()
             ->hasDependencies([

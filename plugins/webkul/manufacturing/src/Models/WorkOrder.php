@@ -11,7 +11,6 @@ use Webkul\Employee\Models\CalendarLeaves;
 use Webkul\Manufacturing\Database\Factories\WorkOrderFactory;
 use Webkul\Manufacturing\Enums\WorkOrderProductionAvailability;
 use Webkul\Manufacturing\Enums\WorkOrderState;
-use Webkul\Product\Models\Product;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\UOM;
 

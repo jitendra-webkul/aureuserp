@@ -5,7 +5,6 @@ namespace Webkul\Manufacturing\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
-use Webkul\Product\Models\Product;
 use Webkul\Security\Models\User;
 
 class WorkCenterCapacity extends Model

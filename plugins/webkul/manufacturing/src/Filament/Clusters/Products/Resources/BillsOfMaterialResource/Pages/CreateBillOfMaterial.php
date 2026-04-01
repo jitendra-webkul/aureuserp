@@ -30,6 +30,11 @@ class CreateBillOfMaterial extends CreateRecord
         return $this->getResource()::getUrl('view', ['record' => $this->getRecord()]);
     }
 
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return BillsOfMaterialResource::normalizeProductVariantData($data);
+    }
+
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()

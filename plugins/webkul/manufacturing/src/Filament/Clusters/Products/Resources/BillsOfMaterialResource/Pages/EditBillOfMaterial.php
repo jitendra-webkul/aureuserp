@@ -5,10 +5,18 @@ namespace Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMater
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource;
+use Webkul\Support\Traits\HasRecordNavigationTabs;
 
 class EditBillOfMaterial extends EditRecord
 {
+    use HasRecordNavigationTabs;
+
     protected static string $resource = BillsOfMaterialResource::class;
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return BillsOfMaterialResource::normalizeProductVariantData($data);
+    }
 
     protected function getSavedNotification(): ?Notification
     {

@@ -10,7 +10,6 @@ use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Lot;
 use Webkul\Manufacturing\Database\Factories\UnbuildOrderFactory;
 use Webkul\Manufacturing\Enums\UnbuildOrderState;
-use Webkul\Product\Models\Product;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\UOM;

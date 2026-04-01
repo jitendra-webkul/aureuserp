@@ -16,7 +16,6 @@ use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
 use Webkul\Manufacturing\Enums\ManufacturingOrderPriority;
 use Webkul\Manufacturing\Enums\ManufacturingOrderReservationState;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
-use Webkul\Product\Models\Product;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\UOM;

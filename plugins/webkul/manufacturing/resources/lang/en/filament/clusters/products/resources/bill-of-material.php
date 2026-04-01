@@ -37,10 +37,22 @@ return [
                 'title'      => 'Components',
                 'add-action' => 'Add a line',
                 'columns'    => [
-                    'component' => 'Component',
-                    'operation' => 'Operation',
-                    'quantity'  => 'Quantity',
-                    'uom'       => 'Product Unit of Measure',
+                    'component'              => 'Component',
+                    'apply-on-variants'      => 'Apply on Variants',
+                    'consumed-in-operation'  => 'Consumed in Operation',
+                    'highlight-consumption'  => 'Highlight Consumption',
+                    'quantity'               => 'Quantity',
+                    'uom'                    => 'Product Unit of Measure',
+                ],
+                'create-form' => [
+                    'fields' => [
+                        'name'            => 'Name',
+                        'type'            => 'Type',
+                        'category'        => 'Category',
+                        'company'         => 'Company',
+                        'uom'             => 'UOM',
+                        'uom-placeholder' => 'UOM',
+                    ],
                 ],
             ],
             'operations' => [
