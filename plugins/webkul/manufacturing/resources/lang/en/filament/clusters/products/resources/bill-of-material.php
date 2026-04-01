@@ -59,10 +59,13 @@ return [
                 'title'      => 'Operations',
                 'add-action' => 'Add a line',
                 'columns'    => [
-                    'operation'   => 'Operation',
-                    'work-center' => 'Work Center',
-                    'time-mode'   => 'Duration Computation',
-                    'duration'    => 'Duration (minutes)',
+                    'operation'        => 'Operation',
+                    'work-center'      => 'Work Center',
+                    'time-mode'        => 'Duration Computation',
+                    'time-mode-batch'  => 'Computed on last',
+                    'company'          => 'Company',
+                    'apply-on-variants'=> 'Apply on Variants',
+                    'duration'         => 'Duration (minutes)',
                 ],
             ],
             'by-products' => [

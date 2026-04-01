@@ -50,6 +50,8 @@ use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
 use Webkul\Manufacturing\Enums\BillOfMaterialReadyToProduce;
 use Webkul\Manufacturing\Enums\BillOfMaterialType;
 use Webkul\Manufacturing\Enums\OperationTimeMode;
+use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource;
+use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\WorkCenterResource;
 use Webkul\Manufacturing\Filament\Clusters\Products;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\CreateBillOfMaterial;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource\Pages\EditBillOfMaterial;
@@ -61,6 +63,7 @@ use Webkul\Support\Filament\Forms\Components\Repeater;
 use Webkul\Support\Filament\Forms\Components\Repeater\TableColumn as RepeaterTableColumn;
 use Webkul\Support\Filament\Infolists\Components\RepeatableEntry;
 use Webkul\Support\Filament\Infolists\Components\Repeater\TableColumn as InfolistTableColumn;
+use Webkul\Support\Models\Company;
 use Webkul\Support\Models\UOM;
 
 class BillsOfMaterialResource extends Resource
@@ -711,8 +714,12 @@ class BillsOfMaterialResource extends Resource
                     ->multiple(),
                 Select::make('operation_id')
                     ->relationship('operation', 'name')
+                    ->native(false)
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->wrapOptionLabels(false)
+                    ->createOptionForm(fn (Schema $schema): Schema => OperationResource::form($schema))
+                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge)),
                 Checkbox::make('is_manual_consumption')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.components.columns.highlight-consumption'))
                     ->default(false),
@@ -751,6 +758,18 @@ class BillsOfMaterialResource extends Resource
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode'))
                     ->markAsRequired()
                     ->resizable(),
+                RepeaterTableColumn::make('time_mode_batch')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode-batch'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->resizable(),
+                RepeaterTableColumn::make('company')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.company'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->resizable(),
+                RepeaterTableColumn::make('attributeValues')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.apply-on-variants'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->resizable(),
                 RepeaterTableColumn::make('manual_cycle_time')
                     ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.duration'))
                     ->markAsRequired()
@@ -763,15 +782,56 @@ class BillsOfMaterialResource extends Resource
                     ->maxLength(255),
                 Select::make('work_center_id')
                     ->relationship('workCenter', 'name')
+                    ->native(false)
                     ->searchable()
                     ->preload()
-                    ->required(),
-                Radio::make('time_mode')
+                    ->wrapOptionLabels(false)
+                    ->required()
+                    ->createOptionForm(fn (Schema $schema): Schema => WorkCenterResource::form($schema))
+                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge)),
+                Select::make('time_mode')
                     ->options(OperationTimeMode::class)
+                    ->native(false)
                     ->default(OperationTimeMode::MANUAL->value)
-                    ->inline(false)
                     ->live()
+                    ->wrapOptionLabels(false)
                     ->required(),
+                TextInput::make('time_mode_batch')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.time-mode-batch'))
+                    ->numeric()
+                    ->default(10)
+                    ->minValue(1)
+                    ->step('1'),
+                Placeholder::make('company')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.company'))
+                    ->content(function (Get $get): string {
+                        $companyId = $get('../../company_id');
+
+                        return Company::query()->find($companyId)?->name ?? '—';
+                    }),
+                Select::make('attributeValues')
+                    ->label(__('manufacturing::filament/clusters/products/resources/bill-of-material.form.tabs.operations.columns.apply-on-variants'))
+                    ->native(false)
+                    ->wrapOptionLabels(false)
+                    ->relationship(
+                        'attributeValues',
+                        'id',
+                        modifyQueryUsing: function (Get $get, Builder $query): void {
+                            $productId = $get('../../product_id');
+
+                            if (! $productId) {
+                                $query->whereRaw('1 = 0');
+
+                                return;
+                            }
+
+                            $query->where('product_id', $productId);
+                        }
+                    )
+                    ->getOptionLabelFromRecordUsing(fn ($record): string => $record->attribute?->name && $record->attributeOption?->name ? "{$record->attribute->name}: {$record->attributeOption->name}" : ($record->attributeOption?->name ?? (string) $record->id))
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
                 TextInput::make('manual_cycle_time')
                     ->default('60:00')
                     ->rule('regex:/^\d+:\d{2}$/')
@@ -840,8 +900,12 @@ class BillsOfMaterialResource extends Resource
                     ->required(),
                 Select::make('operation_id')
                     ->relationship('operation', 'name')
+                    ->native(false)
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->wrapOptionLabels(false)
+                    ->createOptionForm(fn (Schema $schema): Schema => OperationResource::form($schema))
+                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge)),
             ]);
     }
 
