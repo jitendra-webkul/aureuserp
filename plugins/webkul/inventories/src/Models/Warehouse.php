@@ -22,6 +22,7 @@ use Webkul\Inventory\Enums\ReceptionStep;
 use Webkul\Inventory\Enums\ReservationMethod;
 use Webkul\Inventory\Enums\RuleAction;
 use Webkul\Inventory\Enums\RuleAuto;
+use Webkul\Inventory\Settings\WarehouseSettings;
 use Webkul\Partner\Models\Partner;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
@@ -233,6 +234,347 @@ class Warehouse extends Model implements Sortable
         $this->createRules();
     }
 
+    protected function syncWarehouseConfiguration(): void
+    {
+        $supplierLocation = Location::where('type', LocationType::SUPPLIER)->first();
+
+        $customerLocation = Location::where('type', LocationType::CUSTOMER)->first();
+
+        if (! $supplierLocation || ! $customerLocation) {
+            return;
+        }
+
+        $this->updateLocations(
+            'reception_steps',
+            [
+                ReceptionStep::ONE_STEP->value => [
+                    'archive' => [$this->input_stock_location_id, $this->qc_stock_location_id],
+                ],
+                ReceptionStep::TWO_STEPS->value => [
+                    'restore' => [$this->input_stock_location_id],
+                    'archive' => [$this->qc_stock_location_id],
+                ],
+                ReceptionStep::THREE_STEPS->value => [
+                    'restore' => [$this->input_stock_location_id, $this->qc_stock_location_id],
+                ],
+            ]
+        );
+
+        $this->updateLocations(
+            'delivery_steps',
+            [
+                DeliveryStep::ONE_STEP->value => [
+                    'archive' => [$this->output_stock_location_id, $this->pack_stock_location_id],
+                ],
+                DeliveryStep::TWO_STEPS->value => [
+                    'restore' => [$this->output_stock_location_id],
+                    'archive' => [$this->pack_stock_location_id],
+                ],
+                DeliveryStep::THREE_STEPS->value => [
+                    'restore' => [$this->output_stock_location_id, $this->pack_stock_location_id],
+                ],
+            ]
+        );
+
+        $this->updateOperationTypes(
+            'reception_steps',
+            [
+                ReceptionStep::ONE_STEP->value => [
+                    'update' => [
+                        $this->in_type_id => [
+                            'source_location_id'      => $supplierLocation->id,
+                            'destination_location_id' => $this->lot_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                    ],
+                    'archive' => [$this->store_type_id, $this->qc_type_id],
+                ],
+                ReceptionStep::TWO_STEPS->value => [
+                    'update' => [
+                        $this->in_type_id => [
+                            'source_location_id'      => $supplierLocation->id,
+                            'destination_location_id' => $this->input_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                        $this->store_type_id => [
+                            'source_location_id'      => $this->input_stock_location_id,
+                            'destination_location_id' => $this->lot_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                    ],
+                    'archive' => [$this->qc_type_id],
+                ],
+                ReceptionStep::THREE_STEPS->value => [
+                    'update' => [
+                        $this->in_type_id => [
+                            'source_location_id'      => $supplierLocation->id,
+                            'destination_location_id' => $this->input_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                        $this->qc_type_id => [
+                            'source_location_id'      => $this->input_stock_location_id,
+                            'destination_location_id' => $this->qc_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                        $this->store_type_id => [
+                            'source_location_id'      => $this->qc_stock_location_id,
+                            'destination_location_id' => $this->lot_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        $this->updateOperationTypes(
+            'delivery_steps',
+            [
+                DeliveryStep::ONE_STEP->value => [
+                    'update' => [
+                        $this->out_type_id => [
+                            'source_location_id'      => $this->lot_stock_location_id,
+                            'destination_location_id' => $customerLocation->id,
+                            'deleted_at'              => null,
+                        ],
+                    ],
+                    'archive' => [$this->pick_type_id, $this->pack_type_id],
+                ],
+                DeliveryStep::TWO_STEPS->value => [
+                    'update' => [
+                        $this->pick_type_id => [
+                            'source_location_id'      => $this->lot_stock_location_id,
+                            'destination_location_id' => $this->output_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                        $this->out_type_id => [
+                            'source_location_id'      => $this->output_stock_location_id,
+                            'destination_location_id' => $customerLocation->id,
+                            'deleted_at'              => null,
+                        ],
+                    ],
+                    'archive' => [$this->pack_type_id],
+                ],
+                DeliveryStep::THREE_STEPS->value => [
+                    'update' => [
+                        $this->pick_type_id => [
+                            'source_location_id'      => $this->lot_stock_location_id,
+                            'destination_location_id' => $this->pack_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                        $this->pack_type_id => [
+                            'source_location_id'      => $this->pack_stock_location_id,
+                            'destination_location_id' => $this->output_stock_location_id,
+                            'deleted_at'              => null,
+                        ],
+                        $this->out_type_id => [
+                            'source_location_id'      => $this->output_stock_location_id,
+                            'destination_location_id' => $customerLocation->id,
+                            'deleted_at'              => null,
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        if (
+            in_array($this->reception_steps, [ReceptionStep::TWO_STEPS, ReceptionStep::THREE_STEPS], true)
+            && in_array($this->delivery_steps, [DeliveryStep::TWO_STEPS, DeliveryStep::THREE_STEPS], true)
+        ) {
+            OperationType::withTrashed()->whereIn('id', [$this->xdock_type_id])->update(['deleted_at' => null]);
+
+            Route::withTrashed()->whereIn('id', [$this->crossdock_route_id])->update(['deleted_at' => null]);
+
+            Rule::withTrashed()->where('route_id', $this->crossdock_route_id)->update(['deleted_at' => null]);
+        } else {
+            OperationType::withTrashed()->whereIn('id', [$this->xdock_type_id])->update(['deleted_at' => now()]);
+
+            Route::withTrashed()->whereIn('id', [$this->crossdock_route_id])->update(['deleted_at' => now()]);
+
+            Rule::withTrashed()->where('route_id', $this->crossdock_route_id)->update(['deleted_at' => now()]);
+        }
+
+        $this->receptionRoute?->update([
+            'name' => match ($this->reception_steps) {
+                ReceptionStep::ONE_STEP    => $this->name.': Receive in 1 step (Stock)',
+                ReceptionStep::TWO_STEPS   => $this->name.': Receive in 2 steps (Input + Stock)',
+                ReceptionStep::THREE_STEPS => $this->name.': Receive in 3 steps (Input + Quality + Stock)',
+            },
+        ]);
+
+        $this->deliveryRoute?->update([
+            'name' => match ($this->delivery_steps) {
+                DeliveryStep::ONE_STEP    => $this->name.': Deliver in 1 step (Ship)',
+                DeliveryStep::TWO_STEPS   => $this->name.': Deliver in 2 steps (Pick + Ship)',
+                DeliveryStep::THREE_STEPS => $this->name.': Deliver in 3 steps (Pick + Pack + Ship)',
+            },
+        ]);
+
+        $this->updateRules(
+            'reception_steps',
+            [
+                ReceptionStep::ONE_STEP->value => [
+                    'restore' => [
+                        // WH: Vendors → Stock => Partners/Vendors → WH/Stock
+                        ['source_location_id' => $supplierLocation->id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->in_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Input → Quality Control => WH/Input → WH/Quality Control
+                        ['source_location_id' => $this->input_stock_location_id, 'destination_location_id' => $this->qc_stock_location_id, 'operation_type_id' => $this->qc_type_id],
+                        // WH: Quality Control → Stock => WH/Quality Control → WH/Stock
+                        ['source_location_id' => $this->qc_stock_location_id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->store_type_id],
+                        // WH: Input → Stock => WH/Input → WH/Stock
+                        ['source_location_id' => $this->input_stock_location_id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->store_type_id],
+                    ],
+                ],
+                ReceptionStep::TWO_STEPS->value => [
+                    'restore' => [
+                        // WH: Vendors → Stock => Partners/Vendors → WH/Stock
+                        ['source_location_id' => $supplierLocation->id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->in_type_id],
+                        // WH: Input → Stock => WH/Input → WH/Stock
+                        ['source_location_id' => $this->input_stock_location_id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->store_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Input → Quality Control => WH/Input → WH/Quality Control
+                        ['source_location_id' => $this->input_stock_location_id, 'destination_location_id' => $this->qc_stock_location_id, 'operation_type_id' => $this->qc_type_id],
+                        // WH: Quality Control → Stock => WH/Quality Control → WH/Stock
+                        ['source_location_id' => $this->qc_stock_location_id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->store_type_id],
+                    ],
+                ],
+                ReceptionStep::THREE_STEPS->value => [
+                    'restore' => [
+                        // WH: Vendors → Stock => Partners/Vendors → WH/Stock
+                        ['source_location_id' => $supplierLocation->id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->in_type_id],
+                        // WH: Input → Quality Control => WH/Input → WH/Quality Control
+                        ['source_location_id' => $this->input_stock_location_id, 'destination_location_id' => $this->qc_stock_location_id, 'operation_type_id' => $this->qc_type_id],
+                        // WH: Quality Control → Stock => WH/Quality Control → WH/Stock
+                        ['source_location_id' => $this->qc_stock_location_id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->store_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Input → Stock => WH/Input → WH/Stock
+                        ['source_location_id' => $this->input_stock_location_id, 'destination_location_id' => $this->lot_stock_location_id, 'operation_type_id' => $this->store_type_id],
+                    ],
+                ],
+            ]
+        );
+
+        $this->updateRules(
+            'delivery_steps',
+            [
+                DeliveryStep::ONE_STEP->value => [
+                    'restore' => [
+                        // WH: Stock → Customers => WH/Stock → Partners/Customers
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->out_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Stock → Customers => WH/Stock → Partners/Customers
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->pick_type_id],
+                        // WH: Packing Zone → Output => WH/Packing Zone → WH/Output
+                        ['source_location_id' => $this->pack_stock_location_id, 'destination_location_id' => $this->output_stock_location_id, 'operation_type_id' => $this->pack_type_id],
+                        // WH: Output → Customers => WH/Output → Partners/Customers
+                        ['source_location_id' => $this->output_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->out_type_id],
+                    ],
+                ],
+                DeliveryStep::TWO_STEPS->value => [
+                    'restore' => [
+                        // WH: Stock → Customers => WH/Stock → Partners/Customers
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->pick_type_id],
+                        // WH: Output → Customers => WH/Output → Partners/Customers
+                        ['source_location_id' => $this->output_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->out_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Stock → Customers => WH/Stock → Partners/Customers
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->out_type_id],
+                        // WH: Packing Zone → Output => WH/Packing Zone → WH/Output
+                        ['source_location_id' => $this->pack_stock_location_id, 'destination_location_id' => $this->output_stock_location_id, 'operation_type_id' => $this->pack_type_id],
+                    ],
+                ],
+                DeliveryStep::THREE_STEPS->value => [
+                    'restore' => [
+                        // WH: Stock → Customers => WH/Stock → Partners/Customers
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->pick_type_id],
+                        // WH: Packing Zone → Output => WH/Packing Zone → WH/Output
+                        ['source_location_id' => $this->pack_stock_location_id, 'destination_location_id' => $this->output_stock_location_id, 'operation_type_id' => $this->pack_type_id],
+                        // WH: Output → Customers => WH/Output → Partners/Customers
+                        ['source_location_id' => $this->output_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->out_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Stock → Customers => WH/Stock → Partners/Customers
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $customerLocation->id, 'operation_type_id' => $this->out_type_id],
+                    ],
+                ],
+            ]
+        );
+    }
+
+    protected function updateLocations(string $stepType, array $steps): void
+    {
+        $currentStep = $this->{$stepType}?->value ?? $this->{$stepType};
+
+        if (! $currentStep || ! isset($steps[$currentStep])) {
+            return;
+        }
+
+        $actions = $steps[$currentStep];
+
+        if (isset($actions['archive'])) {
+            Location::withTrashed()->whereIn('id', $actions['archive'])->update(['deleted_at' => now()]);
+        }
+
+        if (isset($actions['restore'])) {
+            Location::withTrashed()->whereIn('id', $actions['restore'])->update(['deleted_at' => null]);
+        }
+    }
+
+    protected function updateOperationTypes(string $stepType, array $steps): void
+    {
+        $currentStep = $this->{$stepType}?->value ?? $this->{$stepType};
+
+        if (! $currentStep || ! isset($steps[$currentStep])) {
+            return;
+        }
+
+        $actions = $steps[$currentStep];
+
+        if (isset($actions['archive'])) {
+            OperationType::withTrashed()->whereIn('id', $actions['archive'])->update(['deleted_at' => now()]);
+        }
+
+        if (isset($actions['update'])) {
+            foreach ($actions['update'] as $id => $update) {
+                OperationType::withTrashed()
+                    ->where('id', $id)
+                    ->update($update);
+            }
+        }
+    }
+
+    protected function updateRules(string $stepType, array $steps): void
+    {
+        $currentStep = $this->{$stepType}?->value ?? $this->{$stepType};
+
+        if (! $currentStep || ! isset($steps[$currentStep])) {
+            return;
+        }
+
+        $actions = $steps[$currentStep];
+
+        if (isset($actions['archive'])) {
+            foreach ($actions['archive'] as $conditions) {
+                Rule::withTrashed()
+                    ->where($conditions)
+                    ->update(['deleted_at' => now()]);
+            }
+        }
+
+        if (isset($actions['restore'])) {
+            foreach ($actions['restore'] as $conditions) {
+                Rule::withTrashed()
+                    ->where($conditions)
+                    ->update(['deleted_at' => null]);
+            }
+        }
+    }
+
     protected function createLocations(): void
     {
         $this->view_location_id = Location::create([
@@ -248,7 +590,7 @@ class Warehouse extends Model implements Sortable
         $this->lot_stock_location_id = Location::create([
             'type'         => LocationType::INTERNAL,
             'name'         => 'Stock',
-            'barcode'      => $this->code . 'STOCK',
+            'barcode'      => $this->code.'STOCK',
             'is_scrap'     => false,
             'is_replenish' => true,
             'parent_id'    => $this->view_location_id,
@@ -259,7 +601,7 @@ class Warehouse extends Model implements Sortable
         $this->input_stock_location_id = Location::create([
             'type'         => LocationType::INTERNAL,
             'name'         => 'Input',
-            'barcode'      => $this->code . 'INPUT',
+            'barcode'      => $this->code.'INPUT',
             'is_scrap'     => false,
             'is_replenish' => false,
             'parent_id'    => $this->view_location_id,
@@ -271,7 +613,7 @@ class Warehouse extends Model implements Sortable
         $this->qc_stock_location_id = Location::create([
             'type'         => LocationType::INTERNAL,
             'name'         => 'Quality Control',
-            'barcode'      => $this->code . 'QUALITY',
+            'barcode'      => $this->code.'QUALITY',
             'is_scrap'     => false,
             'is_replenish' => false,
             'parent_id'    => $this->view_location_id,
@@ -283,7 +625,7 @@ class Warehouse extends Model implements Sortable
         $this->output_stock_location_id = Location::create([
             'type'         => LocationType::INTERNAL,
             'name'         => 'Output',
-            'barcode'      => $this->code . 'OUTPUT',
+            'barcode'      => $this->code.'OUTPUT',
             'is_scrap'     => false,
             'is_replenish' => false,
             'parent_id'    => $this->view_location_id,
@@ -295,7 +637,7 @@ class Warehouse extends Model implements Sortable
         $this->pack_stock_location_id = Location::create([
             'type'         => LocationType::INTERNAL,
             'name'         => 'Packing Zone',
-            'barcode'      => $this->code . 'PACKING',
+            'barcode'      => $this->code.'PACKING',
             'is_scrap'     => false,
             'is_replenish' => false,
             'parent_id'    => $this->view_location_id,
@@ -320,7 +662,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'IN',
+            'barcode'                 => $this->code.'IN',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => true,
@@ -346,7 +688,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'OUT',
+            'barcode'                 => $this->code.'OUT',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => true,
@@ -372,7 +714,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'PICK',
+            'barcode'                 => $this->code.'PICK',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => true,
@@ -399,7 +741,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'PACK',
+            'barcode'                 => $this->code.'PACK',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => false,
@@ -422,7 +764,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'QC',
+            'barcode'                 => $this->code.'QC',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => false,
@@ -445,7 +787,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'STOR',
+            'barcode'                 => $this->code.'STOR',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => false,
@@ -472,7 +814,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'INT',
+            'barcode'                 => $this->code.'INT',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => false,
@@ -483,7 +825,7 @@ class Warehouse extends Model implements Sortable
             'destination_location_id' => $this->lot_stock_location_id,
             'company_id'              => $this->company_id,
             'creator_id'              => $this->creator_id,
-            'deleted_at'              => app(\Webkul\Inventory\Settings\WarehouseSettings::class)->enable_locations ? null : now(),
+            'deleted_at'              => app(WarehouseSettings::class)->enable_locations ? null : now(),
         ])->id;
 
         $this->xdock_type_id = OperationType::create([
@@ -495,7 +837,7 @@ class Warehouse extends Model implements Sortable
             'product_label_format'    => '2x7xprice',
             'lot_label_format'        => '4x12_lots',
             'package_label_to_print'  => 'pdf',
-            'barcode'                 => $this->code . 'XD',
+            'barcode'                 => $this->code.'XD',
             'create_backorder'        => CreateBackorder::ASK,
             'move_type'               => MoveType::DIRECT,
             'use_create_lots'         => false,
@@ -515,9 +857,9 @@ class Warehouse extends Model implements Sortable
     {
         $this->reception_route_id = Route::create([
             'name' => match ($this->reception_steps) {
-                ReceptionStep::ONE_STEP    => $this->name . ': Receive in 1 step (Stock)',
-                ReceptionStep::TWO_STEPS   => $this->name . ': Receive in 2 steps (Input + Stock)',
-                ReceptionStep::THREE_STEPS => $this->name . ': Receive in 3 steps (Input + Quality + Stock)',
+                ReceptionStep::ONE_STEP    => $this->name.': Receive in 1 step (Stock)',
+                ReceptionStep::TWO_STEPS   => $this->name.': Receive in 2 steps (Input + Stock)',
+                ReceptionStep::THREE_STEPS => $this->name.': Receive in 3 steps (Input + Quality + Stock)',
             },
             'product_selectable'          => false,
             'product_category_selectable' => true,
@@ -529,9 +871,9 @@ class Warehouse extends Model implements Sortable
 
         $this->delivery_route_id = Route::create([
             'name' => match ($this->delivery_steps) {
-                DeliveryStep::ONE_STEP    => $this->name . ': Deliver in 1 step (Ship)',
-                DeliveryStep::TWO_STEPS   => $this->name . ': Deliver in 2 steps (Pick + Ship)',
-                DeliveryStep::THREE_STEPS => $this->name . ': Deliver in 3 steps (Pick + Pack + Ship)',
+                DeliveryStep::ONE_STEP    => $this->name.': Deliver in 1 step (Ship)',
+                DeliveryStep::TWO_STEPS   => $this->name.': Deliver in 2 steps (Pick + Ship)',
+                DeliveryStep::THREE_STEPS => $this->name.': Deliver in 3 steps (Pick + Pack + Ship)',
             },
             'product_selectable'          => false,
             'product_category_selectable' => true,
@@ -542,7 +884,7 @@ class Warehouse extends Model implements Sortable
         ])->id;
 
         $this->crossdock_route_id = Route::create([
-            'name'                        => $this->name . ': Cross-Dock',
+            'name'                        => $this->name.': Cross-Dock',
             'product_selectable'          => true,
             'product_category_selectable' => true,
             'warehouse_selectable'        => false,
@@ -562,7 +904,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 1,
-            'name'                     => $this->code . ': Vendors → Stock',
+            'name'                     => $this->code.': Vendors → Stock',
             'route_sort'               => 9,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PULL,
@@ -581,7 +923,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                      => 2,
-            'name'                      => $this->code . ': Stock → Customers',
+            'name'                      => $this->code.': Stock → Customers',
             'route_sort'                => 10,
             'group_propagation_option'  => GroupPropagation::PROPAGATE,
             'action'                    => RuleAction::PULL,
@@ -600,7 +942,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 3,
-            'name'                     => $this->code . ': Vendors → Customers',
+            'name'                     => $this->code.': Vendors → Customers',
             'route_sort'               => 20,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PULL,
@@ -620,7 +962,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 4,
-            'name'                     => $this->code . ': Input → Output',
+            'name'                     => $this->code.': Input → Output',
             'route_sort'               => 20,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PUSH,
@@ -640,7 +982,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = $this->mto_pull_id = Rule::create([
             'sort'                     => 5,
-            'name'                     => $this->code . ': Stock → Customers (MTO)',
+            'name'                     => $this->code.': Stock → Customers (MTO)',
             'route_sort'               => 5,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PULL,
@@ -658,7 +1000,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 6,
-            'name'                     => $this->code . ': Input → Quality Control',
+            'name'                     => $this->code.': Input → Quality Control',
             'route_sort'               => 6,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PUSH,
@@ -677,7 +1019,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 7,
-            'name'                     => $this->code . ': Quality Control → Stock',
+            'name'                     => $this->code.': Quality Control → Stock',
             'route_sort'               => 7,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PUSH,
@@ -696,7 +1038,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 8,
-            'name'                     => $this->code . ': Stock → Customers',
+            'name'                     => $this->code.': Stock → Customers',
             'route_sort'               => 8,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PULL,
@@ -715,7 +1057,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 9,
-            'name'                     => $this->code . ': Packing Zone → Output',
+            'name'                     => $this->code.': Packing Zone → Output',
             'route_sort'               => 9,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PUSH,
@@ -734,7 +1076,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 10,
-            'name'                     => $this->code . ': Output → Customers',
+            'name'                     => $this->code.': Output → Customers',
             'route_sort'               => 10,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PUSH,
@@ -753,7 +1095,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 11,
-            'name'                     => $this->code . ': Input → Stock',
+            'name'                     => $this->code.': Input → Stock',
             'route_sort'               => 11,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::PUSH,
@@ -772,7 +1114,7 @@ class Warehouse extends Model implements Sortable
 
         $this->routeIds[] = Rule::create([
             'sort'                     => 12,
-            'name'                     => $this->code . ': False → Customers',
+            'name'                     => $this->code.': False → Customers',
             'route_sort'               => 12,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
             'action'                   => RuleAction::BUY,
@@ -808,6 +1150,8 @@ class Warehouse extends Model implements Sortable
             if ($warehouse->wasChanged('code')) {
                 $warehouse->viewLocation->update(['name' => $warehouse->code]);
             }
+
+            $warehouse->syncWarehouseConfiguration();
         });
     }
 }
