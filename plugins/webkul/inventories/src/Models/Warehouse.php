@@ -234,6 +234,37 @@ class Warehouse extends Model implements Sortable
         $this->createRules();
     }
 
+    protected function finalizeWarehouseCreation(): void
+    {
+        Location::withTrashed()->whereIn('id', [
+            $this->view_location_id,
+            $this->lot_stock_location_id,
+            $this->input_stock_location_id,
+            $this->qc_stock_location_id,
+            $this->output_stock_location_id,
+            $this->pack_stock_location_id,
+        ])->update(['warehouse_id' => $this->id]);
+
+        OperationType::withTrashed()->whereIn('id', [
+            $this->in_type_id,
+            $this->out_type_id,
+            $this->pick_type_id,
+            $this->pack_type_id,
+            $this->qc_type_id,
+            $this->store_type_id,
+            $this->internal_type_id,
+            $this->xdock_type_id,
+        ])->update(['warehouse_id' => $this->id]);
+
+        $this->routes()->sync([
+            $this->reception_route_id,
+            $this->delivery_route_id,
+            $this->crossdock_route_id,
+        ]);
+
+        Rule::withTrashed()->whereIn('id', $this->routeIds)->update(['warehouse_id' => $this->id]);
+    }
+
     protected function syncWarehouseConfiguration(): void
     {
         $supplierLocation = Location::where('type', LocationType::SUPPLIER)->first();
@@ -1144,6 +1175,10 @@ class Warehouse extends Model implements Sortable
 
         static::creating(function (Warehouse $warehouse) {
             $warehouse->handleWarehouseCreation();
+        });
+
+        static::created(function (Warehouse $warehouse) {
+            $warehouse->finalizeWarehouseCreation();
         });
 
         static::updated(function (Warehouse $warehouse) {
