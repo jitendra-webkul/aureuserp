@@ -12,31 +12,37 @@ class OrderPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_manufacturing_order');
+        return $this->check($user, 'view_any');
     }
 
     public function view(User $user, Order $order): bool
     {
-        return $user->can('view_manufacturing_order');
+        return $this->check($user, 'view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create_manufacturing_order');
+        return $this->check($user, 'create');
     }
 
     public function update(User $user, Order $order): bool
     {
-        return $user->can('update_manufacturing_order');
+        return $this->check($user, 'update');
     }
 
     public function delete(User $user, Order $order): bool
     {
-        return $user->can('delete_manufacturing_order');
+        return $this->check($user, 'delete');
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_manufacturing_order');
+        return $this->check($user, 'delete_any');
+    }
+
+    protected function check(User $user, string $ability): bool
+    {
+        return $user->can("{$ability}_manufacturing_order")
+            || $user->can("{$ability}_manufacturing_manufacturing::order");
     }
 }

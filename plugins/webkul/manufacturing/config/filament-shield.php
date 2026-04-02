@@ -3,6 +3,8 @@
 use Webkul\Manufacturing\Filament\Clusters\Configurations;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\WorkCenterResource;
+use Webkul\Manufacturing\Filament\Clusters\Operations;
+use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource;
 use Webkul\Manufacturing\Filament\Clusters\Products;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\BillsOfMaterialResource;
 use Webkul\Manufacturing\Filament\Clusters\Products\Resources\LotResource;
@@ -17,11 +19,12 @@ $reorder = ['reorder'];
 return [
     'resources' => [
         'manage'  => [
-            BillsOfMaterialResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete],
-            LotResource::class             => [...$basic, ...$delete],
-            OperationResource::class       => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
-            ProductResource::class         => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
-            WorkCenterResource::class      => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
+            BillsOfMaterialResource::class    => [...$basic, ...$delete, ...$restore, ...$forceDelete],
+            LotResource::class                => [...$basic, ...$delete],
+            ManufacturingOrderResource::class => [...$basic, ...$delete],
+            OperationResource::class          => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
+            ProductResource::class            => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
+            WorkCenterResource::class         => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
         ],
         'exclude' => [],
     ],
@@ -29,6 +32,7 @@ return [
     'pages' => [
         'exclude' => [
             Configurations::class,
+            Operations::class,
             Products::class,
         ],
     ],
