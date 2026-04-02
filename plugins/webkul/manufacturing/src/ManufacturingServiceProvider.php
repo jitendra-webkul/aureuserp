@@ -5,6 +5,8 @@ namespace Webkul\Manufacturing;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Webkul\Inventory\Models\Warehouse;
+use Webkul\Manufacturing\Listeners\WarehouseLifecycleListener;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
@@ -73,6 +75,7 @@ class ManufacturingServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->registerCustomCss();
+        $this->registerWarehouseLifecycleListener();
     }
 
     public function packageRegistered(): void
@@ -87,5 +90,10 @@ class ManufacturingServiceProvider extends PackageServiceProvider
         FilamentAsset::register([
             Css::make('manufacturing', __DIR__.'/../resources/dist/manufacturing.css'),
         ], 'manufacturing');
+    }
+
+    protected function registerWarehouseLifecycleListener(): void
+    {
+        Warehouse::observe(WarehouseLifecycleListener::class);
     }
 }
