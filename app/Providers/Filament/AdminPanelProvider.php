@@ -69,17 +69,17 @@ class AdminPanelProvider extends PanelProvider
                     ->label(__('admin.navigation.purchase'))
                     ->icon('icon-purchases'),
                 NavigationGroup::make()
+                    ->label(__('admin.navigation.manufacturing'))
+                    ->icon('icon-manufacturing'),
+                NavigationGroup::make()
+                    ->label(__('admin.navigation.inventory'))
+                    ->icon('icon-inventories'),
+                NavigationGroup::make()
                     ->label(__('admin.navigation.invoice'))
                     ->icon('icon-invoices'),
                 NavigationGroup::make()
                     ->label(__('admin.navigation.accounting'))
                     ->icon('icon-accounting'),
-                NavigationGroup::make()
-                    ->label(__('admin.navigation.inventory'))
-                    ->icon('icon-inventories'),
-                NavigationGroup::make()
-                    ->label(__('admin.navigation.manufacturing'))
-                    ->icon('icon-manufacturing'),
                 NavigationGroup::make()
                     ->label(__('admin.navigation.project'))
                     ->icon('icon-projects'),
