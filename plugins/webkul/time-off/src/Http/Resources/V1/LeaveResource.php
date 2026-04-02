@@ -3,7 +3,7 @@
 namespace Webkul\TimeOff\Http\Resources\V1;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Webkul\Employee\Http\Resources\V1\CalendarResource;
+use Webkul\Support\Http\Resources\V1\CalendarResource;
 use Webkul\Employee\Http\Resources\V1\DepartmentResource;
 use Webkul\Employee\Http\Resources\V1\EmployeeResource;
 use Webkul\Security\Http\Resources\V1\UserResource;

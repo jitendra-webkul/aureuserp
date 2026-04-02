@@ -62,8 +62,10 @@ class SupportServiceProvider extends PackageServiceProvider
                 '2025_10_10_080114_create_currency_rates_table',
                 '2025_11_14_102615_alter_currency_rates_table',
                 '2026_03_18_000001_alter_unit_of_measures_factor_precision',
+                '2026_04_02_000001_create_calendars_table',
             ])
-            ->runsMigrations();
+            ->runsMigrations()
+            ->hasSeeder('Webkul\\Support\\Database\\Seeders\\DatabaseSeeder');
     }
 
     public function packageBooted(): void

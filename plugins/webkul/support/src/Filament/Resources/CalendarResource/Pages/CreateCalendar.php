@@ -1,10 +1,10 @@
 <?php
 
-namespace Webkul\Employee\Filament\Clusters\Configurations\Resources\CalendarResource\Pages;
+namespace Webkul\Support\Filament\Resources\CalendarResource\Pages;
 
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
-use Webkul\Employee\Filament\Clusters\Configurations\Resources\CalendarResource;
+use Webkul\Support\Filament\Resources\CalendarResource;
 
 class CreateCalendar extends CreateRecord
 {
@@ -28,7 +28,7 @@ class CreateCalendar extends CreateRecord
     {
         return Notification::make()
             ->success()
-            ->title(__('employees::filament/clusters/configurations/resources/calendar/pages/create-calendar.notification.title'))
-            ->body(__('employees::filament/clusters/configurations/resources/calendar/pages/create-calendar.notification.body'));
+            ->title(__('support::filament/resources/calendar/pages/create-calendar.notification.title'))
+            ->body(__('support::filament/resources/calendar/pages/create-calendar.notification.body'));
     }
 }

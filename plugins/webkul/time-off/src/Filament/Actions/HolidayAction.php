@@ -3,10 +3,10 @@
 namespace Webkul\TimeOff\Filament\Actions;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\Placeholder;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Support\Enums\Width;
 use Illuminate\Support\HtmlString;
-use Webkul\Employee\Models\CalendarLeaves;
+use Webkul\Support\Models\CalendarLeaves;
 use Webkul\TimeOff\Models\LeaveMandatoryDay;
 
 class HolidayAction extends Action
@@ -26,9 +26,9 @@ class HolidayAction extends Action
             ->modalWidth(Width::TwoExtraLarge)
             ->slideOver()
             ->schema([
-                Placeholder::make('public_holiday')
+                TextEntry::make('public_holiday')
                     ->label(__('time-off::filament/actions/holiday-action.form.placeholders.public-holiday'))
-                    ->content(function () {
+                    ->state(function () {
                         $publicHolidays = CalendarLeaves::with('company')->get();
 
                         if ($publicHolidays->isEmpty()) {
@@ -62,9 +62,9 @@ class HolidayAction extends Action
                         return new HtmlString($html);
                     }),
 
-                Placeholder::make('mandatory_holiday')
+                TextEntry::make('mandatory_holiday')
                     ->label(__('time-off::filament/actions/holiday-action.form.placeholders.mandatory-holiday'))
-                    ->content(function () {
+                    ->state(function () {
                         $mandatoryHolidays = LeaveMandatoryDay::with('company', 'creator')->get();
 
                         if ($mandatoryHolidays->isEmpty()) {

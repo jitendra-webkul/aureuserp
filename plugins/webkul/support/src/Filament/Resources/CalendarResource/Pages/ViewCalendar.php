@@ -1,12 +1,12 @@
 <?php
 
-namespace Webkul\Employee\Filament\Clusters\Configurations\Resources\CalendarResource\Pages;
+namespace Webkul\Support\Filament\Resources\CalendarResource\Pages;
 
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Webkul\Employee\Filament\Clusters\Configurations\Resources\CalendarResource;
+use Webkul\Support\Filament\Resources\CalendarResource;
 
 class ViewCalendar extends ViewRecord
 {
@@ -29,8 +29,8 @@ class ViewCalendar extends ViewRecord
                 ->successNotification(
                     Notification::make()
                         ->success()
-                        ->title(__('employees::filament/clusters/configurations/resources/activity-plan/pages/view-activity-plan.header-actions.delete.notification.title'))
-                        ->body(__('employees::filament/clusters/configurations/resources/activity-plan/pages/view-activity-plan.header-actions.delete.notification.body')),
+                        ->title(__('support::filament/resources/calendar/pages/view-calendar.header-actions.delete.notification.title'))
+                        ->body(__('support::filament/resources/calendar/pages/view-calendar.header-actions.delete.notification.body')),
                 ),
         ];
     }
