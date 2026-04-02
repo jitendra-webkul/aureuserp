@@ -44,7 +44,7 @@ return new class extends Migration
 
             $table->foreignId('calendar_leave_id')
                 ->nullable()
-                ->constrained('employees_calendar_leaves')
+                ->constrained('calendar_leaves')
                 ->nullOnDelete();
 
             $table->foreignId('operation_id')

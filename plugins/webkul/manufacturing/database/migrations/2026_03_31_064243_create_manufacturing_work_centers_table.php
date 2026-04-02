@@ -33,7 +33,7 @@ return new class extends Migration
 
             $table->foreignId('calendar_id')
                 ->nullable()
-                ->constrained('employees_calendars')
+                ->constrained('calendars')
                 ->nullOnDelete();
 
             $table->foreignId('creator_id')
