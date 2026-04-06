@@ -5,4 +5,5 @@ return [
     'outgoing' => 'Delivery',
     'internal' => 'Internal',
     'dropship' => 'Dropship',
+    'manufacture' => 'Manufacture',
 ];

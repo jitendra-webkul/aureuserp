@@ -66,6 +66,7 @@ class ManufacturingServiceProvider extends PackageServiceProvider
                 'products',
                 'inventories',
             ])
+            ->hasSeeder('Webkul\\Manufacturing\\Database\Seeders\\DatabaseSeeder')
             ->hasInstallCommand(function (InstallCommand $command): void {
                 $command
                     ->installDependencies()

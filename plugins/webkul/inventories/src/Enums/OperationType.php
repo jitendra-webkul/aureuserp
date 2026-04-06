@@ -14,6 +14,8 @@ enum OperationType: string implements HasLabel
 
     case DROPSHIP = 'dropship';
 
+    case MANUFACTURE = 'manufacture';
+
     public function getLabel(): string
     {
         return match ($this) {
@@ -21,6 +23,7 @@ enum OperationType: string implements HasLabel
             self::OUTGOING => __('inventories::enums/operation-type.outgoing'),
             self::INTERNAL => __('inventories::enums/operation-type.internal'),
             self::DROPSHIP => __('inventories::enums/operation-type.dropship'),
+            self::MANUFACTURE => __('inventories::enums/operation-type.manufacture'),
         };
     }
 }
