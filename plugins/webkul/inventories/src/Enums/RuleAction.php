@@ -22,6 +22,7 @@ enum RuleAction: string implements HasLabel
             self::PULL        => __('inventories::enums/rule-action.pull'),
             self::PUSH        => __('inventories::enums/rule-action.push'),
             self::PULL_PUSH   => __('inventories::enums/rule-action.pull-push'),
+            self::BUY         => __('inventories::enums/rule-action.buy'),
             self::MANUFACTURE => __('inventories::enums/rule-action.manufacture'),
         };
     }

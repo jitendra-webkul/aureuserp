@@ -3,6 +3,7 @@
 namespace Webkul\Manufacturing\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Webkul\Manufacturing\Models\Warehouse;
 
 class DatabaseSeeder extends Seeder
 {
@@ -11,7 +12,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-        ]);
+        $warehouses = Warehouse::all();
+
+        foreach ($warehouses as $warehouse) {
+            $warehouse->handleManufacturingWarehouseCreation();
+
+            $warehouse->finalizeManufacturingWarehouseCreation();
+        }
     }
 }

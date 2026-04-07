@@ -33,7 +33,7 @@ class Warehouse extends Model implements Sortable
 
     protected $table = 'inventories_warehouses';
 
-    protected array $routeIds = [];
+    protected array $ruleIds = [];
 
     protected $fillable = [
         'name',
@@ -582,7 +582,7 @@ class Warehouse extends Model implements Sortable
 
         $customerLocation = Location::where('type', LocationType::CUSTOMER)->first();
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 1,
             'name'                     => $this->code.': Vendors → Stock',
             'route_sort'               => 9,
@@ -601,7 +601,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                      => 2,
             'name'                      => $this->code.': Stock → Customers',
             'route_sort'                => 10,
@@ -620,7 +620,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'                => $this->delivery_steps === DeliveryStep::ONE_STEP ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 3,
             'name'                     => $this->code.': Vendors → Customers',
             'route_sort'               => 20,
@@ -640,7 +640,7 @@ class Warehouse extends Model implements Sortable
                 in_array($this->delivery_steps, [DeliveryStep::TWO_STEPS, DeliveryStep::THREE_STEPS]) ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 4,
             'name'                     => $this->code.': Input → Output',
             'route_sort'               => 20,
@@ -660,7 +660,7 @@ class Warehouse extends Model implements Sortable
                 in_array($this->delivery_steps, [DeliveryStep::TWO_STEPS, DeliveryStep::THREE_STEPS]) ? null : now(),
         ])->id;
 
-        $this->routeIds[] = $this->mto_pull_id = Rule::create([
+        $this->ruleIds[] = $this->mto_pull_id = Rule::create([
             'sort'                     => 5,
             'name'                     => $this->code.': Stock → Customers (MTO)',
             'route_sort'               => 5,
@@ -678,7 +678,7 @@ class Warehouse extends Model implements Sortable
             'company_id'               => $this->company_id,
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 6,
             'name'                     => $this->code.': Input → Quality Control',
             'route_sort'               => 6,
@@ -697,7 +697,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => $this->reception_steps === ReceptionStep::THREE_STEPS ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 7,
             'name'                     => $this->code.': Quality Control → Stock',
             'route_sort'               => 7,
@@ -716,7 +716,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => $this->reception_steps === ReceptionStep::THREE_STEPS ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 8,
             'name'                     => $this->code.': Stock → Customers',
             'route_sort'               => 8,
@@ -735,7 +735,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => $this->delivery_steps === DeliveryStep::ONE_STEP ? now() : null,
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 9,
             'name'                     => $this->code.': Packing Zone → Output',
             'route_sort'               => 9,
@@ -754,7 +754,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => $this->delivery_steps === DeliveryStep::THREE_STEPS ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 10,
             'name'                     => $this->code.': Output → Customers',
             'route_sort'               => 10,
@@ -773,7 +773,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => $this->delivery_steps === DeliveryStep::ONE_STEP ? now() : null,
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 11,
             'name'                     => $this->code.': Input → Stock',
             'route_sort'               => 11,
@@ -792,7 +792,7 @@ class Warehouse extends Model implements Sortable
             'deleted_at'               => $this->delivery_steps === ReceptionStep::TWO_STEPS ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->ruleIds[] = Rule::create([
             'sort'                     => 12,
             'name'                     => $this->code.': False → Customers',
             'route_sort'               => 12,
@@ -841,7 +841,7 @@ class Warehouse extends Model implements Sortable
             $this->crossdock_route_id,
         ]);
 
-        Rule::withTrashed()->whereIn('id', $this->routeIds)->update(['warehouse_id' => $this->id]);
+        Rule::withTrashed()->whereIn('id', $this->ruleIds)->update(['warehouse_id' => $this->id]);
     }
 
     protected function syncWarehouseConfiguration(): void

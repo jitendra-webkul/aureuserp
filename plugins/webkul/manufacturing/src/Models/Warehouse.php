@@ -21,6 +21,8 @@ use Webkul\Inventory\Models\Warehouse as BaseWarehouse;
 
 class Warehouse extends BaseWarehouse
 {
+    protected array $manufactureRuleIds = [];
+
     public function __construct(array $attributes = [])
     {
         $this->mergeFillable([
@@ -116,7 +118,7 @@ class Warehouse extends BaseWarehouse
         );
     }
 
-    protected function handleManufacturingWarehouseCreation(): void
+    public function handleManufacturingWarehouseCreation(): void
     {
         $this->manufacture_steps ??= ManufactureStep::ONE_STEP;
 
@@ -127,6 +129,26 @@ class Warehouse extends BaseWarehouse
         $this->createManufacturingRoutes();
 
         $this->createManufacturingRules();
+
+        $this->saveQuietly();
+    }
+
+    public function finalizeManufacturingWarehouseCreation(): void
+    {
+        Location::withTrashed()->whereIn('id', [
+            $this->pbm_loc_id,
+            $this->sam_loc_id,
+        ])->update(['warehouse_id' => $this->id]);
+
+        OperationType::withTrashed()->whereIn('id', [
+            $this->pbm_type_id,
+            $this->sam_type_id,
+            $this->manu_type_id,
+        ])->update(['warehouse_id' => $this->id]);
+
+        $this->routes()->attach($this->pbm_route_id);
+
+        Rule::withTrashed()->whereIn('id', $this->manufactureRuleIds)->update(['warehouse_id' => $this->id]);
     }
 
     public function createManufacturingLocations(): void
@@ -251,7 +273,7 @@ class Warehouse extends BaseWarehouse
 
     protected function createManufacturingRoutes(): void
     {
-        $this->routeIds[] = $this->pbm_route_id = Route::create([
+        $this->pbm_route_id = Route::create([
             'name' => match ($this->manufacture_steps) {
                 ManufactureStep::ONE_STEP    => $this->name.': Manufacture (1 step)',
                 ManufactureStep::TWO_STEPS   => $this->name.': Pick components and then manufacture (2 steps)',
@@ -270,7 +292,7 @@ class Warehouse extends BaseWarehouse
     {
         $productionLocation = Location::where('type', LocationType::PRODUCTION)->first();
 
-        $this->routeIds[] = Rule::create([
+        $this->manufactureRuleIds[] = Rule::create([
             'sort'                     => 15,
             'name'                     => $this->code.': Stock → Pre-Production',
             'route_sort'               => 10,
@@ -282,14 +304,14 @@ class Warehouse extends BaseWarehouse
             'propagate_carrier'        => false,
             'source_location_id'       => $this->lot_stock_location_id,
             'destination_location_id'  => $this->pbm_loc_id,
-            'route_id'                 => $this->manufacture_route_id,
+            'route_id'                 => $this->pbm_route_id,
             'operation_type_id'        => $this->pbm_type_id,
             'creator_id'               => $this->creator_id,
             'company_id'               => $this->company_id,
             'deleted_at'               => in_array($this->manufacture_steps, [ManufactureStep::TWO_STEPS, ManufactureStep::THREE_STEPS]) ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->manufactureRuleIds[] = Rule::create([
             'sort'                     => 16,
             'name'                     => $this->code.': Pre-Production → Production',
             'route_sort'               => 10,
@@ -301,14 +323,14 @@ class Warehouse extends BaseWarehouse
             'propagate_carrier'        => false,
             'source_location_id'       => $this->pbm_loc_id,
             'destination_location_id'  => $productionLocation->id,
-            'route_id'                 => $this->manufacture_route_id,
+            'route_id'                 => $this->pbm_route_id,
             'operation_type_id'        => $this->manu_type_id,
             'creator_id'               => $this->creator_id,
             'company_id'               => $this->company_id,
             'deleted_at'               => in_array($this->manufacture_steps, [ManufactureStep::TWO_STEPS, ManufactureStep::THREE_STEPS]) ? null : now(),
         ])->id;
 
-        $this->routeIds[] = Rule::create([
+        $this->manufactureRuleIds[] = Rule::create([
             'sort'                     => 17,
             'name'                     => $this->code.': Post-Production → Stock',
             'route_sort'               => 10,
@@ -320,33 +342,15 @@ class Warehouse extends BaseWarehouse
             'propagate_carrier'        => false,
             'source_location_id'       => $productionLocation->id,
             'destination_location_id'  => $this->sam_loc_id,
-            'route_id'                 => $this->manufacture_route_id,
+            'route_id'                 => $this->pbm_route_id,
             'operation_type_id'        => $this->sam_type_id,
             'creator_id'               => $this->creator_id,
             'company_id'               => $this->company_id,
             'deleted_at'               => $this->manufacture_steps === ManufactureStep::THREE_STEPS ? null : now(),
         ])->id;
     }
-
-    protected function finalizeManufacturingWarehouseCreation(): void
-    {
-        Location::withTrashed()->whereIn('id', [
-            $this->pbm_loc_id,
-            $this->sam_loc_id,
-        ])->update(['warehouse_id' => $this->id]);
-
-        OperationType::withTrashed()->whereIn('id', [
-            $this->pbm_type_id,
-            $this->sam_type_id,
-            $this->manu_type_id,
-        ])->update(['warehouse_id' => $this->id]);
-
-        $this->routes()->attach($this->pbm_route_id);
-
-        Rule::withTrashed()->whereIn('id', $this->routeIds)->update(['warehouse_id' => $this->id]);
-    }
     
-    protected function syncManufacturingWarehouseConfiguration(): void
+    public function syncManufacturingWarehouseConfiguration(): void
     {
         $this->updateLocations(
             'manufacture_steps',
