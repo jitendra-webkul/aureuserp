@@ -37,8 +37,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Field\Filament\Traits\HasCustomFields;
+use Webkul\PluginManager\Package;
 use Webkul\Inventory\Enums\DeliveryStep;
 use Webkul\Inventory\Enums\ReceptionStep;
+use Webkul\Inventory\Enums\ManufactureStep;
 use Webkul\Inventory\Filament\Clusters\Configurations;
 use Webkul\Inventory\Filament\Clusters\Configurations\Resources\WarehouseResource\Pages\CreateWarehouse;
 use Webkul\Inventory\Filament\Clusters\Configurations\Resources\WarehouseResource\Pages\EditWarehouse;
@@ -149,9 +151,18 @@ class WarehouseResource extends Resource
                                     ->schema([
                                         CheckboxList::make('supplierWarehouses')
                                             ->label(__('inventories::filament/clusters/configurations/resources/warehouse.form.sections.settings.fields.resupply-from'))
-                                            ->relationship('supplierWarehouses', 'name'),
+                                            ->relationship('supplierWarehouses', 'name')
+                                            ->visible(Warehouse::count() > 1),
+
+                                        Radio::make('manufacture_steps')
+                                            ->label(__('inventories::filament/clusters/configurations/resources/warehouse.form.sections.settings.fields.manufacture'))
+                                            ->options(ManufactureStep::class)
+                                            ->default(ManufactureStep::ONE_STEP)
+                                            ->hintIcon('heroicon-m-question-mark-circle', tooltip: __('inventories::filament/clusters/configurations/resources/warehouse.form.sections.settings.fields.manufacture-hint-tooltip'))
+                                            ->visible(Package::isPluginInstalled('manufacturing')),
                                     ])
-                                    ->visible(Warehouse::count() > 1),
+                                    ->columns(1)
+                                    ->visible(Warehouse::count() > 1 || Package::isPluginInstalled('manufacturing')),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1])

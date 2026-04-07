@@ -14,6 +14,7 @@ use Spatie\EloquentSortable\SortableTrait;
 use Webkul\Inventory\Database\Factories\WarehouseFactory;
 use Webkul\Inventory\Enums\CreateBackorder;
 use Webkul\Inventory\Enums\DeliveryStep;
+use Webkul\Inventory\Enums\ManufactureStep;
 use Webkul\Inventory\Enums\GroupPropagation;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\MoveType;
@@ -41,6 +42,7 @@ class Warehouse extends Model implements Sortable
         'sort',
         'reception_steps',
         'delivery_steps',
+        'manufacture_steps',
         'partner_address_id',
         'company_id',
         'creator_id',
@@ -66,8 +68,9 @@ class Warehouse extends Model implements Sortable
     ];
 
     protected $casts = [
-        'reception_steps' => ReceptionStep::class,
-        'delivery_steps'  => DeliveryStep::class,
+        'reception_steps'   => ReceptionStep::class,
+        'delivery_steps'    => DeliveryStep::class,
+        'manufacture_steps' => ManufactureStep::class,
     ];
 
     public $sortable = [

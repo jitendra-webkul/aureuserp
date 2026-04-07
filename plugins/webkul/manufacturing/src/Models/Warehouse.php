@@ -4,7 +4,7 @@ namespace Webkul\Manufacturing\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Webkul\Manufacturing\Enums\ManufactureStep;
+use Webkul\Inventory\Enums\ManufactureStep;
 use Webkul\Inventory\Enums\CreateBackorder;
 use Webkul\Inventory\Enums\MoveType;
 use Webkul\Inventory\Enums\ReservationMethod;
@@ -26,7 +26,6 @@ class Warehouse extends BaseWarehouse
     public function __construct(array $attributes = [])
     {
         $this->mergeFillable([
-            'manufacture_steps',
             'manufacture_to_resupply',
             'pbm_loc_id',
             'sam_loc_id',
@@ -41,7 +40,6 @@ class Warehouse extends BaseWarehouse
         ]);
 
         $this->mergeCasts([
-            'manufacture_steps'       => ManufactureStep::class,
             'manufacture_to_resupply' => 'boolean',
         ]);
 
