@@ -126,7 +126,7 @@ class Warehouse extends BaseWarehouse
 
         $this->createManufacturingRoutes();
 
-        // $this->createManufacturingRules();
+        $this->createManufacturingRules();
     }
 
     public function createManufacturingLocations(): void
@@ -251,7 +251,7 @@ class Warehouse extends BaseWarehouse
 
     protected function createManufacturingRoutes(): void
     {
-        $this->pbm_route_id = Route::create([
+        $this->routeIds[] = $this->pbm_route_id = Route::create([
             'name' => match ($this->manufacture_steps) {
                 ManufactureStep::ONE_STEP    => $this->name.': Manufacture (1 step)',
                 ManufactureStep::TWO_STEPS   => $this->name.': Pick components and then manufacture (2 steps)',
@@ -271,7 +271,7 @@ class Warehouse extends BaseWarehouse
         $productionLocation = Location::where('type', LocationType::PRODUCTION)->first();
 
         $this->routeIds[] = Rule::create([
-            'sort'                     => 1,
+            'sort'                     => 15,
             'name'                     => $this->code.': Stock → Pre-Production',
             'route_sort'               => 10,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
@@ -283,14 +283,14 @@ class Warehouse extends BaseWarehouse
             'source_location_id'       => $this->lot_stock_location_id,
             'destination_location_id'  => $this->pbm_loc_id,
             'route_id'                 => $this->manufacture_route_id,
-            'operation_type_id'        => $this->in_type_id,
+            'operation_type_id'        => $this->pbm_type_id,
             'creator_id'               => $this->creator_id,
             'company_id'               => $this->company_id,
             'deleted_at'               => in_array($this->manufacture_steps, [ManufactureStep::TWO_STEPS, ManufactureStep::THREE_STEPS]) ? null : now(),
         ])->id;
 
         $this->routeIds[] = Rule::create([
-            'sort'                     => 1,
+            'sort'                     => 16,
             'name'                     => $this->code.': Pre-Production → Production',
             'route_sort'               => 10,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
@@ -302,14 +302,14 @@ class Warehouse extends BaseWarehouse
             'source_location_id'       => $this->pbm_loc_id,
             'destination_location_id'  => $productionLocation->id,
             'route_id'                 => $this->manufacture_route_id,
-            'operation_type_id'        => $this->in_type_id,
+            'operation_type_id'        => $this->manu_type_id,
             'creator_id'               => $this->creator_id,
             'company_id'               => $this->company_id,
             'deleted_at'               => in_array($this->manufacture_steps, [ManufactureStep::TWO_STEPS, ManufactureStep::THREE_STEPS]) ? null : now(),
         ])->id;
 
         $this->routeIds[] = Rule::create([
-            'sort'                     => 1,
+            'sort'                     => 17,
             'name'                     => $this->code.': Post-Production → Stock',
             'route_sort'               => 10,
             'group_propagation_option' => GroupPropagation::PROPAGATE,
@@ -321,7 +321,7 @@ class Warehouse extends BaseWarehouse
             'source_location_id'       => $productionLocation->id,
             'destination_location_id'  => $this->sam_loc_id,
             'route_id'                 => $this->manufacture_route_id,
-            'operation_type_id'        => $this->in_type_id,
+            'operation_type_id'        => $this->sam_type_id,
             'creator_id'               => $this->creator_id,
             'company_id'               => $this->company_id,
             'deleted_at'               => $this->manufacture_steps === ManufactureStep::THREE_STEPS ? null : now(),
@@ -420,6 +420,48 @@ class Warehouse extends BaseWarehouse
                 ManufactureStep::TWO_STEPS   => $this->name.': Pick components and then manufacture (2 steps)',
                 ManufactureStep::THREE_STEPS => $this->name.': Pick components, manufacture and then store products (3 steps)',
             },
+            'deleted_at' => $this->manufacture_steps === ManufactureStep::ONE_STEP ? now() : null,
         ]);
+
+
+        $productionLocation = Location::where('type', LocationType::PRODUCTION)->first();
+
+        $this->updateRules(
+            'manufacture_steps',
+            [
+                ManufactureStep::ONE_STEP->value => [
+                    'archive' => [
+                        // WH: Stock → Pre-Production => WH/Stock → WH/Pre-Production
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $this->pbm_loc_id, 'operation_type_id' => $this->pbm_type_id],
+                        // WH: Pre-Production → Production => WH/Pre-Production → Virtual Locations/Production
+                        ['source_location_id' => $this->pbm_loc_id, 'destination_location_id' => $productionLocation->id, 'operation_type_id' => $this->manu_type_id],
+                        // WH: Post-Production → Stock => WH/Post-Production → WH/Stock
+                        ['source_location_id' => $productionLocation->id, 'destination_location_id' => $this->sam_loc_id, 'operation_type_id' => $this->sam_type_id],
+                    ],
+                ],
+                ManufactureStep::TWO_STEPS->value => [
+                    'restore' => [
+                        // WH: Stock → Pre-Production => WH/Stock → WH/Pre-Production
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $this->pbm_loc_id, 'operation_type_id' => $this->pbm_type_id],
+                        // WH: Pre-Production → Production => WH/Pre-Production → Virtual Locations/Production
+                        ['source_location_id' => $this->pbm_loc_id, 'destination_location_id' => $productionLocation->id, 'operation_type_id' => $this->manu_type_id],
+                    ],
+                    'archive' => [
+                        // WH: Post-Production → Stock => WH/Post-Production → WH/Stock
+                        ['source_location_id' => $productionLocation->id, 'destination_location_id' => $this->sam_loc_id, 'operation_type_id' => $this->sam_type_id],
+                    ],
+                ],
+                ManufactureStep::THREE_STEPS->value => [
+                    'restore' => [
+                        // WH: Stock → Pre-Production => WH/Stock → WH/Pre-Production
+                        ['source_location_id' => $this->lot_stock_location_id, 'destination_location_id' => $this->pbm_loc_id, 'operation_type_id' => $this->pbm_type_id],
+                        // WH: Pre-Production → Production => WH/Pre-Production → Virtual Locations/Production
+                        ['source_location_id' => $this->pbm_loc_id, 'destination_location_id' => $productionLocation->id, 'operation_type_id' => $this->manu_type_id],
+                        // WH: Post-Production → Stock => WH/Post-Production → WH/Stock
+                        ['source_location_id' => $productionLocation->id, 'destination_location_id' => $this->sam_loc_id, 'operation_type_id' => $this->sam_type_id],
+                    ],
+                ],
+            ]
+        );
     }
 }
