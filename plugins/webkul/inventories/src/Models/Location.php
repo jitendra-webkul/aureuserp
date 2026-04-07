@@ -187,18 +187,22 @@ class Location extends Model
 
         static::created(function ($category) {
             $category->updateParentPath();
+
             $category->updateFullName();
+
             $category->saveQuietly();
         });
 
         static::saving(function ($category) {
             if (! empty($category->cyclic_inventory_frequency)) {
-                $category->next_inventory_date = now()->addDays(
-                    (int) $category->cyclic_inventory_frequency
-                );
+                $category->next_inventory_date = now()->addDays((int) $category->cyclic_inventory_frequency);
             } else {
                 $category->next_inventory_date = null;
             }
+
+            $category->updateParentPath();
+
+            $category->updateFullName();
         });
 
         static::updated(function ($category) {
