@@ -71,6 +71,7 @@ class InventoryServiceProvider extends PackageServiceProvider
                 '2026_04_08_043311_add_procurement_group_id_inventories_moves_table',
                 '2026_04_08_043411_add_procurement_group_id_column_in_sales_orders_table_from_inventories',
                 '2026_04_08_043511_add_sale_order_id_column_in_inventories_procurement_groups_table_from_inventories',
+                '2026_04_09_113843_add_procurement_group_id_column_in_inventories_rules_table',
             ])
             ->runsMigrations()
             ->hasSettings([

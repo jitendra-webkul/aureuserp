@@ -46,6 +46,7 @@ class Rule extends Model implements Sortable
         'propagate_warehouse_id',
         'company_id',
         'creator_id',
+        'procurement_group_id',
         'deleted_at',
     ];
 
@@ -97,6 +98,11 @@ class Rule extends Model implements Sortable
     public function partnerAddress(): BelongsTo
     {
         return $this->belongsTo(Partner::class);
+    }
+
+    public function procurementGroup(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementGroup::class, 'procurement_group_id');
     }
 
     public function company(): BelongsTo

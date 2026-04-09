@@ -10,6 +10,7 @@ use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Inventory\Database\Factories\ProductFactory;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\ProductTracking;
+use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
 use Webkul\Security\Models\User;
 
 class Product extends BaseProduct
@@ -110,6 +111,16 @@ class Product extends BaseProduct
                     ->where('is_scrap', false);
             })
             ->sum('quantity');
+    }
+
+    public function getDescription(OperationType $operationType): ?string
+    {
+        return match ($operationType->type) {
+            OperationTypeEnum::INCOMING => $this->description_pickingin ?? $this->description,
+            OperationTypeEnum::OUTGOING => $this->description_pickingout ?? $this->name,
+            OperationTypeEnum::INTERNAL => $this->description_picking ?? $this->description,
+            default =>  $this->description,
+        };
     }
 
     protected static function newFactory(): ProductFactory

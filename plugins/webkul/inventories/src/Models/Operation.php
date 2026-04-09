@@ -51,6 +51,7 @@ class Operation extends Model
         'partner_id',
         'company_id',
         'creator_id',
+        'procurement_group_id',
         'sale_order_id',
     ];
 
