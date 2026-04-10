@@ -198,6 +198,8 @@ class Operation extends Model
             $operation->creator_id ??= Auth::id();
 
             $operation->user_id ??= Auth::id();
+
+            $operation->state ??= OperationState::DRAFT;
         });
 
         static::saving(function ($operation) {
@@ -247,7 +249,9 @@ class Operation extends Model
             $this->state = OperationState::DONE;
         } elseif ($this->moves->every(fn ($move) => $move->state === MoveState::CANCELED)) {
             $this->state = OperationState::CANCELED;
-        } elseif ($this->moves->contains(fn ($move) => $move->state === MoveState::ASSIGNED || $move->state === MoveState::PARTIALLY_ASSIGNED)) {
+        } elseif (
+            $this->moves->contains(fn ($move) => $move->state === MoveState::ASSIGNED || $move->state === MoveState::PARTIALLY_ASSIGNED)
+        ) {
             $this->state = OperationState::ASSIGNED;
         }
     }

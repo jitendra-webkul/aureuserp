@@ -60,6 +60,7 @@ class Move extends Model
         'warehouse_id',
         'product_packaging_id',
         'scrap_id',
+        'price_unit',
         'company_id',
         'creator_id',
         'procurement_group_id',
@@ -193,6 +194,11 @@ class Move extends Model
         return $this->hasMany(MoveLine::class);
     }
 
+    public function moveOrigins(): BelongsToMany
+    {
+        return $this->belongsToMany(Move::class, 'inventories_move_destinations', 'destination_move_id', 'origin_move_id');
+    }
+
     public function moveDestinations(): BelongsToMany
     {
         return $this->belongsToMany(Move::class, 'inventories_move_destinations', 'origin_move_id', 'destination_move_id');
@@ -256,6 +262,8 @@ class Move extends Model
 
             $move->computeReference();
 
+            $move->computeProductQty();
+
             $move->computeProcureMethod();
 
             $move->computePartnerId();
@@ -292,6 +300,11 @@ class Move extends Model
     public function computeReference()
     {
         $this->reference ??= $this->operation?->name;
+    }
+
+    public function computeProductQty()
+    {
+        $this->product_qty ??= $this->uom?->computeQuantity($this->product_uom_qty, $this->product->uom, roundingMethod: 'HALF-UP');
     }
 
     public function computeProcureMethod()
@@ -346,13 +359,15 @@ class Move extends Model
             : $this->product_qty;
 
         $isSupplierSource = $this->sourceLocation->type === LocationType::SUPPLIER;
-        $processedKeys    = collect();
-        $availableQty     = 0;
+
+        $processedKeys = collect();
+
+        $availableQty = 0;
 
         $productQuantities = collect();
 
         if (! $isSupplierSource) {
-            $parentPath        = $this->sourceLocation->parent_path;
+            $parentPath = $this->sourceLocation->parent_path;
             $sourceLocationIds = ($parentPath && trim($parentPath, '/') !== '')
                 ? Location::where('parent_path', 'LIKE', $parentPath . '%')->pluck('id')
                 : collect([$this->source_location_id]);
@@ -402,8 +417,8 @@ class Move extends Model
             }
 
             $processedKeys->push("{$line->source_location_id}-{$line->lot_id}-{$line->package_id}");
-            $availableQty  += $newQty;
-            $remainingQty   = round($remainingQty - $newQty, 4);
+            $availableQty += $newQty;
+            $remainingQty = round($remainingQty - $newQty, 4);
         }
 
         if ($remainingQty > 0 && $isSupplierSource) {
@@ -417,7 +432,7 @@ class Move extends Model
                 ]);
 
                 $availableQty += $newQty;
-                $remainingQty  = round($remainingQty - $newQty, 4);
+                $remainingQty = round($remainingQty - $newQty, 4);
             }
         } elseif ($remainingQty > 0) {
             foreach ($productQuantities as $productQuantity) {

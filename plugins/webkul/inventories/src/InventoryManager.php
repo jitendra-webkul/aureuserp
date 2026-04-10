@@ -3,6 +3,7 @@
 namespace Webkul\Inventory;
 
 use Illuminate\Support\Facades\Auth;
+use Webkul\Inventory\Enums\MoveType;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Enums\ProcureMethod;
@@ -13,6 +14,7 @@ use Webkul\Inventory\Filament\Clusters\Operations\Resources\OperationResource;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\Operation;
+use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\Product;
 use Webkul\Inventory\Models\Rule;
 use Webkul\PluginManager\Package;
@@ -335,7 +337,7 @@ class InventoryManager
 
         $copiedQuantity = $moveToCopy->quantity;
 
-        if (float_compare($moveToCopy->product_uom_qty, 0, precisionRounding: $moveToCopy->product_uom->rounding) < 0) {
+        if (float_compare($moveToCopy->product_uom_qty, 0, precisionRounding: $moveToCopy->uom->rounding) < 0) {
             $copiedQuantity = $moveToCopy->product_uom_qty;
         }
 
@@ -529,7 +531,7 @@ class InventoryManager
         }
 
         usort($procurements, function($procurement) {
-            return float_compare($procurement[0]->product_qty, 0.0, precisionRounding: $procurement[0]->uom->rounding) > 0 ? 1 : 0;
+            return float_compare($procurement[0]['product_qty'], 0.0, precisionRounding: $procurement[0]['product_uom']->rounding) > 0 ? 1 : 0;
         });
 
         $movesValuesByCompany = [];
@@ -548,10 +550,22 @@ class InventoryManager
             $movesValuesByCompany[$procurement['company']->id][] = $moveValues;
         }
 
-        foreach ($movesValuesByCompany as $companyId => $movesValues) {
-            $move = Move::create($moveValues);
+        foreach ($movesValuesByCompany as $companyId => $moveValues) {
+            $moves = collect();
 
-            $move->update(['state' => MoveState::CONFIRMED]);
+            foreach ($moveValues as $moveValue) {
+                $move = Move::create($moveValue);
+
+                $move->update(['state' => MoveState::CONFIRMED]);
+
+                $moves->push($move);
+            }
+
+            $this->assignOperation($moves);
+
+            $this->mergeMoves($moves);
+
+            dd($moves);
         }
 
         dd($movesValuesByCompany);
@@ -623,10 +637,453 @@ class InventoryManager
             'product_packaging_id' => $procurement['values']['product_packaging_id'] ?? null,
         ];
 
+        if (isset( $procurement['values']['sale_order_line_id'])) {
+            $moveValues['sale_order_line_id'] = $procurement['values']['sale_order_line_id'];
+        }
+
+        if (isset( $procurement['values']['purchase_order_line_id'])) {
+            $moveValues['purchase_order_line_id'] = $procurement['values']['purchase_order_line_id'];
+        }
+
+        if (isset( $procurement['values']['work_order_id'])) {
+            $moveValues['work_order_id'] = $procurement['values']['work_order_id'];
+        }
+
         if ($rule->location_dest_from_rule) {
             $moveValues['destination_location_id'] = $rule->destination_location_id;
         }
 
         return $moveValues;
+    }
+
+    public function assignOperation($moves, $mergeInto = null)
+    {
+        $groupedMoves = $moves->groupBy(fn($move) => implode('_', $this->keyAssignPicking($move)));
+
+        foreach ($groupedMoves as $moves) {
+            $operation = $this->searchOperationForAssignation($moves[0]);
+
+            if ($operation) {
+                $vals = [];
+
+                if ($moves->some(fn($move) => $operation->partner_id !== $move->partner_id)) {
+                    $vals['partner_id'] = null;
+                }
+
+                if ($moves->some(fn($move) => $operation->origin !== $move->origin)) {
+                    $vals['origin'] = null;
+                }
+
+                if (! empty($vals)) {
+                    $operation->update($vals);
+                }
+            } else {
+                $moves->each(fn($move) => $move->load('uom'));
+
+                $moves = $moves->filter(fn($move) => float_compare($move->product_uom_qty, 0.0, precisionRounding: $move->uom->rounding) >= 0);
+
+                if ($moves->isEmpty()) {
+                    continue;
+                }
+                
+                $operation = Operation::create($this->getNewOperationValues($moves));
+            }
+
+            foreach ($moves as $move) {
+                $move->update([
+                    'operation_id' => $operation->id,
+                ]);
+            }
+
+            $operation->refresh();
+
+            $operation->computeState();
+
+            $operation->save();
+        }
+    }
+
+    public function getNewOperationValues($moves): array
+    {
+        $origins = $moves->filter(fn($move) => $move->origin)
+            ->pluck('origin')
+            ->unique()
+            ->values();
+
+        if ($origins->isEmpty()) {
+            $origin = null;
+        } else {
+            $origin = $origins->take(5)->implode(',');
+
+            if ($origins->count() > 5) {
+                $origin .= '...';
+            }
+        }
+
+        $partners = $moves->pluck('partner_id')->unique();
+
+        $partner = $partners->count() === 1 ? $partners->first() : null;
+
+        $vals = [
+            'origin'               => $origin,
+            'company_id'           => $moves->pluck('company_id')->first(),
+            'user_id'              => null,
+            'procurement_group_id' => $moves->pluck('procurement_group_id')->first(),
+            'partner_id'           => $partner,
+            'operation_type_id'    => $moves->pluck('operation_type_id')->first(),
+            'source_location_id'   => $moves->pluck('source_location_id')->first(),
+        ];
+
+        $destinationLocationIds = $moves->pluck('destination_location_id')->filter()->unique();
+
+        if ($destinationLocationIds->isNotEmpty()) {
+            $vals['destination_location_id'] = $destinationLocationIds->first();
+        }
+
+        return $vals;
+    }
+
+    public function keyAssignPicking(Move $move): array
+    {
+        $keys = [
+            $move->procurement_group_id,
+            $move->source_location_id,
+            $move->destination_location_id,
+            $move->operation_type_id,
+        ];
+
+        if ($move->partner_id && ! $move->procurement_group_id) {
+            $keys[] = $move->partner_id;
+        }
+
+        return $keys;
+    }
+
+    public function searchOperationForAssignation(Move $move)
+    {
+        $query = Operation::where('procurement_group_id', $move->procurement_group_id)
+            ->where('source_location_id', $move->source_location_id)
+            ->where('destination_location_id', $move->destination_location_id ?? $move->operationType->destination_location_id)
+            ->where('operation_type_id', $move->operation_type_id)
+            // ->where('printed', false)
+            ->whereIn('state', [OperationState::DRAFT, OperationState::CONFIRMED, OperationState::ASSIGNED]);
+
+        if ($move->partner_id && ! $move->procurement_group_id) {
+            $query->where('partner_id', $move->partner_id);
+        }
+
+        return $query->first();
+    }
+
+    public function mergeMoves($moves, $mergeInto = null)
+    {
+        $candidateMovesSet = [];
+
+        $moves->each(fn ($move) => $move->load('operation'));
+
+        if (! $mergeInto) {
+            $operations = $moves
+                ->map(fn($move) => $move->operation)
+                ->filter()
+                ->unique('id');
+
+            foreach ($operations as $operation) {
+                $candidateMovesSet[$operation->id] = $operation->moves;
+            }
+        } else {
+            $candidateMovesSet = array_merge($mergeInto, $moves->toArray());
+        }
+
+        $distinctFields = [
+            'product_id',
+            // 'price_unit',
+            'procure_method',
+            'source_location_id',
+            'destination_location_id',
+            'final_location_id',
+            'uom_id',
+            'restrict_partner_id',
+            'origin_returned_move_id',
+            'package_level_id',
+            'description_picking',
+            'product_packaging_id',
+        ];
+
+        $movesToDelete = collect();
+
+        $mergedMoves = collect();
+
+        $movesToCancel = collect();
+
+        $movesByNegKey = collect();
+
+        $negQtyMoves = $moves->filter(fn($move) => float_compare($move->product_qty, 0.0, precisionRounding: $move->uom->rounding) < 0)
+            ->each(function($move) {
+                $move->operation_id = null;
+            });
+
+        $negKeyFields = array_values(array_diff($distinctFields, ['description_picking', 'price_unit']));
+
+        $negKey = fn($move) => collect($negKeyFields)
+            ->map(fn($field) => $move->$field instanceof \BackedEnum ? $move->$field->value : (string) $move->$field)
+            ->implode('_');
+
+        $priceUnitPrecision =  2;
+
+        foreach ($candidateMovesSet as $candidateMoves) {
+            $candidateMoves = $candidateMoves->filter(fn ($move) => ! in_array($move->state, [
+                    MoveState::DRAFT,
+                    MoveState::DONE,
+                    MoveState::CANCELED,
+                ]))
+                ->diff($negQtyMoves);
+
+            $distinctKey = fn($move) => collect($distinctFields)
+                ->map(fn($field) => $move->$field instanceof \BackedEnum ? $move->$field->value : (string) $move->$field)
+                ->implode('_');
+
+            foreach ($candidateMoves->groupBy($distinctKey) as $group) {
+                if ($group->count() > 1) {
+                    $group->flatMap->lines->each->update(['move_id' => $group->first()->id]);
+
+                    $mergeExtra = (bool) $mergeInto;
+
+                    ['destination_ids' => $destinationIds, 'origin_ids' => $originIds] = $fields = $this->mergeMoveValues($group, $mergeExtra);
+
+                    $values = collect($fields)->except(['destination_ids', 'origin_ids'])->all();
+
+                    $group->first()->update($values);
+
+                    $group->first()->moveDestinations()->sync($destinationIds);
+
+                    $group->first()->moveOrigins()->sync($originIds);
+
+                    $movesToDelete = $movesToDelete->merge($group->skip(1));
+
+                    $mergedMoves = $mergedMoves->merge([$group->first()]);
+                }
+
+                $negKeyValue = $negKey($group->first());
+
+                $movesByNegKey->put(
+                    $negKeyValue,
+                    $movesByNegKey->has($negKeyValue)
+                        ? $movesByNegKey->get($negKeyValue)->push($group->first())
+                        : collect([$group->first()])
+                );
+            }
+        }
+
+        foreach ($negQtyMoves as $negMove) {
+            foreach ($movesByNegKey->get($negKey($negMove), collect()) as $posMove) {
+                if (float_compare($posMove->price_unit, $negMove->price_unit, precisionDigits: 2) == 0) {
+                    $newTotalValue = $posMove->product_qty * $posMove->price_unit + $negMove->product_qty * $negMove->price_unit;
+
+                    if (float_compare($posMove->product_uom_qty, abs($negMove->product_uom_qty), precisionRounding: $posMove->uom->rounding) >= 0) {
+                        $posMove->product_uom_qty += $negMove->product_uom_qty;
+
+                        $moveDestinationIds = $negMove->moveDestinations
+                            ->filter(fn($move) => $move->source_location_id === $posMove->destination_location_id)
+                            ->pluck('id')
+                            ->all();
+
+                        $moveOriginIds = $negMove->moveOrigins
+                            ->filter(fn($move) => $move->destination_location_id === $posMove->source_location_id)
+                            ->pluck('id')
+                            ->all();
+
+                        $posMove->update([
+                            'price_unit' => $posMove->product_qty
+                                ? round($newTotalValue / $posMove->product_qty, $priceUnitPrecision)
+                                : 0,
+                        ]);
+
+                        $posMove->moveDestinations()->syncWithoutDetaching($moveDestinationIds);
+                        $posMove->moveOrigins()->syncWithoutDetaching($moveOriginIds);
+
+                        $mergedMoves->push($posMove);
+
+                        $movesToDelete->push($negMove);
+
+                        if (float_is_zero($posMove->product_uom_qty, precisionRounding: $posMove->uom->rounding)) {
+                            $movesToCancel->push($posMove);
+                        }
+
+                        break;
+                    }
+
+                    $negMove->product_qty += $posMove->product_qty;
+
+                    $negMove->product_uom_qty += $posMove->product_uom_qty;
+
+                    $negMove->price_unit = round($newTotalValue / $negMove->product_qty, $priceUnitPrecision);
+
+                    $posMove->product_uom_qty = 0;
+
+                    $movesToCancel->push($posMove);
+                }
+            }
+        }
+
+        if ($movesToDelete->isNotEmpty()) {
+            $this->cancelMoves($movesToDelete);
+
+            foreach ($movesToDelete as $move) {
+                foreach ($move->lines()->get() as $line) {
+                    $line->delete();
+                }
+
+                $move->delete();
+            }
+
+            $movesToDelete->each->delete();
+        }
+
+        if ($movesToCancel->isNotEmpty()) {
+            $this->cancelMoves($movesToCancel->filter(fn ($move) => ! $move->picked));
+        }
+
+        return $moves->merge($mergedMoves)->diff($movesToDelete);
+    }
+
+    public function mergeMoveValues($moves, $mergeExtra = false)
+    {
+        $state = $this->getRelevantStateAmongMoves($moves);
+
+        $origin = $moves->filter(fn($move) => $move->origin)
+            ->pluck('origin')
+            ->unique()
+            ->implode('/');
+
+        $date = $moves->pluck('operation')->every(fn($operation) => $operation->move_type === MoveType::DIRECT)
+            ? $moves->min('date')
+            : $moves->max('date');
+
+        return [
+            'product_uom_qty' => ! $mergeExtra
+                ? $moves->sum('product_uom_qty')
+                : $moves->first()->product_uom_qty,
+            'product_qty'     => ! $mergeExtra
+                ? $moves->sum('product_qty')
+                : $moves->first()->product_qty,
+            'date'            => $date,
+            'state'           => $state,
+            'origin'          => $origin,
+            'destination_ids' => $moves->flatMap->moveDestinations->pluck('id')->all(),
+            'origin_ids'      => $moves->flatMap->moveOrigins->pluck('id')->all(),
+        ];
+    }
+
+    public function cancelMoves($moves)
+    {
+        if ($moves->some(fn($move) => $move->state === MoveState::DONE && ! $move->is_scraped)) {
+            throw new \Exception(__('You cannot cancel a stock move that has been set to \'Done\'. Create a return in order to reverse the moves which took place.'));
+        }
+
+        $movesToCancel = $moves->filter(
+            fn($move) => $move->state !== MoveState::CANCELED &&
+                ! ($move->state === MoveState::DONE && $move->is_scraped)
+        );
+
+        $movesToCancel->each->update(['picked' => false]);
+
+        // $this->doUnreserve($movesToCancel);
+
+        $cancelMovesOrigin = false;
+
+        $movesToCancel->each->update(['state' => MoveState::CANCELED]);
+
+        foreach ($movesToCancel as $move) {
+            $siblingsStates = $move->moveDestinations
+                ->flatMap->moveOrigins
+                ->diff(collect([$move]))
+                ->pluck('state');
+
+            if ($move->propagate_cancel) {
+                if ($siblingsStates->every(fn($state) => $state === MoveState::CANCELED)) {
+                    $this->cancelMoves(
+                        $move->moveDestinations->filter(
+                            fn($move) => $move->state !== MoveState::DONE &&
+                                $move->location_dest_id === $move->moveDestinations->first()?->location_id
+                        )
+                    );
+
+                    if ($cancelMovesOrigin) {
+                        $this->cancelMoves($move->moveOrigins->filter(fn($move) => $move->state !== MoveState::DONE));
+                    }
+                }
+            } else {
+                if ($siblingsStates->every(fn ($state) => in_array($state, [MoveState::DONE, MoveState::CANCELED]))) {
+                    $move->moveDestinations->each(function ($destMove) use ($move) {
+                        $destMove->update(['procure_method' => ProcureMethod::MAKE_TO_STOCK]);
+                        
+                        $destMove->moveOrigins()->detach($move->id);
+                    });
+                }
+            }
+        }
+
+        $movesToCancel->each(function ($move) {
+            $move->update(['procure_method' => ProcureMethod::MAKE_TO_STOCK]);
+
+            $move->moveOrigins()->detach();
+        });
+
+        return true;
+    }
+
+    public function getRelevantStateAmongMoves($moves): \BackedEnum
+    {
+        $sortMap = [
+            MoveState::ASSIGNED->value           => 4,
+            MoveState::WAITING->value            => 3,
+            MoveState::PARTIALLY_ASSIGNED->value => 2,
+            MoveState::CONFIRMED->value          => 1,
+        ];
+
+        $movesTodo = $moves->filter(fn($move) => 
+                ! in_array($move->state, [MoveState::CANCELED, MoveState::DONE]) &&
+                ! ($move->state === MoveState::ASSIGNED && ! $move->product_uom_qty)
+            )
+            ->sortBy([
+                fn($a, $b) => ($sortMap[$a->state->value] ?? 0) <=> ($sortMap[$b->state->value] ?? 0),
+                fn($a, $b) => $a->product_uom_qty <=> $b->product_uom_qty,
+            ])
+            ->values();
+
+        if ($movesTodo->isEmpty()) {
+            return MoveState::ASSIGNED;
+        }
+
+        $firstMove = $movesTodo->first();
+
+        if ($firstMove->picking && $firstMove->picking->move_type === MoveType::ONE) {
+            if ($movesTodo->every(fn($move) => ! $move->product_uom_qty)) {
+                return MoveState::ASSIGNED;
+            }
+
+            $mostImportantMove = $movesTodo->first();
+
+            if ($mostImportantMove->state === MoveState::CONFIRMED) {
+                return MoveState::CONFIRMED;
+            } elseif ($mostImportantMove->state === MoveState::PARTIALLY_ASSIGNED) {
+                return MoveState::CONFIRMED;
+            } else {
+                return $mostImportantMove->state ?? MoveState::DRAFT;
+            }
+        } elseif (
+            $firstMove->state !== MoveState::ASSIGNED &&
+            $movesTodo->some(fn ($move) => in_array($move->state, [MoveState::ASSIGNED, MoveState::PARTIALLY_ASSIGNED]))
+        ) {
+            return MoveState::PARTIALLY_ASSIGNED;
+        } else {
+            $leastImportantMove = $movesTodo->last();
+
+            if ($leastImportantMove->state === MoveState::CONFIRMED && $leastImportantMove->product_uom_qty == 0) {
+                return MoveState::ASSIGNED;
+            }
+
+            return $leastImportantMove->state ?? MoveState::DRAFT;
+        }
     }
 }

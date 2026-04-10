@@ -155,8 +155,6 @@ class SaleManager
 
         $record->save();
 
-        $this->syncInventoryDelivery($record);
-
         $record->refresh();
 
         return $record;
@@ -545,62 +543,6 @@ class SaleManager
         }
     }
 
-    public function getOutgoingIncomingMoves(OrderLine $orderLine, bool $strict = true)
-    {
-        $outgoingMoveIds = [];
-
-        $incomingMoveIds = [];
-
-        $moves = $orderLine->inventoryMoves->filter(function ($inventoryMove) use ($orderLine) {
-            return $inventoryMove->state != InventoryEnums\MoveState::CANCELED
-                && ! $inventoryMove->is_scraped
-                && $orderLine->product_id == $inventoryMove->product_id;
-        });
-
-        $triggeringRuleIds = [];
-
-        if ($moves->isNotEmpty() && ! $strict) {
-            $sortedMoves = $moves->sortBy('id');
-
-            $seenWarehouseIds = [];
-
-            foreach ($sortedMoves as $move) {
-                if (! in_array($move->warehouse->id, $seenWarehouseIds)) {
-                    $triggeringRuleIds[] = $move->rule_id;
-
-                    $seenWarehouseIds[] = $move->warehouse_id;
-                }
-            }
-        }
-
-        foreach ($moves as $move) {
-            $isOutgoingStrict = $strict && $move->destinationLocation->type == InventoryEnums\LocationType::CUSTOMER;
-
-            $isOutgoingNonStrict = ! $strict
-                && in_array($move->rule_id, $triggeringRuleIds)
-                && ($move->finalLocation ?? $move->destinationLocation->type) == InventoryEnums\LocationType::CUSTOMER;
-
-            if ($isOutgoingStrict || $isOutgoingNonStrict) {
-                if (
-                    ! $move->origin_returned_move_id
-                    || (
-                        $move->origin_returned_move_id
-                        && $move->to_refund
-                    )
-                ) {
-                    $outgoingMoveIds[] = $move->id;
-                }
-            } elseif ($move->sourceLocation == InventoryEnums\LocationType::CUSTOMER && $move->is_refund) {
-                $incomingMoveIds[] = $move->id;
-            }
-        }
-
-        return [
-            $moves->whereIn('id', $outgoingMoveIds),
-            $moves->whereIn('id', $incomingMoveIds),
-        ];
-    }
-
     private function createAccountMove(Order $record): AccountMove
     {
         $accountMove = AccountMove::create([
@@ -652,269 +594,60 @@ class SaleManager
         $accountMoveLine->taxes()->sync($orderLine->taxes->pluck('id'));
     }
 
-    protected function syncInventoryDelivery(Order $record): void
+    public function getOutgoingIncomingMoves(OrderLine $orderLine, bool $strict = true)
     {
-        if ($record->state !== OrderState::SALE) {
-            return;
-        }
+        $outgoingMoveIds = [];
 
-        if (! Package::isPluginInstalled('inventories')) {
-            return;
-        }
+        $incomingMoveIds = [];
 
-        $operations = $record->operations()->get();
-
-        $pendingOperations = $operations->filter(function ($operation) {
-            return in_array($operation->state, [
-                InventoryEnums\OperationState::DRAFT,
-                InventoryEnums\OperationState::CONFIRMED,
-                InventoryEnums\OperationState::ASSIGNED,
-            ]);
+        $moves = $orderLine->inventoryMoves->filter(function ($inventoryMove) use ($orderLine) {
+            return $inventoryMove->state != InventoryEnums\MoveState::CANCELED
+                && ! $inventoryMove->is_scraped
+                && $orderLine->product_id == $inventoryMove->product_id;
         });
 
-        $doneOperations = $operations->filter(function ($operation) {
-            return $operation->state === InventoryEnums\OperationState::DONE;
-        });
+        $triggeringRuleIds = [];
 
-        foreach ($record->lines as $line) {
-            $validatedQty = $doneOperations->flatMap->moves
-                ->where('sale_order_line_id', $line->id)
-                ->where('state', InventoryEnums\MoveState::DONE)
-                ->sum('quantity');
+        if ($moves->isNotEmpty() && ! $strict) {
+            $sortedMoves = $moves->sortBy('id');
 
-            $pendingQty = $pendingOperations->flatMap->moves
-                ->where('sale_order_line_id', $line->id)
-                ->where('state', '!==', InventoryEnums\MoveState::CANCELED)
-                ->sum('product_uom_qty');
+            $seenWarehouseIds = [];
 
-            $totalScheduledQty = $validatedQty + $pendingQty;
+            foreach ($sortedMoves as $move) {
+                if (! in_array($move->warehouse->id, $seenWarehouseIds)) {
+                    $triggeringRuleIds[] = $move->rule_id;
 
-            $requiredQty = $line->product_qty;
-
-            $diffQty = $requiredQty - $totalScheduledQty;
-
-            if ($diffQty > 0) {
-                if ($pendingQty > 0) {
-                    $this->updateDeliveryMoves($line, $pendingOperations, $pendingQty + $diffQty);
-                } else {
-                    $this->createDeliveryMove($record, $line, $diffQty);
+                    $seenWarehouseIds[] = $move->warehouse_id;
                 }
-            } elseif ($diffQty < 0) {
-                $qtyToReduce = min(abs($diffQty), $pendingQty);
-
-                if ($qtyToReduce > 0) {
-                    $newPendingQty = $pendingQty - $qtyToReduce;
-
-                    $this->updateOrCancelDeliveryMoves($line, $pendingOperations, $newPendingQty);
-                }
-            } elseif ($pendingQty > 0 && $pendingQty != ($requiredQty - $validatedQty)) {
-                $expectedPendingQty = max(0, $requiredQty - $validatedQty);
-
-                $this->updateOrCancelDeliveryMoves($line, $pendingOperations, $expectedPendingQty);
             }
         }
 
-        $this->cleanupEmptyDeliveryOperations($record);
+        foreach ($moves as $move) {
+            $isOutgoingStrict = $strict && $move->destinationLocation->type == InventoryEnums\LocationType::CUSTOMER;
 
-        foreach ($record->operations()->get() as $operation) {
-            if (! in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])) {
-                $operation->refresh();
+            $isOutgoingNonStrict = ! $strict
+                && in_array($move->rule_id, $triggeringRuleIds)
+                && ($move->finalLocation?->type ?? $move->destinationLocation->type) == InventoryEnums\LocationType::CUSTOMER;
 
-                InventoryFacade::todoTransfer($operation);
-            }
-        }
-    }
-
-    protected function createDeliveryMove(Order $record, OrderLine $line, float $qty): void
-    {
-        $existingOpenOperation = $record->operations()
-            ->whereIn('state', [
-                InventoryEnums\OperationState::DRAFT,
-                InventoryEnums\OperationState::CONFIRMED,
-                InventoryEnums\OperationState::ASSIGNED,
-            ])
-            ->first();
-
-        $location = Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
-
-        $product = InventoryProduct::find($line->product_id);
-        
-        $rule = InventoryFacade::getRule($product, $location, [
-            'packaging' => $line->productPackaging,
-            'warehouse' => $line->warehouse,
-        ]);
-
-        if (! $rule) {
-            return;
-        }
-
-        $uomQty = $line->uom->computeQuantity($qty, $line->product->uom, true, 'HALF-UP');
-
-        if ($existingOpenOperation) {
-            $newMove = InventoryMove::create([
-                'operation_id'            => $existingOpenOperation->id,
-                'name'                    => $line->name,
-                'reference'               => $existingOpenOperation->name,
-                'state'                   => InventoryEnums\MoveState::DRAFT,
-                'product_id'              => $line->product_id,
-                'product_qty'             => $qty,
-                'product_uom_qty'         => $uomQty,
-                'quantity'                => $uomQty,
-                'uom_id'                  => $line->product_uom_id,
-                'origin'                  => $record->name,
-                'scheduled_at'            => now()->addDays($rule->delay),
-                'source_location_id'      => $rule->source_location_id,
-                'destination_location_id' => $rule->destination_location_id,
-                'final_location_id'       => $rule->destination_location_id,
-                'product_packaging_id'    => $line->product_packaging_id,
-                'rule_id'                 => $rule->id,
-                'company_id'              => $rule->company_id,
-                'operation_type_id'       => $rule->operation_type_id,
-                'propagate_cancel'        => $rule->propagate_cancel,
-                'warehouse_id'            => $rule->warehouse_id,
-                'procure_method'          => InventoryEnums\ProcureMethod::MAKE_TO_ORDER,
-                'sale_order_line_id'      => $line->id,
-            ]);
-
-            if ($newMove->shouldBypassReservation()) {
-                $newMove->update([
-                    'procure_method' => InventoryEnums\ProcureMethod::MAKE_TO_STOCK,
-                ]);
-            }
-        } else {
-            $newMove = $this->runPullRule($rule, $line);
-
-            if ($newMove) {
-                $newMove->update([
-                    'product_qty'     => $qty,
-                    'product_uom_qty' => $uomQty,
-                    'quantity'        => $uomQty,
-                ]);
-
-                $this->createPullOperation($record, $rule, [$newMove]);
-            }
-        }
-    }
-
-    protected function updateDeliveryMoves(OrderLine $line, $pendingOperations, float $targetQty): void
-    {
-        $firstMove = null;
-
-        foreach ($pendingOperations as $operation) {
-            foreach ($operation->moves as $move) {
+            if ($isOutgoingStrict || $isOutgoingNonStrict) {
                 if (
-                    $move->sale_order_line_id === $line->id
-                    && $move->state !== InventoryEnums\MoveState::CANCELED
+                    ! $move->origin_returned_move_id
+                    || (
+                        $move->origin_returned_move_id
+                        && $move->to_refund
+                    )
                 ) {
-                    if (! $firstMove) {
-                        $firstMove = $move;
-                    }
+                    $outgoingMoveIds[] = $move->id;
                 }
+            } elseif ($move->sourceLocation == InventoryEnums\LocationType::CUSTOMER && $move->is_refund) {
+                $incomingMoveIds[] = $move->id;
             }
         }
 
-        if ($firstMove) {
-            $uomQty = $line->uom->computeQuantity($targetQty, $line->product->uom, true, 'HALF-UP');
-
-            $firstMove->update([
-                'product_qty'     => $targetQty,
-                'product_uom_qty' => $uomQty,
-                'quantity'        => $uomQty,
-            ]);
-
-            $firstMove->lines()->delete();
-
-            foreach ($pendingOperations as $operation) {
-                foreach ($operation->moves as $move) {
-                    if (
-                        $move->id !== $firstMove->id
-                        && $move->sale_order_line_id === $line->id
-                        && $move->state !== InventoryEnums\MoveState::CANCELED
-                    ) {
-                        $move->update([
-                            'state'    => InventoryEnums\MoveState::CANCELED,
-                            'quantity' => 0,
-                        ]);
-
-                        $move->lines()->delete();
-                    }
-                }
-            }
-        }
-    }
-
-    protected function updateOrCancelDeliveryMoves(OrderLine $line, $pendingOperations, float $targetQty): void
-    {
-        if ($targetQty <= 0) {
-            foreach ($pendingOperations as $operation) {
-                foreach ($operation->moves as $move) {
-                    if (
-                        $move->sale_order_line_id === $line->id
-                        && $move->state !== InventoryEnums\MoveState::CANCELED
-                    ) {
-                        $move->update([
-                            'state'    => InventoryEnums\MoveState::CANCELED,
-                            'quantity' => 0,
-                        ]);
-
-                        $move->lines()->delete();
-                    }
-                }
-            }
-
-            return;
-        }
-
-        $firstMove = null;
-
-        foreach ($pendingOperations as $operation) {
-            foreach ($operation->moves as $move) {
-                if (
-                    $move->sale_order_line_id === $line->id
-                    && $move->state !== InventoryEnums\MoveState::CANCELED
-                ) {
-                    if (! $firstMove) {
-                        $firstMove = $move;
-
-                        $uomQty = $line->uom->computeQuantity($targetQty, $line->product->uom, true, 'HALF-UP');
-
-                        $firstMove->update([
-                            'product_qty'     => $targetQty,
-                            'product_uom_qty' => $uomQty,
-                            'quantity'        => $uomQty,
-                        ]);
-
-                        $firstMove->lines()->delete();
-                    } else {
-                        $move->update([
-                            'state'    => InventoryEnums\MoveState::CANCELED,
-                            'quantity' => 0,
-                        ]);
-
-                        $move->lines()->delete();
-                    }
-                }
-            }
-        }
-    }
-
-    protected function cleanupEmptyDeliveryOperations(Order $record): void
-    {
-        $operations = $record->operations()->get();
-
-        foreach ($operations as $operation) {
-            if (in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])) {
-                continue;
-            }
-
-            $activeMoves = $operation->moves()->where('state', '!=', InventoryEnums\MoveState::CANCELED)->count();
-
-            if ($activeMoves === 0) {
-                $operation->update([
-                    'state' => InventoryEnums\OperationState::CANCELED,
-                ]);
-            }
-        }
+        return [
+            $moves->whereIn('id', $outgoingMoveIds),
+            $moves->whereIn('id', $incomingMoveIds),
+        ];
     }
 
     public function getQtyProcurement(OrderLine $line, $previousProductUomQty = false)
@@ -1000,10 +733,6 @@ class SaleManager
             return;
         }
 
-        $rulesToRun = [];
-
-        $location = Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
-
         $procurements = collect();
 
         foreach ($record->lines as $line) {
@@ -1017,7 +746,7 @@ class SaleManager
 
             $qty = $this->getQtyProcurement($line, $previousProductUomQty);
 
-            if (float_compare($qty, $line->product_uom_qty, precisionDigits: 2) == 0) {
+            if (float_compare($qty, $line->product_qty, precisionDigits: 2) == 0) {
                 continue;
             }
 
@@ -1049,7 +778,7 @@ class SaleManager
 
             $values = $this->prepareProcurementValues($line, $procurementGroup);
 
-            $productQty = $line->product_uom_qty - $qty;
+            $productQty = $line->product_qty - $qty;
 
             $origin = $line->order->client_order_ref 
                 ? "{$line->order->name} - {$line->order->client_order_ref}" 
@@ -1062,53 +791,6 @@ class SaleManager
 
         if ($procurements->count()) {
             InventoryFacade::runProcurements($procurements);
-        }
-    }
-
-    public function applyInventoryRulesOld(Order $record, $previousProductUomQty = false): void
-    {
-        if (! Package::isPluginInstalled('inventories')) {
-            return;
-        }
-
-        $rulesToRun = [];
-
-        $location = Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
-
-        foreach ($record->lines as $line) {
-            $product = InventoryProduct::find($line->product_id);
-            
-            $rule = InventoryFacade::getRule($product, $location, [
-                'packaging' => $line->productPackaging,
-                'warehouse' => $line->warehouse,
-            ]);
-
-            if (! $rule) {
-                throw new Exception("No pull rule has been found to replenish \"{$line->name}\".\nVerify the routes configuration on the product.");
-            }
-
-            $rulesToRun[$line->id] = $rule;
-        }
-
-        $rules = [];
-
-        foreach ($record->lines as $line) {
-            $rule = $rulesToRun[$line->id];
-
-            $pulledMove = $this->runPullRule($rule, $line);
-
-            if (! isset($rules[$rule->id])) {
-                $rules[$rule->id] = [
-                    'rule'  => $rule,
-                    'moves' => [$pulledMove],
-                ];
-            } else {
-                $rules[$rule->id]['moves'][] = $pulledMove;
-            }
-        }
-
-        foreach ($rules as $ruleData) {
-            $this->createPullOperation($record, $ruleData['rule'], $ruleData['moves']);
         }
     }
 
@@ -1132,79 +814,5 @@ class SaleManager
         }
 
         $record->operation->refresh()->computeState();
-    }
-
-    /**
-     * Create a new operation based on a push rule and assign moves to it.
-     */
-    private function createPullOperation(Order $record, Rule $rule, array $moves): void
-    {
-        $newOperation = InventoryOperation::create([
-            'state'                   => InventoryEnums\OperationState::DRAFT,
-            'origin'                  => $record->name,
-            'partner_id'              => $record->partner_id,
-            'operation_type_id'       => $rule->operation_type_id,
-            'source_location_id'      => $rule->source_location_id,
-            'destination_location_id' => $rule->destination_location_id,
-            'scheduled_at'            => now()->addDays($rule->delay),
-            'company_id'              => $rule->company_id,
-            'sale_order_id'           => $record->id,
-        ]);
-
-        foreach ($moves as $move) {
-            $move->update([
-                'operation_id' => $newOperation->id,
-                'reference'    => $newOperation->name,
-                'scheduled_at' => $newOperation->scheduled_at,
-            ]);
-        }
-
-        $newOperation->refresh();
-
-        InventoryFacade::todoTransfer($newOperation);
-    }
-
-    /**
-     * Run a pull rule on a line.
-     */
-    public function runPullRule(Rule $rule, OrderLine $line)
-    {
-        if ($rule->auto !== InventoryEnums\RuleAuto::MANUAL) {
-            return;
-        }
-
-        $newMove = InventoryMove::create([
-            'state'                   => InventoryEnums\MoveState::DRAFT,
-            'reference'               => null,
-            'name'                    => $line->name,
-            'product_id'              => $line->product_id,
-            'product_qty'             => $line->product_qty,
-            'product_uom_qty'         => $line->product_uom_qty,
-            'quantity'                => $line->product_qty,
-            'uom_id'                  => $line->product_uom_id,
-            'origin'                  => $line->origin,
-            'scheduled_at'            => now()->addDays($rule->delay),
-            'source_location_id'      => $rule->source_location_id,
-            'destination_location_id' => $rule->destination_location_id,
-            'final_location_id'       => $rule->destination_location_id,
-            'product_packaging_id'    => $line->product_packaging_id,
-            'rule_id'                 => $rule->id,
-            'company_id'              => $rule->company_id,
-            'operation_type_id'       => $rule->operation_type_id,
-            'propagate_cancel'        => $rule->propagate_cancel,
-            'warehouse_id'            => $rule->warehouse_id,
-            'procure_method'          => InventoryEnums\ProcureMethod::MAKE_TO_ORDER,
-            'sale_order_line_id'      => $line->id,
-        ]);
-
-        $newMove->save();
-
-        if ($newMove->shouldBypassReservation()) {
-            $newMove->update([
-                'procure_method' => InventoryEnums\ProcureMethod::MAKE_TO_STOCK,
-            ]);
-        }
-
-        return $newMove;
     }
 }
