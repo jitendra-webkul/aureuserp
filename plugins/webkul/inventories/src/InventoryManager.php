@@ -18,6 +18,7 @@ use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\Product;
 use Webkul\Inventory\Models\Rule;
 use Webkul\PluginManager\Package;
+use Webkul\Purchase\Models\PurchaseOrder;
 use Webkul\Purchase\Facades\PurchaseOrder as PurchaseOrderFacade;
 use Webkul\Sale\Facades\SaleOrder as SaleFacade;
 
@@ -841,9 +842,9 @@ class InventoryManager
 
                     $mergeExtra = (bool) $mergeInto;
 
-                    ['destination_ids' => $destinationIds, 'origin_ids' => $originIds] = $fields = $this->mergeMoveValues($group, $mergeExtra);
+                    ['move_destination_ids' => $destinationIds, 'move_origin_ids' => $originIds] = $fields = $this->mergeMoveValues($group, $mergeExtra);
 
-                    $values = collect($fields)->except(['destination_ids', 'origin_ids'])->all();
+                    $values = collect($fields)->except(['move_destination_ids', 'move_origin_ids'])->all();
 
                     $group->first()->update($values);
 
@@ -953,17 +954,17 @@ class InventoryManager
             : $moves->max('date');
 
         return [
-            'product_uom_qty' => ! $mergeExtra
+            'product_uom_qty'      => ! $mergeExtra
                 ? $moves->sum('product_uom_qty')
                 : $moves->first()->product_uom_qty,
-            'product_qty'     => ! $mergeExtra
+            'product_qty'          => ! $mergeExtra
                 ? $moves->sum('product_qty')
                 : $moves->first()->product_qty,
-            'date'            => $date,
-            'state'           => $state,
-            'origin'          => $origin,
-            'destination_ids' => $moves->flatMap->moveDestinations->pluck('id')->all(),
-            'origin_ids'      => $moves->flatMap->moveOrigins->pluck('id')->all(),
+            'date'                 => $date,
+            'state'                => $state,
+            'origin'               => $origin,
+            'move_destination_ids' => $moves->flatMap->moveDestinations->pluck('id')->all(),
+            'move_origin_ids'      => $moves->flatMap->moveOrigins->pluck('id')->all(),
         ];
     }
 
@@ -1121,6 +1122,97 @@ class InventoryManager
                     ]);
             }
 
+            $supplier = $supplier ?: $procurement['product']
+                ->prepareSellers(false)
+                ->filter(fn($seller) => ! $seller->company_id || $seller->company_id === $company->id)
+                ->first();
+
+            if (! $supplier && $procurement['values']['from_orderpoint'] ?? null) {
+                $msg = __(
+                    'There is no matching vendor price to generate the purchase order for product %s ' .
+                    '(no vendor defined, minimum quantity not reached, dates not valid, ...). ' .
+                    'Go on the product form and complete the list of vendors.',
+                    $procurement['product']->name
+                );
+
+                $errors[] = [$procurement, $msg];
+            } elseif (! $supplier) {
+                $moves = $procurement['values']['move_destination_ids'] ?? collect();
+
+                foreach ($moves as $move) {
+                    if ($move->propagate_cancel) {
+                        $move->actionCancel();
+                        $this->cancelMoves(collect([$move]));
+                    }
+
+                    $move->procure_method = 'make_to_stock';
+                }
+
+                continue;
+            }
+
+            $partner = $supplier->partner;
+
+            $procurement['values']['supplier'] = $supplier;
+
+            $procurement['values']['propagate_cancel'] = $rule->propagate_cancel;
+
+            $domain = $rule->makePoGetDomain($company, $procurement['values'], $partner);
+
+            $procurementsByPoDomain[$domain][] = [$procurement, $rule];
         }
+
+        if (!empty($errors)) {
+            throw new \Exception(implode(', ', $errors));
+        }
+
+        foreach ($procurementsByPoDomain as $domain => $procurementsRules) {
+            $procurements = array_column($procurementsRules, 0);
+            $rules = array_column($procurementsRules, 1);
+
+            $origins = array_unique(
+                array_filter(
+                    array_map(fn($procurement) => $procurement['origin'], $procurements),
+                    fn ($origin) => ! empty($origin)
+                )
+            );
+
+            $purchaseOrder = PurchaseOrder::where(json_decode($domain, true))->first();
+
+            $company = $rules[0]->company ?: $procurements[0]['company'];
+
+            if (! $purchaseOrder) {
+                $positiveValues = array_filter(
+                    array_map(fn($procurement) => $procurement['values'], $procurements),
+                    fn($values) => float_compare(
+                        $values['product_qty'],
+                        0,
+                        precisionRounding: $values['product_uom']->rounding
+                    ) >= 0
+                );
+
+                if (! empty($positiveValues)) {
+                    $vals = $this->preparePurchaseOrderValues($rules[0], $company, $origins, $positiveValues);
+
+                    $purchaseOrder = PurchaseOrder::create($vals);
+                }
+            } else {
+                if ($purchaseOrder->origin) {
+                    $missingOrigins = array_diff($origins, explode(', ', $purchaseOrder->origin));
+
+                    if (! empty($missingOrigins)) {
+                        $purchaseOrder->update(['origin' => $purchaseOrder->origin . ', ' . implode(', ', $missingOrigins)]);
+                    }
+                } else {
+                    $purchaseOrder->update(['origin' => implode(', ', $origins)]);
+                }
+            }
+        }
+    }
+
+    public function preparePurchaseOrderValues($rule, $company, $origins, $positiveValues)
+    {
+        return [
+        ];
     }
 }
