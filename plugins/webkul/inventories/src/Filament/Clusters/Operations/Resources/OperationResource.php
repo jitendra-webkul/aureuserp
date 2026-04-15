@@ -101,8 +101,16 @@ class OperationResource extends Resource
                     ->options(function ($record) {
                         $options = OperationState::options();
 
-                        if ($record && $record->state !== OperationState::CANCELED) {
-                            unset($options[OperationState::CANCELED->value]);
+                        if (! $record) {
+                            unset($options[OperationState::WAITING->value]);
+                        } else {
+                            if ($record->state !== OperationState::CANCELED) {
+                                unset($options[OperationState::CANCELED->value]);
+                            }
+
+                            if ($record->state !== OperationState::WAITING) {
+                                unset($options[OperationState::WAITING->value]);
+                            }
                         }
 
                         return $options;

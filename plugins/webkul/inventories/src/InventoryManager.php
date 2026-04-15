@@ -43,19 +43,56 @@ class InventoryManager
         return $record;
     }
 
-    public function todoTransfer(Operation $record): Operation
+    public function confirmTransfer(Operation $record): Operation
     {
         if ($record->state !== OperationState::DRAFT) {
             return $record;
         }
 
-        $record->moves->each(fn (Move $move) => $move->update(['state' => MoveState::CONFIRMED]));
+        $this->confirmMoves($record->moves);
 
         $record->computeState();
 
         $record->save();
 
         return $record;
+    }
+
+    public function confirmMoves($moves)
+    {
+        $moves->each(fn (Move $move) => $move->update(['state' => MoveState::CONFIRMED]));
+
+        return;
+
+        $movesToCreateProcurement = collect();
+
+        $movesToConfirm = collect();
+
+        $movesWaiting = collect();
+
+        $movesToAssign = [];
+
+        foreach ($moves as $move) {
+            if ($move->moveOrigins->isNotEmpty()) {
+                $movesWaiting->push($move);
+            } elseif ($move->procure_method === ProcureMethod::MAKE_TO_ORDER) {
+                $movesWaiting->push($move);
+
+                $movesToCreateProcurement->push($move);
+            } elseif ($move->rule?->procure_method === ProcureMethod::MTS_ELSE_MTO) {
+                $movesToCreateProcurement->push($move);
+
+                $movesToConfirm->push($move);
+            } else {
+                $movesToConfirm[] = $move;
+            }
+
+            if (! $move->operation_id and $move->operation_type_id) {
+                $key = implode('_', $this->keyAssignPicking($move));
+
+                $movesToAssign[$key] = $move;
+            }
+        }
     }
 
     public function validateTransfer(Operation $record): Operation
@@ -148,7 +185,7 @@ class InventoryManager
 
         $newOperation->refresh();
 
-        $newOperation = $this->todoTransfer($newOperation);
+        $newOperation = $this->confirmTransfer($newOperation);
 
         if (Package::isPluginInstalled('purchases')) {
             $newOperation->purchaseOrders()->attach($record->purchaseOrders->pluck('id'));
@@ -207,7 +244,7 @@ class InventoryManager
 
         $newOperation->refresh();
 
-        $newOperation = $this->todoTransfer($newOperation);
+        $newOperation = $this->confirmTransfer($newOperation);
 
         if (Package::isPluginInstalled('purchases')) {
             $newOperation->purchaseOrders()->attach($record->purchaseOrders->pluck('id'));
@@ -284,7 +321,7 @@ class InventoryManager
                 ]);
             }
 
-            $this->todoTransfer($operation->fresh());
+            $this->confirmTransfer($operation->fresh());
         }
     }
 
@@ -569,18 +606,7 @@ class InventoryManager
             $this->assignOperation($moves);
 
             $this->mergeMoves($moves);
-
-            dd($moves);
         }
-
-        dd($movesValuesByCompany);
-    }
-
-    /**
-     * Run a manufacture rule on a line.
-     */
-    public function runManufactureRule($procurements)
-    {
     }
 
     public function prepareMoveValues($rule, $procurement)
@@ -1090,6 +1116,10 @@ class InventoryManager
      */
     public function runBuyRule($procurements)
     {
+        if (! Package::isPluginInstalled('purchases')) {
+            return;
+        }
+
         $procurementsByPoFilters = [];
         
         $errors = [];
@@ -1428,5 +1458,12 @@ class InventoryManager
         }
 
         return $result;
+    }
+
+    /**
+     * Run a manufacture rule on a line.
+     */
+    public function runManufactureRule($procurements)
+    {
     }
 }

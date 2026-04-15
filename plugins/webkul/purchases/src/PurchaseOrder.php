@@ -531,7 +531,7 @@ class PurchaseOrder
             if (! in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])) {
                 $operation->refresh();
 
-                Inventory::todoTransfer($operation);
+                Inventory::confirmTransfer($operation);
             }
         }
     }
@@ -761,7 +761,7 @@ class PurchaseOrder
 
             $operation->refresh();
 
-            Inventory::todoTransfer($operation);
+            Inventory::confirmTransfer($operation);
 
             $url = PurchaseOrderResource::getUrl('view', ['record' => $record]);
 

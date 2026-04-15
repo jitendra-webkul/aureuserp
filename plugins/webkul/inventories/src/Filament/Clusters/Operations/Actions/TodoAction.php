@@ -33,7 +33,7 @@ class TodoAction extends Action
                     return;
                 }
 
-                $record = Inventory::todoTransfer($record);
+                $record = Inventory::confirmTransfer($record);
 
                 $livewire->updateForm();
 

@@ -118,7 +118,7 @@ class OperationController extends Controller
     protected function todoById(string $id): Operation
     {
         $operation = $this->findOperationById($id);
-        $operation = Inventory::todoTransfer($operation);
+        $operation = Inventory::confirmTransfer($operation);
 
         return $operation->refresh()->load($this->allowedIncludes);
     }

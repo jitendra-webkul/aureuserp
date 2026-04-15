@@ -92,7 +92,7 @@ class ValidateAction extends Action
 
     protected function hasMoveErrors(Operation $record): bool
     {
-        $record = Inventory::todoTransfer($record);
+        $record = Inventory::confirmTransfer($record);
 
         foreach ($record->moves as $move) {
             if ($this->hasMoveLineErrors($move)) {
