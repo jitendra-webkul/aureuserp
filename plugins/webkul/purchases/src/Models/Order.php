@@ -69,6 +69,7 @@ class Order extends Model
         'company_id',
         'creator_id',
         'operation_type_id',
+        'destination_address_id',
     ];
 
     protected $casts = [
@@ -159,6 +160,11 @@ class Order extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function destinationAddress(): BelongsTo
+    {
+        return $this->belongsTo(Partner::class, 'destination_address_id');
     }
 
     public function lines(): HasMany

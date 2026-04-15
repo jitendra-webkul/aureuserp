@@ -22,6 +22,7 @@ use Webkul\PluginManager\Package;
 use Webkul\Purchase\Models\PurchaseOrder;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Purchase\Facades\PurchaseOrder as PurchaseOrderFacade;
+use Webkul\Account\Facades\Tax as TaxFacade;
 use Webkul\Purchase\Enums as PurchaseOrderEnums;
 use Webkul\Sale\Facades\SaleOrder as SaleFacade;
 
@@ -630,7 +631,7 @@ class InventoryManager
             'propagate_cancel' => $rule->propagate_cancel,
             'description_picking' => $pickingDescription,
             'priority' => $procurement['values']['priority'] ?? '0',
-            'orderpoint_id' => $procurement['values']['orderpoint']?->is ?? null,
+            'order_point_id' => $procurement['values']['order_point']?->is ?? null,
             'product_packaging_id' => $procurement['values']['product_packaging']?->id ?? null,
         ];
 
@@ -1106,10 +1107,10 @@ class InventoryManager
             if (! empty($procurement['values']['supplierinfo'])) {
                 $supplier = $procurement['values']['supplierinfo'];
             } elseif (
-                ! empty($procurement['values']['orderpoint']) &&
-                $procurement['values']['orderpoint']->supplier
+                ! empty($procurement['values']['order_point']) &&
+                $procurement['values']['order_point']->supplier
             ) {
-                $supplier = $procurement['values']['orderpoint']->supplier;
+                $supplier = $procurement['values']['order_point']->supplier;
             } else {
                 $supplier = $procurement['product']
                     ->getSeller([
@@ -1130,7 +1131,7 @@ class InventoryManager
                 ->filter(fn($seller) => ! $seller->company_id || $seller->company_id === $company->id)
                 ->first();
 
-            if (! $supplier && $procurement['values']['from_orderpoint'] ?? null) {
+            if (! $supplier && $procurement['values']['from_order_point'] ?? null) {
                 $msg = __(
                     'There is no matching vendor price to generate the purchase order for product %s ' .
                     '(no vendor defined, minimum quantity not reached, dates not valid, ...). ' .
@@ -1190,9 +1191,9 @@ class InventoryManager
                     ->all();
 
                 if (! empty($positiveValues)) {
-                    $vals = $this->preparePurchaseOrderValues($rules->first(), $company, $origins, $positiveValues);
+                    $values = $this->preparePurchaseOrderValues($rules->first(), $company, $origins, $positiveValues);
 
-                    $purchaseOrder = PurchaseOrder::create($vals);
+                    $purchaseOrder = PurchaseOrder::create($values);
                 }
             } else {
                 if ($purchaseOrder->origin) {
@@ -1254,9 +1255,41 @@ class InventoryManager
         }
     }
 
-    public function preparePurchaseOrderValues($rule, $company, $origins, $positiveValues)
+    public function preparePurchaseOrderValues($rule, $company, $origins, $values)
     {
+        $purchaseDate = collect($values)
+            ->map(fn($value) => ! empty($value['scheduled_at'])
+                ? Carbon::parse($value['scheduled_at'])
+                : Carbon::parse($value['planned'])->subDays((int) $value['supplier']?->delay ?? 0)
+            )
+            ->min();
+
+        $value = $values[0];
+
+        $partner = $value['supplier']->partner;
+
+        // $fiscalPosition = FiscalPosition::getFiscalPosition($partner);
+
+        $gpo = $rule->group_propagation_option;
+
+        $procurementGroupId = match(true) {
+            $gpo === GroupPropagation::FIXED     => $rule->procurement_group_id,
+            $gpo === GroupPropagation::PROPAGATE => $values['procurement_group']?->id ?? false,
+            default                              => false,
+        };
+
         return [
+            'partner_id'             => $partner->id,
+            'user_id'                => $partner->user_id,
+            'operation_type_id'      => $rule->operation_type_id,
+            'company_id'             => $company->id,
+            'currency_id'            => $partner->purchase_currency_id ?? $company->currency_id,
+            'destination_address_id' => $value['partner_id'] ?? null,
+            'origin'                 => implode(', ', $origins),
+            'payment_term_id'        => $partner->property_supplier_payment_term_id,
+            'ordered_at'             => $purchaseDate,
+            // 'fiscal_position_id'     => $fiscalPosition?->id,
+            'procurement_group_id'   => $procurementGroupId,
         ];
     }
 
@@ -1264,7 +1297,7 @@ class InventoryManager
     {
         $gpo = $rule->group_propagation_option;
 
-        $group = match(true) {
+        $procurementGroupId = match(true) {
             $gpo === GroupPropagation::FIXED     => $rule->procurement_group_id,
             $gpo === GroupPropagation::PROPAGATE => $values['procurement_group']?->id ?? false,
             default                              => false,
@@ -1278,7 +1311,7 @@ class InventoryManager
             ['user_id', '=', $partner->user_id],
         ];
 
-        if (! empty($values['orderpoint'])) {
+        if (! empty($values['order_point'])) {
             $procurementDate = Carbon::parse($values['planned'])
                 ->subDays($values['supplier']->delay ?? 0)
                 ->toDateString();
@@ -1287,8 +1320,8 @@ class InventoryManager
             $filters[] = ['ordered_at', '>=', Carbon::parse($procurementDate)->startOfDay()];
         }
 
-        if ($group) {
-            $filters[] = ['procurement_group_id', '=', $group->id];
+        if ($procurementGroupId) {
+            $filters[] = ['procurement_group_id', '=', $procurementGroupId];
         }
 
         return $filters;
@@ -1296,17 +1329,104 @@ class InventoryManager
 
     public function getProcurementsToMerge($procurements)
     {
+        return collect($procurements)
+            ->groupBy(function ($procurement) {
+                $orderPointKey = (! empty($procurement['values']['order_point']) && empty($procurement['values']['move_destination_ids']))
+                    ? $procurement['values']['order_point']->id
+                    : null;
 
-        return [];
+                return implode('_', [
+                    $procurement['product']->id,
+                    $procurement['product_uom']->id,
+                    (int) $procurement['values']['propagate_cancel'],
+                    $orderPointKey ?? '',
+                ]);
+            })
+            ->values()
+            ->all();
     }
 
     public function mergeProcurements($procurements)
     {
+        $mergedProcurements = [];
 
-        return [];
+        foreach ($procurements as $procurements) {
+            $quantity = 0;
+
+            $moveDestinationIds = collect();
+
+            $orderPoint = null;
+
+            foreach ($procurements as $procurement) {
+                if (! empty($procurement['values']['move_destination_ids'])) {
+                    $moveDestinationIds = $moveDestinationIds->merge($procurement['values']['move_destination_ids']);
+                }
+
+                if (! $orderPoint && ! empty($procurement['values']['order_point'])) {
+                    $orderPoint = $procurement['values']['order_point'];
+                }
+
+                $quantity += $procurement['product_qty'];
+            }
+
+            $values = array_merge($procurement['values'], [
+                'move_destination_ids' => $moveDestinationIds,
+                'order_point' => $orderPoint,
+            ]);
+
+            $mergedProcurements[] = [
+                'product'     => $procurement['product'],
+                'product_qty' => $quantity,
+                'product_uom' => $procurement['product_uom'],
+                'location'    => $procurement['location'],
+                'name'        => $procurement['name'],
+                'origin'      => $procurement['origin'],
+                'company'     => $procurement['company'],
+                'values'      => $values,
+            ];
+        }
+
+        return $mergedProcurements;
     }
 
-    public function updatePurchaseOrderLine($product, $quantity, $uom, $company, $values, $purchaseOrderLine)
+    public function updatePurchaseOrderLine($product, $quantity, $uom, $company, $values, $line)
     {
-        return [];
+        $partner = $values['supplier']->partner;
+
+        $procurementUOMPoQty = $uom->computeQuantity($quantity, $product->uomPO, roundingMethod: 'HALF-UP');
+
+        $seller = $product
+            ->getSeller([
+                'partner'  => $partner,
+                'quantity' => $line->product_qty + $procurementUOMPoQty,
+                'date'     => $line->order->ordered_at?->toDateString(),
+                'uom'      => $product->uomPO,
+                'company'  => $company,
+            ]);
+
+        $priceUnit = $seller
+            ? TaxFacade::fixTaxIncludedPriceCompany($seller->price, $line->product->supplierTaxes, $line->taxes, $company)
+            : 0.0;
+
+        if ($priceUnit && $seller && $line->order->currency && $seller->currency_id !== $line->order->currency_id) {
+            $priceUnit = $seller->currency->convert(
+                $priceUnit,
+                $line->order->currency,
+                $line->order->company,
+                now()->toDateString(),
+            );
+        }
+
+        $result = [
+            'product_qty'          => $line->product_qty + $procurementUOMPoQty,
+            'price_unit'           => $priceUnit,
+            'move_destination_ids' => collect($values['move_destination_ids'] ?? [])->pluck('id')->all(),
+        ];
+
+        if (! empty($values['order_point'])) {
+            $result['order_point_id'] = $values['order_point']->id;
+        }
+
+        return $result;
+    }
 }

@@ -579,7 +579,7 @@ class TaxManager
         return $baseLine;
     }
 
-    public function addAccountingDataToBaseLineTaxDetails($baseLine, $company)
+    public function addAccountingDataToBaseLineTaxDetails($baseLine, $company, $computeAllUseRawBaseLines = false)
     {
         $companyCurrency = $company->currency;
 
@@ -616,7 +616,7 @@ class TaxManager
             $taxRepartitionsData = [];
 
             foreach ($taxRepartitions as $taxRepartition) {
-                $taxAmountCurrency = config('compute_all_use_raw_base_lines', false)
+                $taxAmountCurrency = $computeAllUseRawBaseLines
                     ? ($taxData['raw_tax_amount_currency'] ?? 0.0)
                     : ($taxData['tax_amount_currency'] ?? 0.0);
 
@@ -648,7 +648,7 @@ class TaxManager
                 ['tax_amount_currency', $currency],
                 ['tax_amount', $companyCurrency],
             ] as [$field, $fieldCurrency]) {
-                $taxAmount = config('compute_all_use_raw_base_lines', false)
+                $taxAmount = $computeAllUseRawBaseLines
                     ? ($taxData["raw_{$field}"] ?? 0.0)
                     : ($taxData[$field] ?? 0.0);
 
@@ -1203,5 +1203,122 @@ class TaxManager
         if ($taxAmount !== null) {
             $addTaxAmountToResults($tax, $taxAmount);
         }
+    }
+
+    public function computeAll(
+        mixed $taxes,
+        float $priceUnit,
+        $currency = null,
+        float $quantity = 1,
+        $product = null,
+        $partner = null,
+        bool $isRefund = false,
+        bool $handlePriceInclude = true,
+        bool $forcePriceInclude = false,
+        $roundingMethod = null,
+        bool $roundBase = false
+    )
+    {
+        if ($taxes->isEmpty()) {
+            $company = Auth::user()->defaultCompany;
+        } else {
+            $company = $taxes->first()->company;
+        }
+
+        $currency = $currency ?: $company->currency;
+
+        if ($forcePriceInclude) {
+            $specialMode = 'total_included';
+        } elseif (! $handlePriceInclude) {
+            $specialMode = 'total_excluded';
+        } else {
+            $specialMode = false;
+        }
+
+        $baseLine = $this->prepareBaseLineForTaxesComputation(
+            null,
+            partner: $partner,
+            currency: $currency,
+            product: $product,
+            taxes: $taxes,
+            priceUnit: $priceUnit,
+            quantity: $quantity,
+            isRefund: $isRefund,
+            specialMode: $specialMode
+        );
+
+        $baseLine = $this->addTaxDetailsInBaseLine($baseLine, $company, roundingMethod: $roundingMethod);
+
+        $baseLines = $this->addAccountingDataInBaseLinesTaxDetails([$baseLine], $company, true);
+
+        $baseLine = $baseLines[0];
+
+        $taxDetails = $baseLine['tax_details'];
+
+        $totalVoid = $totalExcluded = $taxDetails['raw_total_excluded_currency'];
+
+        $totalIncluded = $taxDetails['raw_total_included_currency'];
+
+        $calculatedTaxes = [];
+
+        foreach ($taxDetails['taxes_data'] as $taxData) {
+            $tax = $taxData['tax'];
+
+            foreach ($taxData['tax_reps_data'] as $taxRepData) {
+                $repLine = $taxRepData['tax_rep'];
+
+                $calculatedTaxes[] = [
+                    'id' => $tax->id,
+                    'name' => $tax->name,
+                    'amount' => $taxRepData['tax_amount_currency'],
+                    'base' => $taxData['raw_base_amount_currency'],
+                    'sort' => $tax->sort,
+                    'account_id' => $taxRepData['account']->id,
+                    'analytic' => $tax->analytic,
+                    'price_include' => $tax->price_include,
+                    'tax_exigibility' => $tax->tax_exigibility,
+                    'tax_repartition_line_id' => $repLine->id,
+                    'group' => $taxData['group'],
+                    'tax_ids' => $taxRepData['taxes']->pluck('id')->toArray(),
+                ];
+
+                if (! $repLine->account_id) {
+                    $totalVoid += $taxRepData['tax_amount_currency'];
+                }
+            }
+        }
+
+        if ($roundBase) {
+            $totalExcluded = $currency->round($totalExcluded);
+
+            $totalIncluded = $currency->round($totalIncluded);
+        }
+
+        return [
+            'taxes' => $calculatedTaxes,
+            'total_excluded' => $totalExcluded,
+            'total_included' => $totalIncluded,
+            'total_void' => $totalVoid,
+        ];
+    }
+
+    public function fixTaxIncludedPrice(float $price, $prodTaxes, $lineTaxes): float
+    {
+        $inclTaxes = $prodTaxes->filter(fn($tax) => ! $lineTaxes->contains($tax) && $tax->price_include);
+
+        if ($inclTaxes->isNotEmpty()) {
+            return $this->computeAll($inclTaxes, $price)['total_excluded'];
+        }
+
+        return $price;
+    }
+
+    public function fixTaxIncludedPriceCompany(float $price, $prodTaxes, $lineTaxes, $company): float
+    {
+        $prodTaxes = $prodTaxes->filter(fn($tax) => $tax->company_id === $company->id);
+
+        $lineTaxes = $lineTaxes->filter(fn($tax) => $tax->company_id === $company->id);
+
+        return $this->fixTaxIncludedPrice($price, $prodTaxes, $lineTaxes);
     }
 }
