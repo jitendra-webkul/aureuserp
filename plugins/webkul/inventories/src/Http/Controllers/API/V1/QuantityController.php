@@ -204,7 +204,7 @@ class QuantityController extends Controller
                     'lot_id'      => $record->lot_id,
                 ],
                 [
-                    'quantity'               => -$record->product->on_hand_quantity,
+                    'quantity'               => -$record->product->available_qty,
                     'company_id'             => $record->company_id,
                     'creator_id'             => Auth::id(),
                     'incoming_at'            => now(),

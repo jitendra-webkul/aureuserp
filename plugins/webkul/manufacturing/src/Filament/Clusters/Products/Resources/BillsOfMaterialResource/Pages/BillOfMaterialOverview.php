@@ -80,7 +80,7 @@ class BillOfMaterialOverview extends Page implements HasForms
 
     public function getProductOnHandQuantity(): float
     {
-        return (float) ($this->getRecord()->product?->on_hand_quantity ?? 0);
+        return (float) ($this->getRecord()->product?->available_qty ?? 0);
     }
 
     public function getProductDateLabel(): string

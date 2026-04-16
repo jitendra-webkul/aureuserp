@@ -105,7 +105,7 @@ class EditProduct extends BaseEditProduct
                         ->afterStateUpdated(function (Get $get, Set $set) {
                             $product = Product::find($get('product_id'));
 
-                            $set('quantity', $product?->on_hand_quantity ?? 0);
+                            $set('quantity', $product?->available_qty ?? 0);
                         })
                         ->visible((bool) $record->is_configurable),
                     TextInput::make('quantity')
@@ -114,7 +114,7 @@ class EditProduct extends BaseEditProduct
                         ->maxValue(99999999999)
                         ->required()
                         ->live()
-                        ->default(fn () => ! $record->is_configurable ? $record->on_hand_quantity : 0),
+                        ->default(fn () => ! $record->is_configurable ? $record->available_qty : 0),
                 ])
                 ->modalSubmitActionLabel(__('inventories::filament/clusters/products/resources/product/pages/edit-product.header-actions.update-quantity.modal-submit-action-label'))
                 ->visible($this->getRecord()->is_storable)
@@ -140,7 +140,7 @@ class EditProduct extends BaseEditProduct
                         $record = Product::find($data['product_id']);
                     }
 
-                    $previousQuantity = $record->on_hand_quantity;
+                    $previousQuantity = $record->available_qty;
 
                     if ($previousQuantity == $data['quantity']) {
                         return;

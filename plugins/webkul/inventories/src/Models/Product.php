@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Webkul\Product\Models\Product as BaseProduct;
+use Illuminate\Support\Facades\Auth;
 use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Inventory\Database\Factories\ProductFactory;
 use Webkul\Inventory\Enums\LocationType;
-use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
+use Webkul\Inventory\Enums\ProductTracking;
+use Webkul\Product\Models\Product as BaseProduct;
 use Webkul\Security\Models\User;
 
 class Product extends BaseProduct
@@ -106,14 +107,39 @@ class Product extends BaseProduct
         return $this->belongsTo(User::class);
     }
 
-    public function getOnHandQuantityAttribute(): float
+    public function getAvailableQtyAttribute(): float
     {
-        return $this->quantities()
-            ->whereHas('location', function ($query) {
-                $query->where('type', LocationType::INTERNAL)
-                    ->where('is_scrap', false);
-            })
-            ->sum('quantity');
+        $quantities = $this->computeQuantities();
+
+        return $quantities['available_qty'] ?? 0.0;
+    }
+
+    public function getFreeQtyAttribute(): float
+    {
+        $quantities = $this->computeQuantities();
+
+        return $quantities['free_qty'] ?? 0.0;
+    }
+
+    public function getIncomingQtyAttribute(): float
+    {
+        $quantities = $this->computeQuantities();
+
+        return $quantities['incoming_qty'] ?? 0.0;
+    }
+
+    public function getOutgoingQtyAttribute(): float
+    {
+        $quantities = $this->computeQuantities();
+
+        return $quantities['outgoing_qty'] ?? 0.0;
+    }
+
+    public function getVirtualAvailableQtyAttribute(): float
+    {
+        $quantities = $this->computeQuantities();
+
+        return $quantities['virtual_available_qty'] ?? 0.0;
     }
 
     public function getDescription(OperationType $operationType): ?string
@@ -122,101 +148,87 @@ class Product extends BaseProduct
             OperationTypeEnum::INCOMING => $this->description_pickingin ?? $this->description,
             OperationTypeEnum::OUTGOING => $this->description_pickingout ?? $this->name,
             OperationTypeEnum::INTERNAL => $this->description_picking ?? $this->description,
-            default =>  $this->description,
+            default                     => $this->description,
         };
     }
 
-    public function computeQuantities(
-        ?int $lotId = null,
-        ?int $packageId = null,
-        ?string $fromDate = null,
-        ?string $toDate = null,
-    ): array {
+    public function computeQuantities(): array
+    {
+        $lotId = $this->context['lot_id'] ?? null;
+        $packageId = $this->context['package_id'] ?? null;
+        $fromDate = $this->context['from_date'] ?? null;
+        $toDate = $this->context['to_date'] ?? null;
+
         if ($this->is_configurable) {
             $totals = [
-                'qty_available'     => 0.0,
-                'free_qty'          => 0.0,
-                'incoming_qty'      => 0.0,
-                'outgoing_qty'      => 0.0,
-                'virtual_available' => 0.0,
+                'available_qty'         => 0.0,
+                'free_qty'              => 0.0,
+                'incoming_qty'          => 0.0,
+                'outgoing_qty'          => 0.0,
+                'virtual_available_qty' => 0.0,
             ];
 
             foreach ($this->variants as $variant) {
-                $variantQty = $variant->computeQuantities($lotId, $packageId, $fromDate, $toDate);
+                $variant->context = $this->context ?? [];
+
+                $variantQty = $variant->computeQuantities();
 
                 foreach ($totals as $key => $_) {
                     $totals[$key] += $variantQty[$key];
                 }
             }
 
-            return array_map(fn($value) => float_round($value, precisionRounding: $this->uom->rounding), $totals);
+            return array_map(fn ($value) => float_round($value, precisionRounding: $this->uom->rounding), $totals);
         }
 
-        [$domainQuantLocation, $domainMoveInLocation, $domainMoveOutLocation] = $this->getLocationFilters();
-
-        $domainQuantity = array_merge([['product_id', '=', $this->id]], $domainQuantLocation);
-
-        $domainMoveIn = array_merge([['product_id', '=', $this->id]], $domainMoveInLocation);
-
-        $domainMoveOut = array_merge([['product_id', '=', $this->id]], $domainMoveOutLocation);
+        [$quantLocationScope, $moveInLocationScope, $moveOutLocationScope] = $this->getLocationFilters();
 
         $toDate = $toDate ? Carbon::parse($toDate) : null;
 
         $datesInThePast = $toDate && $toDate->lt(now());
 
-        if ($lotId !== null) {
-            $domainQuantity[] = ['lot_id', '=', $lotId];
-        }
-
-        if ($packageId !== null) {
-            $domainQuantity[] = ['package_id', '=', $packageId];
-        }
-
-        if ($datesInThePast) {
-            $domainMoveInDone  = $domainMoveIn;
-
-            $domainMoveOutDone = $domainMoveOut;
-        }
-
-        if ($fromDate) {
-            $domainMoveIn[]  = ['scheduled_at', '>=', $fromDate];
-
-            $domainMoveOut[] = ['scheduled_at', '>=', $fromDate];
-        }
-
-        if ($toDate) {
-            $domainMoveIn[]  = ['scheduled_at', '<=', $toDate];
-
-            $domainMoveOut[] = ['scheduled_at', '<=', $toDate];
-        }
-
         $todoStates = [MoveState::WAITING, MoveState::CONFIRMED, MoveState::ASSIGNED, MoveState::PARTIALLY_ASSIGNED];
 
-        $movesInRes = Move::where(array_merge([['state', 'in', $todoStates]], $domainMoveIn))
+        $movesInRes = Move::query()
+            ->where('product_id', $this->id)
+            ->whereIn('state', $todoStates)
+            ->where(fn (Builder $q) => $moveInLocationScope($q))
+            ->when($fromDate, fn ($q) => $q->where('scheduled_at', '>=', $fromDate))
+            ->when($toDate, fn ($q) => $q->where('scheduled_at', '<=', $toDate))
             ->groupBy('product_id')
             ->selectRaw('product_id, SUM(product_qty) as total')
             ->value('total') ?? 0.0;
 
-        $movesOutRes = Move::where(array_merge([['state', 'in', $todoStates]], $domainMoveOut))
+        $movesOutRes = Move::query()
+            ->where('product_id', $this->id)
+            ->whereIn('state', $todoStates)
+            ->where(fn (Builder $q) => $moveOutLocationScope($q))
+            ->when($fromDate, fn ($q) => $q->where('scheduled_at', '>=', $fromDate))
+            ->when($toDate, fn ($q) => $q->where('scheduled_at', '<=', $toDate))
             ->groupBy('product_id')
             ->selectRaw('product_id, SUM(product_qty) as total')
             ->value('total') ?? 0.0;
 
-        $quantRow = ProductQuantity::where($domainQuantity)
+        $quantRow = ProductQuantity::query()
+            ->where('product_id', $this->id)
+            ->where(fn (Builder $q) => $quantLocationScope($q))
+            ->when($lotId !== null, fn ($q) => $q->where('lot_id', $lotId))
+            ->when($packageId !== null, fn ($q) => $q->where('package_id', $packageId))
             ->selectRaw('SUM(quantity) as quantity, SUM(reserved_quantity) as reserved_quantity')
             ->first();
 
         $qtyAvailableBase = $quantRow->quantity ?? 0.0;
         $reservedQuantity = $quantRow->reserved_quantity ?? 0.0;
 
-        $movesInResPast  = 0.0;
+        $movesInResPast = 0.0;
         $movesOutResPast = 0.0;
 
         if ($datesInThePast) {
-            $domainMoveInDone  = array_merge([['state', '=', MoveState::DONE], ['scheduled_at', '>', $toDate]], $domainMoveInDone);
-            $domainMoveOutDone = array_merge([['state', '=', MoveState::DONE], ['scheduled_at', '>', $toDate]], $domainMoveOutDone);
-
-            Move::where($domainMoveInDone)
+            Move::query()
+                ->where('product_id', $this->id)
+                ->where('state', MoveState::DONE)
+                ->where('scheduled_at', '>', $toDate)
+                ->where(fn (Builder $q) => $moveInLocationScope($q))
                 ->groupBy('product_id', 'uom_id')
                 ->selectRaw('uom_id, SUM(quantity) as total')
                 ->get()
@@ -224,7 +236,11 @@ class Product extends BaseProduct
                     $movesInResPast += $row->uom->computeQuantity($row->total, $this->uom);
                 });
 
-            Move::where($domainMoveOutDone)
+            Move::query()
+                ->where('product_id', $this->id)
+                ->where('state', MoveState::DONE)
+                ->where('scheduled_at', '>', $toDate)
+                ->where(fn (Builder $q) => $moveOutLocationScope($q))
                 ->groupBy('product_id', 'uom_id')
                 ->selectRaw('uom_id, SUM(quantity) as total')
                 ->get()
@@ -243,20 +259,25 @@ class Product extends BaseProduct
         $outgoingQty = float_round($movesOutRes, precisionRounding: $rounding);
 
         return [
-            'qty_available'     => float_round($qtyAvailable, precisionRounding: $rounding),
-            'free_qty'          => float_round($qtyAvailable - $reservedQuantity, precisionRounding: $rounding),
-            'incoming_qty'      => $incomingQty,
-            'outgoing_qty'      => $outgoingQty,
-            'virtual_available' => float_round($qtyAvailable + $incomingQty - $outgoingQty, precisionRounding: $rounding),
+            'available_qty'         => float_round($qtyAvailable, precisionRounding: $rounding),
+            'free_qty'              => float_round($qtyAvailable - $reservedQuantity, precisionRounding: $rounding),
+            'incoming_qty'          => $incomingQty,
+            'outgoing_qty'          => $outgoingQty,
+            'virtual_available_qty' => float_round($qtyAvailable + $incomingQty - $outgoingQty, precisionRounding: $rounding),
         ];
     }
 
-    protected function getLocationFilters(
-        int|string|array|null $location = null,
-        int|string|array|null $warehouse = null,
-        bool $strict = false,
-        array $companyIds = []
-    ): array {
+    protected function getLocationFilters(): array
+    {
+        $locationId = $this->context['location_id'] ?? null;
+        $warehouseId = $this->context['warehouse_id'] ?? null;
+        $companyIds = $this->context['company_ids'] ?? [];
+        $strict = $this->context['strict'] ?? false;
+
+        if (empty($companyIds)) {
+            $companyIds = array_filter([Auth::user()?->default_company_id]);
+        }
+
         $searchIds = function (string $modelClass, array $values): array {
             $ids = [];
             $names = [];
@@ -274,7 +295,7 @@ class Product extends BaseProduct
 
                 $query->where(function (Builder $query) use ($names) {
                     foreach ($names as $name) {
-                        $query->orWhere('name', 'like', '%' . $name . '%');
+                        $query->orWhere('name', 'like', '%'.$name.'%');
                     }
                 });
 
@@ -284,16 +305,16 @@ class Product extends BaseProduct
             return array_values(array_unique($ids));
         };
 
-        if ($location !== null && ! is_array($location)) {
-            $location = [$location];
+        if ($locationId !== null && ! is_array($locationId)) {
+            $locationId = [$locationId];
         }
 
-        if ($warehouse !== null && ! is_array($warehouse)) {
-            $warehouse = [$warehouse];
+        if ($warehouseId !== null && ! is_array($warehouseId)) {
+            $warehouseId = [$warehouseId];
         }
 
-        if (! empty($warehouse)) {
-            $warehouseIds = $searchIds(Warehouse::class, $warehouse);
+        if (! empty($warehouseId)) {
+            $warehouseIds = $searchIds(Warehouse::class, $warehouseId);
 
             $warehouseLocationIds = Warehouse::query()
                 ->whereIn('id', $warehouseIds)
@@ -303,8 +324,8 @@ class Product extends BaseProduct
                 ->values()
                 ->toArray();
 
-            if (! empty($location)) {
-                $locationIds = $searchIds(Location::class, $location);
+            if (! empty($locationId)) {
+                $locationIds = $searchIds(Location::class, $locationId);
 
                 $parentPaths = Location::query()
                     ->whereIn('id', $warehouseLocationIds)
@@ -335,18 +356,16 @@ class Product extends BaseProduct
             } else {
                 $resolvedLocationIds = $warehouseLocationIds;
             }
+        } elseif (! empty($locationId)) {
+            $resolvedLocationIds = $searchIds(Location::class, $locationId);
         } else {
-            if (! empty($location)) {
-                $resolvedLocationIds = $searchIds(Location::class, $location);
-            } else {
-                $resolvedLocationIds = Warehouse::query()
-                    ->whereIn('company_id', $companyIds)
-                    ->pluck('view_location_id')
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->toArray();
-            }
+            $resolvedLocationIds = Warehouse::query()
+                ->whereIn('company_id', $companyIds)
+                ->pluck('view_location_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
         }
 
         return $this->getLocationFiltersNew($resolvedLocationIds, $strict);
@@ -355,11 +374,9 @@ class Product extends BaseProduct
     protected function getLocationFiltersNew(array $locationIds, bool $strict = false): array
     {
         if (empty($locationIds)) {
-            return [
-                [['0', '=', '1']],
-                [['0', '=', '1']],
-                [['0', '=', '1']],
-            ];
+            $impossible = fn (Builder $query) => $query->whereRaw('0 = 1');
+
+            return [$impossible, $impossible, $impossible];
         }
 
         $locations = Location::query()
@@ -367,62 +384,65 @@ class Product extends BaseProduct
             ->get(['id', 'parent_path']);
 
         if ($locations->isEmpty()) {
-            return [
-                [['0', '=', '1']],
-                [['0', '=', '1']],
-                [['0', '=', '1']],
-            ];
+            $impossible = fn (Builder $query) => $query->whereRaw('0 = 1');
+
+            return [$impossible, $impossible, $impossible];
         }
 
         if ($strict) {
             $ids = $locations->pluck('id')->values()->toArray();
 
-            $sourceLocationFilter = [
-                ['source_location_id', 'in', $ids],
-            ];
+            $quantityScope = fn (Builder $query) => $query->whereIn('location_id', $ids);
 
-            $destinationLocationFilter = [
-                ['destination_location_id', 'in', $ids],
-            ];
+            $moveSourceScope = fn (Builder $query) => $query->whereIn('source_location_id', $ids);
+
+            $moveDestinationScope = fn (Builder $query) => $query->whereIn('destination_location_id', $ids);
         } else {
-            $pathsDomain = [];
+            $parentPaths = $locations
+                ->pluck('parent_path')
+                ->filter()
+                ->values()
+                ->toArray();
 
-            foreach ($locations as $location) {
-                if (! empty($location->parent_path)) {
-                    $pathsDomain[] = [
-                        ['parent_path', 'like', $location->parent_path . '%'],
-                    ];
-                }
+            if (empty($parentPaths)) {
+                $impossible = fn (Builder $query) => $query->whereRaw('0 = 1');
+
+                return [$impossible, $impossible, $impossible];
             }
 
-            if (empty($pathsDomain)) {
-                return [
-                    [['0', '=', '1']],
-                    [['0', '=', '1']],
-                    [['0', '=', '1']],
-                ];
-            }
+            $matchingLocationIds = Location::query()
+                ->where(function (Builder $query) use ($parentPaths) {
+                    foreach ($parentPaths as $path) {
+                        $query->orWhere('parent_path', 'like', $path.'%');
+                    }
+                })
+                ->pluck('id')
+                ->toArray();
 
-            $sourceLocationFilter = [
-                ['location_id', 'any', $pathsDomain],
-            ];
+            $quantityScope = fn (Builder $query) => $query->whereIn('location_id', $matchingLocationIds);
 
-            $destinationLocationFilter = [
-                '|',
-                '&',
-                ['final_location_id', '!=', false],
-                ['final_location_id', 'any', $pathsDomain],
-                '&',
-                ['final_location_id', '=', false],
-                ['destination_location_id', 'any', $pathsDomain],
-            ];
+            $moveSourceScope = fn (Builder $query) => $query->whereIn('source_location_id', $matchingLocationIds);
+
+            $moveDestinationScope = fn (Builder $query) => $query->where(function (Builder $q) use ($matchingLocationIds) {
+                $q->where(function (Builder $q2) use ($matchingLocationIds) {
+                    $q2->whereNotNull('final_location_id')
+                        ->whereIn('final_location_id', $matchingLocationIds);
+                })->orWhere(function (Builder $q2) use ($matchingLocationIds) {
+                    $q2->whereNull('final_location_id')
+                        ->whereIn('destination_location_id', $matchingLocationIds);
+                });
+            });
         }
 
-        return [
-            $sourceLocationFilter,
-            array_merge($destinationLocationFilter, ['!'], $sourceLocationFilter),
-            array_merge($sourceLocationFilter, ['!'], $destinationLocationFilter),
-        ];
+        $moveInScope = fn (Builder $query) => $query
+            ->where(fn (Builder $q) => $moveDestinationScope($q))
+            ->whereNot(fn (Builder $q) => $moveSourceScope($q));
+
+        $moveOutScope = fn (Builder $query) => $query
+            ->where(fn (Builder $q) => $moveSourceScope($q))
+            ->whereNot(fn (Builder $q) => $moveDestinationScope($q));
+
+        return [$quantityScope, $moveInScope, $moveOutScope];
     }
 
     protected static function newFactory(): ProductFactory
