@@ -702,7 +702,7 @@ class SaleManager
             'scheduled_at'       => $datePlanned,
             'planned'            => $datePlanned,
             'deadline'           => $deadline,
-            'route_ids'          => [$line->route_id],
+            'routes'             => collect($line->route),
             'warehouse'          => $line->warehouse,
             'partner'            => $line->order->partner,
             'final_location'     => $location,

@@ -58,11 +58,9 @@ class InventoryManager
         return $record;
     }
 
-    public function confirmMoves($moves)
+    public function confirmMoves($moves, $merge = true, $mergeInto = null)
     {
-        $moves->each(fn (Move $move) => $move->update(['state' => MoveState::CONFIRMED]));
-
-        return;
+        // $moves->each(fn (Move $move) => $move->update(['state' => MoveState::CONFIRMED]));
 
         $movesToCreateProcurement = collect();
 
@@ -84,7 +82,7 @@ class InventoryManager
 
                 $movesToConfirm->push($move);
             } else {
-                $movesToConfirm[] = $move;
+                $movesToConfirm->push($move);
             }
 
             if (! $move->operation_id and $move->operation_type_id) {
@@ -93,6 +91,83 @@ class InventoryManager
                 $movesToAssign[$key] = $move;
             }
         }
+
+        $procurementRequests = [];
+
+        $quantities = $this->prepareProcurementQty($movesToCreateProcurement);
+    }
+
+    public function prepareProcurementQty($moves)
+    {
+        $quantities = [];
+
+        $mtsoProductsByLocations = [];
+
+        $mtsoMoveIds = [];
+
+        foreach ($moves as $move) {
+            if ($move->rule?->procure_method === ProcureMethod::MTS_ELSE_MTO) {
+                $mtsoMoveIds[$move->id] = true;
+
+                $mtsoProductsByLocations[$move->location_id][] = $move->product_id;
+            }
+        }
+
+        $forecastedQuantitiesByLocation = [];
+
+        foreach ($mtsoProductsByLocations as $locationId => $productIds) {
+            $location = Location::find($locationId);
+
+            if (! $location || $location->shouldBypassReservation()) {
+                continue;
+            }
+
+            $forecastedQuantitiesByLocation[$locationId] = Product::whereIn('id', array_unique($productIds))
+                ->get()
+                ->mapWithKeys(function ($product) use ($locationId) {
+                    $product->context = ['location_id' => $locationId];
+
+                    return [$product->id => $product->free_qty];
+                })
+                ->all();
+        }
+
+        foreach ($moves as $move) {
+            $rounding = $move->product->uom->rounding ?? 0.01;
+
+            if (
+                ! isset($mtsoMoveIds[$move->id])
+                || float_compare($move->product_qty, 0, precisionRounding: $rounding) <= 0
+            ) {
+                $quantities[] = $move->product_uom_qty;
+
+                continue;
+            }
+
+            if ($move->shouldBypassReservation()) {
+                $quantities[] = $move->product_uom_qty;
+
+                continue;
+            }
+
+            $freeQty = max($forecastedQuantitiesByLocation[$move->location_id][$move->product_id] ?? 0, 0);
+
+            $quantity = max($move->product_qty - $freeQty, 0);
+
+            $productUomQty = $move->product->uom->computeQuantity(
+                $quantity,
+                $move->uom,
+                roundingMethod: 'HALF-UP'
+            );
+
+            $quantities[] = $productUomQty;
+
+            $forecastedQuantitiesByLocation[$move->location_id][$move->product_id] =
+                ($forecastedQuantitiesByLocation[$move->location_id][$move->product_id] ?? 0)
+                - min($move->product_qty, $freeQty);
+        }
+
+        return $quantities;
     }
 
     public function validateTransfer(Operation $record): Operation
@@ -423,6 +498,7 @@ class InventoryManager
             $filters['source_location_id'] = $location->id;
 
             $foundRule = $this->searchRule(
+                $values['routes'] ?? collect(),
                 $values['packaging'] ?? null,
                 $product,
                 $values['warehouse'] ?? null,
@@ -448,6 +524,7 @@ class InventoryManager
             $filters['destination_location_id'] = $location->id;
 
             $foundRule = $this->searchRule(
+                $values['routes'] ?? collect(),
                 $values['packaging'] ?? null,
                 $product,
                 $values['warehouse'] ?? null,
@@ -463,10 +540,16 @@ class InventoryManager
     /**
      * Search for a push rule based on the provided filters.
      */
-    public function searchRule($productPackaging, $product, $warehouse, array $filters)
+    public function searchRule($routes, $productPackaging, $product, $warehouse, array $filters)
     {
         if ($warehouse) {
             $filters['warehouse_id'] = $warehouse->id;
+        }
+
+        $routeIds = collect();
+
+        if ($routes?->isNotEmpty()) {
+            $routeIds->merge($routes->pluck('id'));
         }
 
         $routeSources = [
@@ -481,7 +564,8 @@ class InventoryManager
                 continue;
             }
 
-            $routeIds = $source->{$relationName}->pluck('id');
+            $routeIds->merge($source->{$relationName}->pluck('id'))
+                ->unique();
 
             if ($routeIds->isEmpty()) {
                 continue;
@@ -650,7 +734,7 @@ class InventoryManager
             'origin' => $procurement['origin'] ?? null,
             'operation_type_id' => $rule->operation_type_id,
             'procurement_group_id' => $procurementGroupId,
-            'route_ids' => $procurement['values']['route_ids'] ?? [],
+            'routes' => $procurement['values']['routes'] ?? collect(),
             'warehouse_id' => $rule->warehouse_id,
             'scheduled_at' => $dateScheduled,
             'date_deadline' => $rule->group_propagation_option === GroupPropagation::FIXED ? null : $dateDeadline,
@@ -872,15 +956,15 @@ class InventoryManager
 
                     $mergeExtra = (bool) $mergeInto;
 
-                    ['move_destination_ids' => $destinationIds, 'move_origin_ids' => $originIds] = $fields = $this->mergeMoveValues($group, $mergeExtra);
+                    ['move_destinations' => $destinations, 'move_origins' => $origins] = $fields = $this->mergeMoveValues($group, $mergeExtra);
 
-                    $values = collect($fields)->except(['move_destination_ids', 'move_origin_ids'])->all();
+                    $values = collect($fields)->except(['move_destinations', 'move_origins'])->all();
 
                     $group->first()->update($values);
 
-                    $group->first()->moveDestinations()->sync($destinationIds);
+                    $group->first()->moveDestinations()->sync($destinations->pluck('id')->all());
 
-                    $group->first()->moveOrigins()->sync($originIds);
+                    $group->first()->moveOrigins()->sync($origins->pluck('id')->all());
 
                     $movesToDelete = $movesToDelete->merge($group->skip(1));
 
@@ -984,17 +1068,17 @@ class InventoryManager
             : $moves->max('date');
 
         return [
-            'product_uom_qty'      => ! $mergeExtra
+            'product_uom_qty'   => ! $mergeExtra
                 ? $moves->sum('product_uom_qty')
                 : $moves->first()->product_uom_qty,
-            'product_qty'          => ! $mergeExtra
+            'product_qty'       => ! $mergeExtra
                 ? $moves->sum('product_qty')
                 : $moves->first()->product_qty,
-            'date'                 => $date,
-            'state'                => $state,
-            'origin'               => $origin,
-            'move_destination_ids' => $moves->flatMap->moveDestinations->pluck('id')->all(),
-            'move_origin_ids'      => $moves->flatMap->moveOrigins->pluck('id')->all(),
+            'date'              => $date,
+            'state'             => $state,
+            'origin'            => $origin,
+            'move_destinations' => $moves->flatMap->moveDestinations,
+            'move_origins'      => $moves->flatMap->moveOrigins,
         ];
     }
 
@@ -1171,7 +1255,7 @@ class InventoryManager
 
                 $errors[] = [$procurement, $msg];
             } elseif (! $supplier) {
-                $moves = $procurement['values']['move_destination_ids'] ?? collect();
+                $moves = $procurement['values']['move_destinations'] ?? collect();
 
                 foreach ($moves as $move) {
                     if ($move->propagate_cancel) {
@@ -1361,7 +1445,7 @@ class InventoryManager
     {
         return collect($procurements)
             ->groupBy(function ($procurement) {
-                $orderPointKey = (! empty($procurement['values']['order_point']) && empty($procurement['values']['move_destination_ids']))
+                $orderPointKey = (! empty($procurement['values']['order_point']) && empty($procurement['values']['move_destinations']))
                     ? $procurement['values']['order_point']->id
                     : null;
 
@@ -1383,13 +1467,13 @@ class InventoryManager
         foreach ($procurements as $procurements) {
             $quantity = 0;
 
-            $moveDestinationIds = collect();
+            $moveDestinations = collect();
 
             $orderPoint = null;
 
             foreach ($procurements as $procurement) {
-                if (! empty($procurement['values']['move_destination_ids'])) {
-                    $moveDestinationIds = $moveDestinationIds->merge($procurement['values']['move_destination_ids']);
+                if (! empty($procurement['values']['move_destinations'])) {
+                    $moveDestinations = $moveDestinations->merge($procurement['values']['move_destinations']);
                 }
 
                 if (! $orderPoint && ! empty($procurement['values']['order_point'])) {
@@ -1400,8 +1484,8 @@ class InventoryManager
             }
 
             $values = array_merge($procurement['values'], [
-                'move_destination_ids' => $moveDestinationIds,
-                'order_point' => $orderPoint,
+                'move_destinations' => $moveDestinations,
+                'order_point'       => $orderPoint,
             ]);
 
             $mergedProcurements[] = [
@@ -1448,9 +1532,9 @@ class InventoryManager
         }
 
         $result = [
-            'product_qty'          => $line->product_qty + $procurementUOMPoQty,
-            'price_unit'           => $priceUnit,
-            'move_destination_ids' => collect($values['move_destination_ids'] ?? [])->pluck('id')->all(),
+            'product_qty'       => $line->product_qty + $procurementUOMPoQty,
+            'price_unit'        => $priceUnit,
+            'move_destinations' => collect($values['move_destinations'] ?? collect()),
         ];
 
         if (! empty($values['order_point'])) {

@@ -114,6 +114,50 @@ class Rule extends Model implements Sortable
     {
         return $this->belongsTo(User::class);
     }
+    
+    public function getLeadDays($product, array $values = []): array
+    {
+        $delays = ['total_delay' => 0.0];
+
+        $delay = $this->filter(function ($rule) {
+            return in_array($rule->action, [RuleAction::PULL, RuleAction::PULL_PUSH], true);
+        })->sum('delay');
+
+        $delays['total_delay'] += $delay;
+
+        $globalVisibilityDays = (int) ($this->context['global_visibility_days'] ?? 0);
+
+        if ($globalVisibilityDays) {
+            $delays['total_delay'] += $globalVisibilityDays;
+        }
+
+        if (! empty($this->context['bypass_delay_description'])) {
+            $delayDescription = [];
+        } else {
+            $delayDescription = [];
+
+            foreach ($this as $rule) {
+                if (
+                    in_array($rule->action, [RuleAction::PULL, RuleAction::PULL_PUSH], true)
+                    && $rule->delay
+                ) {
+                    $delayDescription[] = [
+                        __('Delay on :name', ['name' => $rule->name]),
+                        __('+ :days day(s)', ['days' => $rule->delay]),
+                    ];
+                }
+            }
+        }
+
+        if ($globalVisibilityDays) {
+            $delayDescription[] = [
+                __('Time Horizon'),
+                __('+ :days day(s)', ['days' => $globalVisibilityDays]),
+            ];
+        }
+
+        return [$delays, $delayDescription];
+    }
 
     protected static function newFactory(): RuleFactory
     {

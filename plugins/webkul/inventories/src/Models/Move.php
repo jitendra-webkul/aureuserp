@@ -13,6 +13,7 @@ use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\ProcureMethod;
+use Webkul\Inventory\Enums\GroupPropagation;
 use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Sale\Models\OrderLine as SaleOrderLine;
@@ -204,6 +205,11 @@ class Move extends Model
         return $this->belongsToMany(Move::class, 'inventories_move_destinations', 'origin_move_id', 'destination_move_id');
     }
 
+    public function routes(): BelongsToMany
+    {
+        return $this->belongsToMany(Route::class, 'inventories_route_moves', 'move_id', 'route_id');
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
@@ -340,6 +346,64 @@ class Move extends Model
     public function computeScheduledAt()
     {
         $this->scheduled_at ??= $this->operation?->scheduled_at ?? now();
+    }
+
+    public function prepareProcurementValues(): array
+    {
+        $procurementGroup = $this->procurementGroup ?: false;
+
+        if ($this->rule) {
+            if (
+                $this->rule->group_propagation_option === GroupPropagation::FIXED
+                && $this->rule->procurement_group_id
+            ) {
+                $procurementGroup = $this->rule->procurementGroup;
+            } elseif ($this->rule->group_propagation_option === GroupPropagation::NONE) {
+                $procurementGroup = false;
+            }
+        }
+
+        $datesInfo = [
+            'planned' => $this->scheduled_at,
+        ];
+
+        if (
+            $this->location?->warehouse?->lotStock?->parent_path
+            && str_contains(
+                $this->location->parent_path ?? '',
+                $this->location->warehouse->lotStock->parent_path
+            )
+        ) {
+            $datesInfo = $this->product->getDatesInfo(
+                $this->date,
+                $this->location,
+                $this->routes
+            );
+        }
+
+        $warehouse = $this->warehouse ?: $this->operationType?->warehouse;
+
+        if (! $this->location?->warehouse) {
+            $warehouse = $this->rule?->propagateWarehouse;
+        }
+
+        $moveDestinations = collect();
+
+        if ($this->procure_method === ProcureMethod::MAKE_TO_ORDER) {
+            $moveDestinations = collect($this);
+        }
+
+        return [
+            'planned'           => $datesInfo['planned'] ?? null,
+            'ordered_at'        => $datesInfo['date_order'] ?? null,
+            'deadline'          => $this->deadline,
+            'move_destinations' => $moveDestinations,
+            'group_id'          => $procurementGroup,
+            'routes'            => $this->routes,
+            'warehouse'         => $warehouse,
+            'order_point'       => $this->orderPoint,
+            'product_packaging' => $this->productPackaging,
+        ];
     }
 
     public function computeLines()

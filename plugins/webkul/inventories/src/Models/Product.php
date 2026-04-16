@@ -11,11 +11,14 @@ use Illuminate\Support\Facades\Auth;
 use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Inventory\Database\Factories\ProductFactory;
 use Webkul\Inventory\Enums\LocationType;
+use Webkul\Inventory\Enums\ProcureMethod;
+use Webkul\Inventory\Enums\RuleAction;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Product\Models\Product as BaseProduct;
 use Webkul\Security\Models\User;
+use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 
 class Product extends BaseProduct
 {
@@ -150,6 +153,66 @@ class Product extends BaseProduct
             OperationTypeEnum::INTERNAL => $this->description_picking ?? $this->description,
             default                     => $this->description,
         };
+    }
+
+    public function getRulesFromLocation($location, $routes = false, $seenRules = null)
+    {
+        if (! $seenRules) {
+            $seenRules = collect();
+        }
+
+        $warehouse = $location->warehouse ?? null;
+
+        if (! $warehouse && $seenRules->isNotEmpty()) {
+            $warehouse = optional($seenRules->last())->propagateWarehouse;
+        }
+
+        if (! $routes) {
+            $routes = collect();
+        }
+
+        $rule = InventoryFacade::getRule($this, $location, [
+            'routes' => $routes,
+            'warehouse' => $warehouse,
+        ]);
+
+        if ($rule && $seenRules->contains(fn ($seenRule) => $seenRule->id === $rule->id)) {
+            throw new \Exception(__(
+                "Invalid rule's configuration, the following rule causes an endless loop: :name",
+                ['name' => $rule->name]
+            ));
+        }
+
+        if (! $rule) {
+            return $seenRules;
+        }
+
+        $updatedSeenRules = $seenRules->push($rule);
+
+        if (
+            $rule->procure_method === ProcureMethod::MAKE_TO_STOCK
+            || ! in_array($rule->action, [RuleAction::PULL_PUSH, RuleAction::PULL], true)
+        ) {
+            return $updatedSeenRules;
+        }
+
+        return $this->getRulesFromLocation(
+            $rule->sourceLocation,
+            false,
+            $updatedSeenRules
+        );
+    }
+
+    public function getDateInfo($date, $location, $routeIds = false): array
+    {
+        $rules = $this->getRulesFromLocation($location, $routeIds);
+
+        [$delays, ] = $rules->getLeadDays($this);
+
+        return [
+            'date_planned' => Carbon::parse($date)->subDays($delays['security_lead_days']),
+            'date_order'   => Carbon::parse($date)->subDays($delays['security_lead_days'] + $delays['purchase_delay']),
+        ];
     }
 
     public function computeQuantities(): array
