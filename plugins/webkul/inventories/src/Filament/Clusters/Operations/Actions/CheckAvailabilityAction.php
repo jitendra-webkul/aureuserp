@@ -23,7 +23,7 @@ class CheckAvailabilityAction extends Action
         $this
             ->label(__('inventories::filament/clusters/operations/actions/check-availability.label'))
             ->action(function (Operation $record, Component $livewire): void {
-                $record = Inventory::checkTransferAvailability($record);
+                $record = Inventory::assignTransfer($record);
 
                 $livewire->updateForm();
             })

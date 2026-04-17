@@ -110,7 +110,7 @@ class OperationController extends Controller
     protected function checkAvailabilityById(string $id): Operation
     {
         $operation = $this->findOperationById($id);
-        $operation = Inventory::checkTransferAvailability($operation);
+        $operation = Inventory::assignTransfer($operation);
 
         return $operation->refresh()->load($this->allowedIncludes);
     }

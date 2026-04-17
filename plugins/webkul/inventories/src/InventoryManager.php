@@ -28,34 +28,32 @@ use Webkul\Sale\Facades\SaleOrder as SaleFacade;
 
 class InventoryManager
 {
-    public function checkTransferAvailability(Operation $record): Operation
+    public function assignTransfer(Operation $record): Operation
     {
-        if ($record->state !== OperationState::DRAFT) {
-            return $record;
+        if ($record->state === OperationState::DRAFT) {
+            $record = $this->confirmTransfer($record);
         }
 
-        $record->moves->each(fn (Move $move) => $move->computeLines());
+        $moves = $record->moves->filter(fn (Move $move) => ! in_array($move->state, [MoveState::DRAFT, MoveState::CANCELED, MoveState::DONE]))
+            ->sortBy([
+                fn (Move $move) => ! (bool) $move->deadline,
+                fn (Move $move) => $move->deadline,
+                fn (Move $move) => $move->scheduled_at,
+                fn (Move $move) => $move->id,
+            ]);
 
-        $record->computeState();
+        if ($moves->isEmpty()) {
+            throw new \Exception('Nothing to check the availability for.');
+        }
 
-        $record->save();
+        $this->assignMoves($moves);
 
         return $record;
     }
 
     public function confirmTransfer(Operation $record): Operation
     {
-        if ($record->state !== OperationState::DRAFT) {
-            return $record;
-        }
-
-        $this->confirmMoves($record->moves);
-
-        $record->computeState();
-
-        $record->save();
-
-        // TODO: Run order points for replenishment
+        $this->confirmMoves($record->moves->filter(fn (Move $move) => $move->state === MoveState::DRAFT));
 
         return $record;
     }
@@ -188,7 +186,7 @@ class InventoryManager
         $movesToAssign = $moves->filter(fn ($move) => in_array($move->state, [MoveState::CONFIRMED, MoveState::PARTIALLY_ASSIGNED])
             && (
                 $move->shouldBypassReservation()
-                || $move->pickingType->reservation_method === ReservationMethod::AT_CONFIRM
+                || $move->operationType->reservation_method === ReservationMethod::AT_CONFIRM
                 || ($move->reservation_date && $move->reservation_date <= now()->toDateString())
             )
         );
@@ -286,7 +284,7 @@ class InventoryManager
 
     public function assignMoves($moves)
     {
-        
+
     }
 
     public function validateTransfer(Operation $record): Operation
