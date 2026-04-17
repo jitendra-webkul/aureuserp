@@ -137,10 +137,6 @@ class ProductQuantity extends Model
 
         $quants = $query->get();
 
-        if ($removalStrategy === 'closest') {
-            $quants = $quants->sortBy(fn ($q) => [$q->location->complete_name, -$q->id])->values();
-        }
-
         return $quants->sortBy(fn ($q) => $q->lot_id ? 0 : 1)->values();
     }
 
@@ -161,6 +157,16 @@ class ProductQuantity extends Model
         }
 
         return 'fifo';
+    }
+
+    public static function getRemovalStrategyOrder(string $removalStrategy): ?string
+    {
+        return match ($removalStrategy) {
+            'fifo'    => 'incoming_at ASC, id',
+            'lifo'    => 'incoming_at DESC, id DESC',
+            'closest' => null,
+            default   => throw new \RuntimeException(__('Removal strategy :strategy not implemented.', ['strategy' => $removalStrategy])),
+        };
     }
 
     public static function getGatherDomain(
@@ -201,16 +207,6 @@ class ProductQuantity extends Model
                 $query->where('partner_id', $partner?->id);
                 $query->where('location_id', $location->id);
             }
-        };
-    }
-
-    public static function getRemovalStrategyOrder(string $removalStrategy): ?string
-    {
-        return match ($removalStrategy) {
-            'fifo'    => 'incoming_at ASC, id',
-            'lifo'    => 'incoming_at DESC, id DESC',
-            'closest' => null,
-            default   => throw new \RuntimeException(__('Removal strategy :strategy not implemented.', ['strategy' => $removalStrategy])),
         };
     }
 
