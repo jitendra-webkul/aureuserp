@@ -127,10 +127,6 @@ class ProductQuantity extends Model
 
         $domain = static::getGatherDomain($product, $location, $lot, $package, $partner, $strict);
 
-        if ($removalStrategy === 'least_packages' && $qty) {
-            $domain = static::runLeastPackagesRemovalStrategyAstar($domain, $qty);
-        }
-
         $order = static::getRemovalStrategyOrder($removalStrategy);
 
         $query = static::query()->where($domain);
@@ -150,18 +146,18 @@ class ProductQuantity extends Model
 
     public static function getRemovalStrategy(Product $product, Location $location): string
     {
-        if ($product->category?->removalStrategy?->method) {
-            return $product->category->removalStrategy->method;
+        if ($product->category?->removal_strategy) {
+            return $product->category->removal_strategy;
         }
 
         $loc = $location;
 
         while ($loc) {
-            if ($loc->removalStrategy?->method) {
-                return $loc->removalStrategy->method;
+            if ($loc->removal_strategy) {
+                return $loc->removal_strategy;
             }
 
-            $loc = $loc->location;
+            $loc = $loc->parent;
         }
 
         return 'fifo';
@@ -211,156 +207,11 @@ class ProductQuantity extends Model
     public static function getRemovalStrategyOrder(string $removalStrategy): ?string
     {
         return match ($removalStrategy) {
-            'fifo', 'least_packages' => 'incoming_at ASC, id',
-            'lifo'                   => 'incoming_at DESC, id DESC',
-            'closest'                => null,
-            default                  => throw new \RuntimeException(__('Removal strategy :strategy not implemented.', ['strategy' => $removalStrategy])),
+            'fifo'    => 'incoming_at ASC, id',
+            'lifo'    => 'incoming_at DESC, id DESC',
+            'closest' => null,
+            default   => throw new \RuntimeException(__('Removal strategy :strategy not implemented.', ['strategy' => $removalStrategy])),
         };
-    }
-
-    public static function runLeastPackagesRemovalStrategyAstar(\Closure $domain, float $qty): \Closure
-    {
-        $qtyByPackage = static::query()
-            ->where($domain)
-            ->selectRaw('package_id, SUM(quantity - reserved_quantity) AS available_qty')
-            ->groupBy('package_id')
-            ->havingRaw('SUM(quantity - reserved_quantity) > 0')
-            ->orderByRaw('available_qty DESC')
-            ->get()
-            ->map(fn ($row) => [$row->package_id, (float) $row->available_qty])
-            ->toArray();
-
-        $pkgFound = false;
-        $newQtyByPackage = [];
-        $noneElements = [];
-
-        foreach ($qtyByPackage as $elem) {
-            if ($elem[0] === null) {
-                for ($i = 0; $i < (int) $elem[1]; $i++) {
-                    $noneElements[] = [null, 1.0];
-                }
-            } elseif ($elem[1] != 0) {
-                $newQtyByPackage[] = $elem;
-                $pkgFound = true;
-            }
-        }
-
-        $qtyByPackage = array_merge($newQtyByPackage, $noneElements);
-
-        if (! $pkgFound) {
-            return $domain;
-        }
-
-        $size = count($qtyByPackage);
-
-        $heuristic = function (array $node) use ($size, $qtyByPackage): float {
-            [$countRemaining, $takenPackages, $nextIndex] = $node;
-
-            if ($nextIndex < $size) {
-                return count($takenPackages) + $countRemaining / $qtyByPackage[$nextIndex][1];
-            }
-
-            return (float) count($takenPackages);
-        };
-
-        $generateDomain = function (array $node) use ($domain): \Closure {
-            [, $takenPackages] = $node;
-
-            $packageIds = [];
-            $hasNullPackage = false;
-
-            foreach ($takenPackages as $pkg) {
-                if ($pkg[0] === null) {
-                    $hasNullPackage = true;
-                } else {
-                    $packageIds[] = $pkg[0];
-                }
-            }
-
-            $selectedSingleItemIds = [];
-
-            if ($hasNullPackage) {
-                $selectedSingleItemIds = static::query()
-                    ->where($domain)
-                    ->whereNull('package_id')
-                    ->pluck('id')
-                    ->toArray();
-            }
-
-            return function ($query) use ($domain, $packageIds, $selectedSingleItemIds) {
-                $query->where($domain);
-                $query->where(function ($q) use ($packageIds, $selectedSingleItemIds) {
-                    $q->whereIn('package_id', $packageIds);
-
-                    if (! empty($selectedSingleItemIds)) {
-                        $q->orWhereIn('id', $selectedSingleItemIds);
-                    }
-                });
-            };
-        };
-
-        $frontier = new \SplPriorityQueue();
-        $frontier->setExtractFlags(\SplPriorityQueue::EXTR_BOTH);
-
-        $startNode = [$qty, [], 0];
-        $frontier->insert($startNode, -$heuristic($startNode));
-
-        $bestLeaf = $startNode;
-
-        try {
-            while (! $frontier->isEmpty()) {
-                $current = $frontier->extract()['data'];
-                [$countRemaining, $takenPackages, $nextIndex] = $current;
-
-                if ($countRemaining <= 0) {
-                    return $generateDomain($current);
-                }
-
-                $lastCount = null;
-                $i = $nextIndex;
-
-                while ($i < $size) {
-                    $pkg = $qtyByPackage[$i];
-                    $i++;
-
-                    if ($pkg[1] === $lastCount) {
-                        continue;
-                    }
-
-                    $lastCount = $pkg[1];
-
-                    $count = $countRemaining - $pkg[1];
-                    $taken = array_merge($takenPackages, [$pkg]);
-                    $node = [$count, $taken, $i];
-
-                    if ($count < 0) {
-                        if (
-                            $bestLeaf[0] > 0
-                            || count($node[1]) < count($bestLeaf[1])
-                            || (count($node[1]) === count($bestLeaf[1]) && $node[0] > $bestLeaf[0])
-                        ) {
-                            $bestLeaf = $node;
-                        }
-
-                        continue;
-                    }
-
-                    if ($i >= $size && $count != 0) {
-                        if ($node[0] < $bestLeaf[0]) {
-                            $bestLeaf = $node;
-                        }
-
-                        continue;
-                    }
-
-                    $frontier->insert($node, -$heuristic($node));
-                }
-            }
-        } catch (\Exception $e) {
-            return $domain;
-        }
-
-        return $generateDomain($bestLeaf);
     }
 
     public static function getAvailableQuantity(
@@ -425,10 +276,6 @@ class ProductQuantity extends Model
 
         $availableQuantity = static::getAvailableQuantity($product, $location, $lot, $package, $partner, $strict);
 
-        if ($productPackaging && $product->category?->packaging_reserve_method === 'full') {
-            $availableQuantity = $productPackaging->checkQty($availableQuantity, $product->uom, 'DOWN');
-        }
-
         $quantity = min($quantity, $availableQuantity);
 
         if (! $strict && $uom && $product->uom->id !== $uom->id) {
@@ -488,7 +335,7 @@ class ProductQuantity extends Model
                     $toRemove = min(abs($negQty), $maxOnQuant);
 
                     $negativeReserved[$negKey] += $toRemove;
-                    
+
                     $maxOnQuant -= $toRemove;
                 }
 
