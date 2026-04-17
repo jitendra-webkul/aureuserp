@@ -257,7 +257,7 @@ class Move extends Model
 
             $move->quantity ??= null;
 
-            $move->state = MoveState::DRAFT;
+            $move->state ??= MoveState::DRAFT;
         });
 
         static::saving(function ($move) {
@@ -285,7 +285,7 @@ class Move extends Model
             
             $move->computeScheduledAt();
 
-            $move->computeLines();
+            // $move->computeLines();
         });
     }
 
@@ -296,7 +296,7 @@ class Move extends Model
 
     public function computeName()
     {
-        $this->name = $this->product->name;
+        $this->name ??= $this->product->name;
     }
 
     public function computeReference()

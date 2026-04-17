@@ -419,8 +419,6 @@ class QuantityResource extends Resource
 
                         $data['inventory_diff_quantity'] = $data['counted_quantity'];
 
-                        $data['incoming_at'] = now();
-
                         $data['scheduled_at'] = now()->setDay(static::getOperationSettings()->annual_inventory_day)->setMonth(static::getOperationSettings()->annual_inventory_month);
 
                         return $data;
@@ -461,45 +459,13 @@ class QuantityResource extends Resource
                             ->body(__('inventories::filament/clusters/operations/resources/quantity.table.actions.apply.notification.body')),
                     )
                     ->action(function (ProductQuantity $record) {
-                        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                            ->where('is_scrap', false)
-                            ->first();
-
                         $countedQuantity = $record->counted_quantity;
 
-                        $diffQuantity = $record->inventory_diff_quantity;
-
                         $record->update([
-                            'quantity'                => $countedQuantity,
-                            'counted_quantity'        => 0,
-                            'inventory_diff_quantity' => 0,
-                            'inventory_quantity_set'  => false,
+                            'quantity'               => $countedQuantity,
+                            'counted_quantity'       => 0,
+                            'inventory_quantity_set' => false,
                         ]);
-
-                        ProductQuantity::updateOrCreate(
-                            [
-                                'location_id' => $adjustmentLocation->id,
-                                'product_id'  => $record->product_id,
-                                'lot_id'      => $record->lot_id,
-                            ], [
-                                'quantity'               => -$record->product->on_hand_quantity,
-                                'company_id'             => $record->company_id,
-                                'incoming_at'            => now(),
-                                'inventory_quantity_set' => false,
-                            ]
-                        );
-
-                        if ($diffQuantity < 0) {
-                            $sourceLocationId = $record->location_id;
-
-                            $destinationLocationId = $adjustmentLocation->id;
-                        } else {
-                            $sourceLocationId = $adjustmentLocation->id;
-
-                            $destinationLocationId = $record->location_id;
-                        }
-
-                        ProductResource::createMove($record, abs($diffQuantity), $sourceLocationId, $destinationLocationId);
                     }),
                 Action::make('clear')
                     ->label(__('inventories::filament/clusters/operations/resources/quantity.table.actions.clear.label'))

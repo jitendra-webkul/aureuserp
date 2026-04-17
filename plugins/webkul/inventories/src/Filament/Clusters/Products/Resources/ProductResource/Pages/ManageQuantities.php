@@ -23,7 +23,6 @@ use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\LotResource;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\PackageResource;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource;
-use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Warehouse;
 use Webkul\Inventory\Settings\OperationSettings;
@@ -258,45 +257,11 @@ class ManageQuantities extends ManageRelatedRecords
                             return;
                         }
 
-                        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                            ->where('is_scrap', false)
-                            ->first();
-
-                        $currentQuantity = $state - $previousQuantity;
-
-                        if ($currentQuantity < 0) {
-                            $sourceLocationId = $record->location_id;
-
-                            $destinationLocationId = $adjustmentLocation->id;
-                        } else {
-                            $sourceLocationId = $adjustmentLocation->id;
-
-                            $destinationLocationId = $record->location_id;
-                        }
-
-                        ProductResource::createMove($record, $currentQuantity, $sourceLocationId, $destinationLocationId);
+                        $record->update([
+                            'inventory_diff_quantity' => $state - $previousQuantity,
+                        ]);
                     })
                     ->afterStateUpdated(function ($record, $state) {
-                        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                            ->where('is_scrap', false)
-                            ->first();
-
-                        $data['inventory_quantity_set'] = false;
-
-                        ProductQuantity::updateOrCreate(
-                            [
-                                'location_id' => $adjustmentLocation->id,
-                                'product_id'  => $record->product_id,
-                                'lot_id'      => $record->lot_id,
-                            ], [
-                                'quantity'               => -$record->product->available_qty,
-                                'company_id'             => $record->company_id,
-                                'creator_id'             => Auth::id(),
-                                'incoming_at'            => now(),
-                                'inventory_quantity_set' => false,
-                            ]
-                        );
-
                         Notification::make()
                             ->success()
                             ->title(__('inventories::filament/clusters/products/resources/product/pages/manage-quantities.table.columns.on-hand-before-state-updated.notification.title'))
@@ -324,15 +289,9 @@ class ManageQuantities extends ManageRelatedRecords
 
                         $data['location_id'] = $data['location_id'] ?? Warehouse::first()->lot_stock_location_id;
 
-                        $data['creator_id'] = Auth::id();
-
                         $data['company_id'] = $this->getOwnerRecord()->company_id;
 
-                        $data['inventory_quantity_set'] = false;
-
-                        $data['counted_quantity'] = 0;
-
-                        $data['incoming_at'] = now();
+                        $data['inventory_diff_quantity'] = $data['quantity'];
 
                         return $data;
                     })
@@ -363,38 +322,6 @@ class ManageQuantities extends ManageRelatedRecords
 
                             $record = $this->getOwnerRecord()->quantities()->create($data);
                         }
-
-                        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                            ->where('is_scrap', false)
-                            ->first();
-
-                        ProductQuantity::updateOrCreate(
-                            [
-                                'location_id' => $adjustmentLocation->id,
-                                'product_id'  => $record->product_id,
-                                'lot_id'      => $record->lot_id,
-                            ], [
-                                'quantity'    => -$record->product->available_qty,
-                                'company_id'  => $record->company_id,
-                                'creator_id'  => Auth::id(),
-                                'incoming_at' => now(),
-                            ]
-                        );
-
-                        if ($record->package) {
-                            $record->package->update([
-                                'location_id' => $record->location_id,
-                                'pack_date'   => now(),
-                            ]);
-                        }
-
-                        if ($record->lot) {
-                            $record->lot->update([
-                                'location_id' => $record->location_id,
-                            ]);
-                        }
-
-                        ProductResource::createMove($record, $record->quantity, $adjustmentLocation->id, $record->location_id);
 
                         return $record;
                     })

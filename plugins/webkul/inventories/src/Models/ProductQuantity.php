@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Database\Factories\ProductQuantityFactory;
+use Webkul\Inventory\Enums\LocationType;
+use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Settings\OperationSettings;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Models\Packaging;
@@ -93,9 +95,154 @@ class ProductQuantity extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function getUomAttribute(): UOM
+    {
+        return $this->product->uom;
+    }
+
     public function getAvailableQuantityAttribute(): float
     {
         return $this->quantity - $this->reserved_quantity;
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($productQuantity) {
+            $productQuantity->creator_id ??= Auth::id();
+
+            $productQuantity->incoming_at ??= now();
+        });
+
+        static::saving(function ($productQuantity) {
+            $productQuantity->updateScheduledAt();
+        });
+
+        static::created(function ($productQuantity) {
+            if ($productQuantity->package) {
+                $productQuantity->package->update([
+                    'location_id' => $productQuantity->location_id,
+                    'pack_date'   => now(),
+                ]);
+            }
+
+            if ($productQuantity->lot) {
+                $productQuantity->lot->update([
+                    'location_id' => $productQuantity->location_id,
+                ]);
+            }
+
+            if (! $productQuantity->inventory_quantity_set) {
+                $productQuantity->applyInventory();
+            }
+        });
+
+        static::updated(function ($productQuantity) {
+            if (! $productQuantity->inventory_quantity_set) {
+                $productQuantity->applyInventory();
+            }
+        });
+    }
+
+    public function applyInventory()
+    {
+        if (float_compare($this->inventory_diff_quantity, 0.0, precisionRounding: $this->uom->rounding) == 0) {
+            return;
+        }
+
+        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
+            ->where('is_scrap', false)
+            ->first();
+
+        if (float_compare($this->inventory_diff_quantity, 0.0, precisionRounding: $this->uom->rounding) > 0) {
+            $moveValues = $this->getInventoryMoveValues(
+                $this->inventory_diff_quantity,
+                $adjustmentLocation,
+                $this->location,
+                destinationPackage: $this->package
+            );
+        } else {
+            $moveValues = $this->getInventoryMoveValues(
+                -$this->inventory_diff_quantity,
+                $this->location,
+                $adjustmentLocation,
+                package: $this->package
+            );
+        }
+
+        $move = Move::create($moveValues);
+
+        foreach ($moveValues['lines'] as $lineValues) {
+            MoveLine::create(array_merge($lineValues, [
+                'move_id' => $move->id,
+            ]));
+        }
+
+        $this->product->context = [
+            'location_id' => $this->location_id,
+        ];
+
+        ProductQuantity::updateOrCreate(
+            [
+                'location_id' => $adjustmentLocation->id,
+                'product_id'  => $this->product_id,
+                'lot_id'      => $this->lot_id,
+            ], [
+                'quantity'    => -$this->product->available_qty,
+                'company_id'  => $this->company_id,
+                'creator_id'  => Auth::id(),
+                'incoming_at' => now(),
+            ]
+        );
+
+        $this->updateQuietly([
+            'inventory_diff_quantity' => 0.0,
+            'inventory_quantity_set' => false,
+        ]);
+    }
+
+    public function getInventoryMoveValues(
+        $qty,
+        Location $sourceLocation,
+        Location $destinationLocation,
+        ?Package $package = null,
+        ?Package $destinationPackage = null
+    )
+    {
+        if ($this->context['inventory_name'] ?? false) {
+            $name = $this->context['inventory_name'];
+        } elseif (float_is_zero($qty, precisionRounding: $this->product->uom->rounding)) {
+            $name = 'Product Quantity Confirmed';
+        } else {
+            $name = 'Product Quantity Updated';
+        }
+
+        return [
+            'name' => $name,
+            'state' => MoveState::DONE,
+            'quantity' => $qty,
+            'product_uom_qty' => $qty,
+            'is_picked' => true,
+            'product_id' => $this->product_id,
+            'uom_id' => $this->uom->id,
+            'source_location_id' => $sourceLocation->id,
+            'destination_location_id' => $destinationLocation->id,
+            'company_id' => $this->company->id ?? Auth::user()->default_company_id,
+            'lines' => [[
+                'reference' => $name,
+                'qty' => $qty,
+                'uom_qty' => $qty,
+                'product_id' => $this->product_id,
+                'uom_id' => $this->uom->id,
+                'source_location_id' => $sourceLocation->id,
+                'destination_location_id' => $destinationLocation->id,
+                'lot_id' => $this->lot_id,
+                'package_id' => $package?->id,
+                'result_package_id' => $destinationPackage?->id,
+                'company_id' => $this->company->id ?? Auth::user()->default_company_id,
+            ]],
+        ];
     }
 
     public function updateScheduledAt()
@@ -370,18 +517,5 @@ class ProductQuantity extends Model
     protected static function newFactory(): ProductQuantityFactory
     {
         return ProductQuantityFactory::new();
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($productQuantity) {
-            $productQuantity->creator_id ??= Auth::id();
-        });
-
-        static::saving(function ($productQuantity) {
-            $productQuantity->updateScheduledAt();
-        });
     }
 }
