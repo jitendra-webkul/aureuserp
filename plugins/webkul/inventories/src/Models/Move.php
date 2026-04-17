@@ -271,6 +271,8 @@ class Move extends Model
 
             $move->computeProductQty();
 
+            $move->computeProductUOMQty();
+
             $move->computeProcureMethod();
 
             $move->computePartnerId();
@@ -307,6 +309,11 @@ class Move extends Model
     public function computeProductQty()
     {
         $this->product_qty ??= $this->uom?->computeQuantity($this->product_uom_qty, $this->product->uom, roundingMethod: 'HALF-UP');
+    }
+
+    public function computeProductUOMQty()
+    {
+        $this->product_uom_qty ??= $this->product->uom?->computeQuantity($this->product_qty, $this->uom, roundingMethod: 'HALF-UP');
     }
 
     public function computeProcureMethod()
