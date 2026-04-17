@@ -578,6 +578,118 @@ class Move extends Model
         return $groupedMoveLinesOut;
     }
 
+    public function updateReservedQuantity(
+        float $need,
+        Location $location,
+        ?Lot $lot = null,
+        ?Package $package = null,
+        ?Partner $partner = null,
+        bool $strict = true
+    ): float
+    {
+        $rounding = $this->product->uom->rounding;
+
+        $quants = ProductQuantity::getReserveQuantity(
+            $this->product,
+            $location,
+            $need,
+            productPackaging: $this->productPackaging,
+            uom: $this->uom,
+            lot: $lot,
+            package: $package,
+            partner: $partner,
+            strict: $strict,
+        );
+
+        $takenQuantity = 0.0;
+
+        $candidateLines = [];
+
+        foreach ($this->lines as $line) {
+            if ($line->result_package_id || $this->product->tracking === ProductTracking::SERIAL) {
+                continue;
+            }
+
+            $candidateKey = implode('_', [
+                $line->source_location_id,
+                $line->lot_id,
+                $line->package_id,
+                $line->partner_id,
+            ]);
+
+            $candidateLines[$candidateKey] = $line;
+        }
+
+        $groupedQuants = [];
+
+        foreach ($quants as [$quant, $quantity]) {
+            $groupKey = implode('_', [
+                $quant->location_id,
+                $quant->lot_id,
+                $quant->package_id,
+                $quant->partner_id,
+            ]);
+
+            if (! isset($groupedQuants[$groupKey])) {
+                $groupedQuants[$groupKey] = [$quant, $quantity];
+            } else {
+                $groupedQuants[$groupKey][1] += $quantity;
+            }
+        }
+
+        $moveLineVals = [];
+
+        foreach ($groupedQuants as [$reservedQuant, $quantity]) {
+            $takenQuantity += $quantity;
+
+            $candidateKey = implode('_', [
+                $reservedQuant->location_id,
+                $reservedQuant->lot_id,
+                $reservedQuant->package_id,
+                $reservedQuant->partner_id,
+            ]);
+
+            $toUpdate = $candidateLines[$candidateKey] ?? null;
+
+            if ($toUpdate) {
+                $uomQuantity = $this->product->uom->computeQuantity($quantity, $toUpdate->uom, roundingMethod: 'HALF-UP');
+
+                $uomQuantity = float_round($uomQuantity, precisionRounding: $rounding);
+
+                $uomQuantityBackToProductUom = $toUpdate->uom->computeQuantity($uomQuantity, $this->product->uom, roundingMethod: 'HALF-UP');
+            }
+
+            if ($toUpdate && float_compare($quantity, $uomQuantityBackToProductUom, precisionRounding: $rounding) === 0) {
+                $toUpdate->update(['uom_qty' => $toUpdate->uom_qty + $uomQuantity]);
+            } else {
+                if (
+                    $this->product->tracking === ProductTracking::SERIAL
+                    && ($this->operationType?->use_create_lots || $this->operationType?->use_existing_lots)
+                ) {
+                    array_push($moveLineVals, ...$this->addSerialMoveLineToValsList($reservedQuant, $quantity));
+                } else {
+                    $moveLineVals[] = $this->prepareLines(quantity: $quantity, reservedQuantity: $reservedQuant);
+                }
+            }
+        }
+
+        if (! empty($moveLineVals)) {
+            foreach ($moveLineVals as $vals) {
+                $this->lines()->create($vals);
+            }
+        }
+
+        return $takenQuantity;
+    }
+
+    public function addSerialMoveLineToValsList(ProductQuantity $reservedQuant, float $quantity): array
+    {
+        return array_map(
+            fn () => $this->prepareLines(quantity: 1, reservedQuantity: $reservedQuant),
+            range(0, (int) $quantity - 1)
+        );
+    }
+
     public function computeLines()
     {
         if (! $this->state) {
