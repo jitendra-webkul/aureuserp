@@ -17,12 +17,10 @@ use Knuckles\Scribe\Attributes\UrlParam;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use Webkul\Inventory\Enums\ScrapState;
-use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource as ProductFilamentResource;
 use Webkul\Inventory\Http\Requests\ScrapRequest;
 use Webkul\Inventory\Http\Resources\V1\ScrapResource;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Product;
-use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Scrap;
 use Webkul\Inventory\Models\Warehouse;
 
@@ -195,66 +193,11 @@ class ScrapController extends Controller
         }
 
         return DB::transaction(function () use ($scrap) {
-            $baseQty = $scrap->uom && $scrap->product?->uom
-                ? $scrap->uom->computeQuantity($scrap->qty, $scrap->product->uom, false)
-                : $scrap->qty;
-
-            $locationQuantity = ProductQuantity::query()
-                ->where('location_id', $scrap->source_location_id)
-                ->where('product_id', $scrap->product_id)
-                ->where('package_id', $scrap->package_id)
-                ->where('lot_id', $scrap->lot_id)
-                ->first();
-
-            if (! $locationQuantity || $locationQuantity->quantity < $baseQty) {
+            if (! $scrap->validate()) {
                 return response()->json([
                     'message' => 'Insufficient source quantity for this scrap.',
                 ], 422);
             }
-
-            $locationQuantity->update([
-                'quantity' => $locationQuantity->quantity - $baseQty,
-            ]);
-
-            $destinationQuantity = ProductQuantity::query()
-                ->where('product_id', $scrap->product_id)
-                ->where('location_id', $scrap->destination_location_id)
-                ->first();
-
-            if ($destinationQuantity) {
-                $destinationQuantity->update([
-                    'quantity'                => $destinationQuantity->quantity + $baseQty,
-                    'reserved_quantity'       => $destinationQuantity->reserved_quantity + $baseQty,
-                    'inventory_diff_quantity' => $destinationQuantity->inventory_diff_quantity - $baseQty,
-                ]);
-            } else {
-                ProductQuantity::create([
-                    'product_id'              => $scrap->product_id,
-                    'location_id'             => $scrap->destination_location_id,
-                    'quantity'                => $baseQty,
-                    'reserved_quantity'       => $baseQty,
-                    'inventory_diff_quantity' => -$baseQty,
-                    'incoming_at'             => now(),
-                    'creator_id'              => Auth::id(),
-                    'company_id'              => $scrap->destinationLocation->company_id,
-                ]);
-            }
-
-            $scrap->update([
-                'state'     => ScrapState::DONE,
-                'closed_at' => now(),
-            ]);
-
-            $move = ProductFilamentResource::createMove(
-                $scrap,
-                $baseQty,
-                $scrap->source_location_id,
-                $scrap->destination_location_id
-            );
-
-            $move->update([
-                'scrap_id' => $scrap->id,
-            ]);
 
             return (new ScrapResource($scrap->fresh()->load($this->allowedIncludes)))
                 ->additional(['message' => 'Scrap validated successfully.']);

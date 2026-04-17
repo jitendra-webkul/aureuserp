@@ -188,34 +188,12 @@ class QuantityController extends Controller
             }
 
             $countedQuantity = $record->counted_quantity;
-            $diffQuantity = $record->inventory_diff_quantity;
 
             $record->update([
-                'quantity'                => $countedQuantity,
-                'counted_quantity'        => 0,
-                'inventory_diff_quantity' => 0,
-                'inventory_quantity_set'  => false,
+                'quantity'               => $countedQuantity,
+                'counted_quantity'       => 0,
+                'inventory_quantity_set' => false,
             ]);
-
-            ProductQuantity::updateOrCreate(
-                [
-                    'location_id' => $adjustmentLocation->id,
-                    'product_id'  => $record->product_id,
-                    'lot_id'      => $record->lot_id,
-                ],
-                [
-                    'quantity'               => -$record->product->available_qty,
-                    'company_id'             => $record->company_id,
-                    'creator_id'             => Auth::id(),
-                    'incoming_at'            => now(),
-                    'inventory_quantity_set' => false,
-                ]
-            );
-
-            $sourceLocationId = $diffQuantity < 0 ? $record->location_id : $adjustmentLocation->id;
-            $destinationLocationId = $diffQuantity < 0 ? $adjustmentLocation->id : $record->location_id;
-
-            ProductFilamentResource::createMove($record, abs($diffQuantity), $sourceLocationId, $destinationLocationId);
 
             return (new ProductQuantityResource($record->fresh()->load($this->allowedIncludes)))
                 ->additional(['message' => 'Quantity applied successfully.']);

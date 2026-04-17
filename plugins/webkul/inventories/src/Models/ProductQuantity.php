@@ -50,6 +50,15 @@ class ProductQuantity extends Model
         'incoming_at'            => 'datetime',
     ];
 
+    protected array $context = [];
+
+    public function setContext(array $context)
+    {
+        $this->context = array_merge($this->context, $context);
+
+        return $this;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

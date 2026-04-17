@@ -148,43 +148,26 @@ class EditProduct extends BaseEditProduct
 
                     $warehouse = Warehouse::first();
 
-                    $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                        ->where('is_scrap', false)
-                        ->first();
-
-                    $currentQuantity = $data['quantity'] - $previousQuantity;
-
-                    if ($currentQuantity < 0) {
-                        $sourceLocationId = $data['location_id'] ?? $warehouse->lot_stock_location_id;
-
-                        $destinationLocationId = $adjustmentLocation->id;
-                    } else {
-                        $sourceLocationId = $data['location_id'] ?? $adjustmentLocation->id;
-
-                        $destinationLocationId = $warehouse->lot_stock_location_id;
-                    }
-
                     $productQuantity = ProductQuantity::where('product_id', $record->id)
                         ->where('location_id', $data['location_id'] ?? $warehouse->lot_stock_location_id)
                         ->first();
 
                     if ($productQuantity) {
-                        $productQuantity->update(['quantity' => $data['quantity']]);
+                        $productQuantity->update([
+                            'quantity'                => $data['quantity'],
+                            'inventory_diff_quantity' => $data['quantity'] - $previousQuantity,
+                        ]);
                     } else {
                         $productQuantity = ProductQuantity::create([
-                            'product_id'        => $record->id,
-                            'company_id'        => $record->company_id,
-                            'location_id'       => $data['location_id'] ?? $warehouse->lot_stock_location_id,
-                            'package_id'        => $data['package_id'] ?? null,
-                            'lot_id'            => $data['lot_id'] ?? null,
-                            'quantity'          => $data['quantity'],
-                            'reserved_quantity' => 0,
-                            'incoming_at'       => now(),
-                            'creator_id'        => Auth::id(),
+                            'product_id'              => $record->id,
+                            'company_id'              => $record->company_id,
+                            'location_id'             => $data['location_id'] ?? $warehouse->lot_stock_location_id,
+                            'package_id'              => $data['package_id'] ?? null,
+                            'lot_id'                  => $data['lot_id'] ?? null,
+                            'quantity'                => $data['quantity'],
+                            'inventory_diff_quantity' => $data['quantity'],
                         ]);
                     }
-
-                    ProductResource::createMove($productQuantity, $currentQuantity, $sourceLocationId, $destinationLocationId);
                 }),
         ], parent::getHeaderActions());
     }

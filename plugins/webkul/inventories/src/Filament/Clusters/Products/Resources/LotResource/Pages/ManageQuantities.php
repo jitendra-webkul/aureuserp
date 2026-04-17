@@ -8,13 +8,8 @@ use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
-use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\LotResource;
-use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource;
-use Webkul\Inventory\Models\Location;
-use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Settings\OperationSettings;
 use Webkul\Inventory\Settings\TraceabilitySettings;
 use Webkul\Inventory\Settings\WarehouseSettings;
@@ -89,45 +84,11 @@ class ManageQuantities extends ManageRelatedRecords
                             return;
                         }
 
-                        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                            ->where('is_scrap', false)
-                            ->first();
-
-                        $currentQuantity = $state - $previousQuantity;
-
-                        if ($currentQuantity < 0) {
-                            $sourceLocationId = $record->location_id;
-
-                            $destinationLocationId = $adjustmentLocation->id;
-                        } else {
-                            $sourceLocationId = $adjustmentLocation->id;
-
-                            $destinationLocationId = $record->location_id;
-                        }
-
-                        ProductResource::createMove($record, $currentQuantity, $sourceLocationId, $destinationLocationId);
+                        $record->update([
+                            'inventory_diff_quantity' => $state - $previousQuantity,
+                        ]);
                     })
                     ->afterStateUpdated(function ($record, $state) {
-                        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-                            ->where('is_scrap', false)
-                            ->first();
-
-                        $data['inventory_quantity_set'] = false;
-
-                        ProductQuantity::updateOrCreate(
-                            [
-                                'location_id' => $adjustmentLocation->id,
-                                'product_id'  => $record->product_id,
-                                'lot_id'      => $record->lot_id,
-                            ], [
-                                'quantity'               => -$record->product->available_qty,
-                                'company_id'             => $record->company_id,
-                                'creator_id'             => Auth::id(),
-                                'incoming_at'            => now(),
-                                'inventory_quantity_set' => false,
-                            ]
-                        );
-
                         Notification::make()
                             ->success()
                             ->title(__('projects::filament/resources/task.table.actions.delete.notification.title'))
