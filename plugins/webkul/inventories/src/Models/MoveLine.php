@@ -46,9 +46,11 @@ class MoveLine extends Model
     ];
 
     protected $casts = [
-        'state'             => MoveState::class,
-        'is_picked'         => 'boolean',
-        'scheduled_at'      => 'datetime',
+        'state'        => MoveState::class,
+        'qty'          => 'float',
+        'uom_qty'      => 'float',
+        'is_picked'    => 'boolean',
+        'scheduled_at' => 'datetime',
     ];
 
     public function move(): BelongsTo

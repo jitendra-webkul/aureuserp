@@ -485,9 +485,7 @@ class InventoryManager
             }
         }
 
-        if ($moveLineValsList->isNotEmpty()) {
-            MoveLine::insert($moveLineValsList->toArray());
-        }
+        $moveLineValsList->each(fn($vals) => MoveLine::create($vals));
 
         Move::whereIn('id', $partiallyAssignedMovesIds)->update(['state' => MoveState::PARTIALLY_ASSIGNED]);
 

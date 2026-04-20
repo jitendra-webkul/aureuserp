@@ -72,6 +72,9 @@ class Move extends Model
 
     protected $casts = [
         'state'            => MoveState::class,
+        'quantity'         => 'float',
+        'product_qty'      => 'float',
+        'product_uom_qty'  => 'float',
         'is_favorite'      => 'boolean',
         'is_picked'        => 'boolean',
         'is_scraped'       => 'boolean',
