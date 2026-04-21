@@ -69,6 +69,15 @@ class Operation extends Model
         'closed_at'          => 'datetime',
     ];
 
+    protected array $context = [];
+
+    public function setContext(array $context)
+    {
+        $this->context = array_merge($this->context, $context);
+
+        return $this;
+    }
+
     public function getModelTitle(): string
     {
         return __('inventories::models/operation.title');

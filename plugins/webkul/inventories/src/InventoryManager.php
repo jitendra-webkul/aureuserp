@@ -76,9 +76,45 @@ class InventoryManager
 
     public function doneTransfer(Operation $record, $cancelBackOrder = false): Operation
     {
-        $todoMoves = $record->moves->filter(fn ($move) => in_array($move->state, [MoveState::DRAFT, MoveState::WAITING, MoveState::PARTIALLY_ASSIGNED, MoveState::ASSIGNED, MoveState::CONFIRMED]));
+        $todoMoves = $record->moves->filter(fn ($move) => in_array($move->state, [
+            MoveState::DRAFT,
+            MoveState::WAITING,
+            MoveState::PARTIALLY_ASSIGNED,
+            MoveState::ASSIGNED,
+            MoveState::CONFIRMED,
+        ]));
+
+        $hasQuantity = false;
+
+        $hasPick = false;
+
+        foreach ($record->moves as $move) {
+            if ($move->quantity) {
+                $hasQuantity = true;
+            }
+
+            if ($move->is_scraped) {
+                continue;
+            }
+
+            if ($move->is_picked) {
+                $hasPick = true;
+            }
+
+            if ($hasQuantity && $hasPick) {
+                break;
+            }
+        }
+
+        if ($hasQuantity && ! $hasPick) {
+            $record->moves->each->update(['is_picked' => true]);
+        }
 
         $this->doneMoves($todoMoves, $cancelBackOrder);
+
+        $record->refresh();
+
+        $record->computeState();
 
         $record->closed_at = Carbon::now();
 
@@ -442,8 +478,8 @@ class InventoryManager
     public function doneMoves($moves, $cancelBackOrder = false)
     {
         $confirmedMoves = $moves->filter(
-            fn($move) => $move->state === MoveState::DRAFT ||
-                float_is_zero($move->product_uom_qty, precisionRounding: $move->uom->rounding)
+            fn($move) => $move->state === MoveState::DRAFT
+                || float_is_zero($move->product_uom_qty, precisionRounding: $move->uom->rounding)
         );
 
         $newMoves = $this->confirmMoves($confirmedMoves, merge: false);
@@ -541,9 +577,10 @@ class InventoryManager
         if ($operation && ! $cancelBackOrder) {
             $backOrder = $this->createBackOrder($operation);
 
-            if ($backOrder->moves->some(fn($move) => $move->state === MoveState::ASSIGNED)) {
-                $backOrder->checkEntirePack();
-            }
+            //TODO:: implement this
+            // if ($backOrder->moves->some(fn($move) => $move->state === MoveState::ASSIGNED)) {
+            //     $backOrder->checkEntirePack();
+            // }
         }
 
         if ($movesTodo->isNotEmpty()) {
@@ -578,7 +615,7 @@ class InventoryManager
             $qtyDoneFloatCompared = float_compare($moveLine->qty, 0, precisionRounding: $moveLine->uom->rounding);
 
             if ($qtyDoneFloatCompared > 0) {
-                if ($moveLine->product->tracking === ProductTracking::NONE) {
+                if ($moveLine->product->tracking === ProductTracking::QTY) {
                     continue;
                 }
 
@@ -667,7 +704,7 @@ class InventoryManager
         foreach ($moveLinesTodo as $moveLine) {
             $moveLine->synchronizeQuantity(
                 -$moveLine->uom_qty,
-                $moveLine->location,
+                $moveLine->sourceLocation,
                 action: 'reserved'
             );
 
@@ -685,7 +722,7 @@ class InventoryManager
             if ($availableQty < 0) {
                 $moveLine->freeReservation(
                     product: $moveLine->product,
-                    location: $moveLine->location,
+                    location: $moveLine->sourceLocation,
                     quantity: abs($availableQty),
                     lot: $moveLine->lot,
                     package: $moveLine->package,
@@ -699,7 +736,7 @@ class InventoryManager
         $moveLinesTodo->each->update(['scheduled_at' => now()]);
     }
 
-    public function createMovesBackOrder($moves): void
+    public function createMovesBackOrder($moves)
     {
         $backOrderMovesValues = [];
 
@@ -717,9 +754,27 @@ class InventoryManager
             }
         }
 
-        $backOrderMoves = collect(
-            array_map(fn($vals) => Move::create($vals), $backOrderMovesValues)
-        );
+        $backOrderMoves = collect();
+
+        foreach ($backOrderMoves as $moveValues) {
+            $originIds = $moveValues['move_origin_ids'] ?? [];
+            
+            $destinationIds = $moveValues['move_destination_ids'] ?? [];
+
+            unset($moveValues['move_origin_ids'], $moveValues['move_destination_ids']);
+
+            $move = Move::create($moveValues);
+
+            if (! empty($originIds)) {
+                $move->moveOrigins()->attach($originIds);
+            }
+
+            if (! empty($destinationIds)) {
+                $move->moveDestinations()->attach($destinationIds);
+            }
+
+            $backOrderMoves->push($move);
+        }
 
         $this->confirmMoves($backOrderMoves, merge: false);
         
@@ -826,7 +881,7 @@ class InventoryManager
         });
 
         if ($movesToBackOrder->isEmpty()) {
-            continue;
+            return;
         }
 
         $backOrderOperation = $record->replicate(['name', 'moves', 'moveLines']);
@@ -927,6 +982,8 @@ class InventoryManager
         $newMoves = collect();
 
         foreach ($moves as $move) {
+            $newMove = null;
+
             $warehouse = $move->warehouse ?? $move->operation?->operationType->warehouse;
 
             $rule = $this->getPushRule($move->product, $move->destinationLocation, [
@@ -953,7 +1010,7 @@ class InventoryManager
 
             $movesToMts = collect();
 
-            foreach ($move->moveDestinations->diff(collect([$newMove])) as $m) {
+            foreach ($move->moveDestinations->diff($newMove ? collect([$newMove]) : collect()) as $m) {
                 if ($newMove && $move->final_location_id && $m->source_location_id === $move->final_location_id) {
                     $movesToPropagate->push($m);
                 } elseif (! $m->location->isChildOf($move->destination_location_id)) {
@@ -965,13 +1022,15 @@ class InventoryManager
                 $m->moveOrigins()->detach($move->id);
 
                 $m->procure_method = ProcureMethod::MAKE_TO_STOCK;
+
                 $m->computeState();
+
                 $m->save();
             }
 
             $move->moveDestinations()->detach($movesToPropagate->pluck('id')->all());
 
-            $newMove->moveDestinations()->syncWithoutDetaching($movesToPropagate->pluck('id')->all());
+            $newMove?->moveDestinations()->syncWithoutDetaching($movesToPropagate->pluck('id')->all());
         }
 
         $this->confirmMoves($newMoves);

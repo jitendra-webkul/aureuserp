@@ -86,6 +86,15 @@ class Move extends Model
         'alert_Date'       => 'datetime',
     ];
 
+    protected array $context = [];
+
+    public function setContext(array $context)
+    {
+        $this->context = array_merge($this->context, $context);
+
+        return $this;
+    }
+
     public function isPurchaseReturn()
     {
         return $this->destinationLocation->type === LocationType::SUPPLIER
@@ -305,6 +314,14 @@ class Move extends Model
         static::updated(function ($move) {
             if ($move->wasChanged('quantity')) {
                 $move->setQuantity();
+            }
+
+            if ($move->wasChanged('state')) {
+                $move->lines->each(fn($moveLine) => $moveLine->update(['state' => $move->state]));
+            }
+
+            if ($move->wasChanged('is_picked')) {
+                $move->lines->each(fn($moveLine) => $moveLine->update(['is_picked' => $move->is_picked]));
             }
         });
 
@@ -550,6 +567,83 @@ class Move extends Model
         });
 
         return $quantity;
+    }
+
+    public function split(float $qty, ?int $restrictPartnerId = null): array
+    {
+        if (in_array($this->state, [MoveState::DONE, MoveState::CANCELED])) {
+            throw new \Exception(__('You cannot split a stock move that has been set to \'Done\' or \'Cancel\'.'));
+        }
+
+        if ($this->state === MoveState::DRAFT) {
+            throw new \Exception(__('You cannot split a draft move. It needs to be confirmed first.'));
+        }
+
+        if (float_is_zero($qty, precisionRounding: $this->product->uom->rounding)) {
+            return [];
+        }
+
+        $uomQty = $this->product->uom->computeQuantity($qty, $this->uom, roundingMethod: 'HALF-UP');
+
+        if (
+            float_compare(
+                $qty,
+                $this->uom->computeQuantity($uomQty, $this->product->uom, roundingMethod: 'HALF-UP'),
+                precisionDigits: 2
+            ) === 0
+        ) {
+            $defaults = $this->prepareMoveSplitVals($uomQty);
+        } else {
+            $defaults = $this->prepareMoveSplitVals($qty, forceUomId: $this->product->uom_id);
+        }
+
+        if ($restrictPartnerId) {
+            $defaults['restrict_partner_id'] = $restrictPartnerId;
+        }
+
+        if ($this->context['source_location_id'] ?? false) {
+            $defaults['destination_location_id'] = $this->context['source_location_id'];
+        }
+
+        $newMoveVals = array_merge(
+            $this->toArray(),
+            $defaults,
+            ['id' => null]
+        );
+
+        $newProductQty = $this->product->uom->computeQuantity(
+            max(0, $this->product_qty - $qty),
+            $this->uom,
+            round: false
+        );
+
+        $newProductQty = float_round($newProductQty, precisionDigits: 2);
+
+        $this->update(['product_uom_qty' => $newProductQty]);
+
+        return $newMoveVals;
+    }
+
+    public function prepareMoveSplitVals(float $qty, ?int $forceUomId = null): array
+    {
+        $values = [
+            'product_uom_qty'         => $qty,
+            'procure_method'          => $this->procure_method,
+            'move_destination_ids'    => $this->moveDestinations
+                ->filter(fn($x) => ! in_array($x->state, [MoveState::DONE, MoveState::CANCELED]))
+                ->pluck('id')
+                ->all(),
+            'move_origin_ids'         => $this->moveOrigins->pluck('id')->all(),
+            'origin_returned_move_id' => $this->origin_returned_move_id,
+            'price_unit'              => $this->price_unit,
+            'deadline'                => $this->deadline,
+        ];
+
+        if ($forceUomId) {
+            $values['uom_id'] = $forceUomId;
+        }
+
+        return $values;
     }
 
     public function computeState()

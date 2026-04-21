@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Database\Factories\MoveLineFactory;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Partner\Models\Partner;
+use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Security\Models\User;
 use Webkul\Inventory\Enums\LocationType;
+use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\UOM;
 
@@ -52,6 +54,15 @@ class MoveLine extends Model
         'is_picked'    => 'boolean',
         'scheduled_at' => 'datetime',
     ];
+
+    protected array $context = [];
+
+    public function setContext(array $context)
+    {
+        $this->context = array_merge($this->context, $context);
+
+        return $this;
+    }
 
     public function move(): BelongsTo
     {
@@ -370,6 +381,88 @@ class MoveLine extends Model
         }
 
         return [$availableQty, $incomingDate];
+    }
+
+    public function freeReservation(
+        Product $product,
+        Location $location,
+        float $quantity,
+        ?Lot $lot = null,
+        ?Package $package = null,
+        $moveLineIdsToIgnore = null
+    ): void {
+        $moveLineIdsToIgnore = $moveLineIdsToIgnore ?? collect();
+        
+        $moveLineIdsToIgnore->push($this->id);
+
+        if ($this->move->shouldBypassReservation($location)) {
+            return;
+        }
+
+        $outdatedMoveLines = MoveLine::query()
+            ->whereNotIn('state', [MoveState::DONE, MoveState::CANCELED])
+            ->where('product_id', $product->id)
+            ->where('lot_id', $lot?->id)
+            ->where('source_location_id', $location->id)
+            ->where('package_id', $package?->id)
+            ->where('uom_qty', '>', 0.0)
+            ->where('is_picked', false)
+            ->whereNotIn('id', $moveLineIdsToIgnore->all())
+            ->get()
+            ->sortBy(function ($candidate) {
+                $isCurrentOperation = $candidate->move->operation_id !== $this->move->operation_id ? 1 : 0;
+
+                $scheduledAt = $candidate->operation_id
+                    ? ($candidate->move->operation->scheduled_date ?? $candidate->move->scheduled_at)
+                    : ($candidate->move->scheduled_at ?? null);
+
+                return [
+                    $isCurrentOperation,
+                    $scheduledAt ? -$scheduledAt->timestamp() : 0,
+                    -$candidate->id,
+                ];
+            });
+
+        $moveToReassign = collect();
+
+        $toDeleteCandidateIds = collect();
+
+        $rounding = $this->uom->rounding;
+
+        foreach ($outdatedMoveLines as $candidate) {
+            $moveToReassign->push($candidate->move);
+
+            if (float_compare($candidate->uom_qty, $quantity, precisionRounding: $rounding) <= 0) {
+                $quantity -= $candidate->uom_qty;
+
+                $toDeleteCandidateIds->push($candidate->id);
+
+                if (float_is_zero($quantity, precisionRounding: $rounding)) {
+                    break;
+                }
+            } else {
+                $candidate->decrement(
+                    'qty',
+                    $candidate->product->uom->computeQuantity($quantity, $candidate->uom, roundingMethod: 'HALF-UP')
+                );
+                break;
+            }
+        }
+
+        $moveLinesToDelete = MoveLine::whereIn('id', $toDeleteCandidateIds)->get();
+
+        $moveLinesToDelete->pluck('move')
+            ->merge($moveToReassign)
+            ->unique('id')
+            ->each(function ($move) {
+                $move->update(['procure_method' => ProcureMethod::MAKE_TO_STOCK]);
+
+                $move->moveOrigins()->detach();
+            });
+
+        MoveLine::whereIn('id', $toDeleteCandidateIds)->get()->each(fn ($moveLine) => $moveLine->delete());
+
+        InventoryFacade::assignMoves($moveToReassign->unique('id'));
     }
 
     public function transferInventories()

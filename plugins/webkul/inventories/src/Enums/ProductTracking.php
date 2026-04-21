@@ -12,15 +12,12 @@ enum ProductTracking: string implements HasLabel
 
     case QTY = 'qty';
 
-    case NONE = 'none';
-
     public function getLabel(): string
     {
         return match ($this) {
             self::SERIAL => __('inventories::enums/product-tracking.serial'),
             self::LOT    => __('inventories::enums/product-tracking.lot'),
             self::QTY    => __('inventories::enums/product-tracking.qty'),
-            self::NONE   => __('inventories::enums/product-tracking.none'),
         };
     }
 }
