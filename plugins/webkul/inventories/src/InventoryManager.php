@@ -780,21 +780,9 @@ class InventoryManager
         return $backOrderMoves;
     }
 
-    public function checkQuantity($moves)
-    {
-
-    }
-
     public function cancelTransfer(Operation $record): Operation
     {
-        foreach ($record->moves as $move) {
-            $move->update([
-                'state'    => MoveState::CANCELED,
-                'quantity' => 0,
-            ]);
-
-            $move->lines()->delete();
-        }
+        $this->cancelMoves($record->moves);
 
         $record->computeState();
 
@@ -1224,7 +1212,7 @@ class InventoryManager
         $routeIds = collect();
 
         if ($routes?->isNotEmpty()) {
-            $routeIds->merge($routes->pluck('id'));
+            $routeIds = $routeIds->merge($routes->pluck('id'));
         }
 
         $routeSources = [
@@ -1239,7 +1227,7 @@ class InventoryManager
                 continue;
             }
 
-            $routeIds->merge($source->{$relationName}->pluck('id'))
+            $routeIds = $routeIds->merge($source->{$relationName}->pluck('id'))
                 ->unique();
 
             if ($routeIds->isEmpty()) {
@@ -1528,7 +1516,7 @@ class InventoryManager
         return $vals;
     }
 
-    public function keyAssignPicking(Move $move): array
+    public function keyAssignPicking($move): array
     {
         $keys = [
             $move->procurement_group_id,
@@ -1767,13 +1755,13 @@ class InventoryManager
         }
 
         $movesToCancel = $moves->filter(
-            fn ($move) => $move->state !== MoveState::CANCELED &&
-                ! ($move->state === MoveState::DONE && $move->is_scraped)
+            fn ($move) => $move->state !== MoveState::CANCELED
+                && ! ($move->state === MoveState::DONE && $move->is_scraped)
         );
 
-        $movesToCancel->each->update(['picked' => false]);
+        $movesToCancel->each->update(['is_picked' => false]);
 
-        // $this->doUnreserve($movesToCancel);
+        $this->doUnreserve($movesToCancel);
 
         $cancelMovesOrigin = false;
 
@@ -1814,6 +1802,51 @@ class InventoryManager
 
             $move->moveOrigins()->detach();
         });
+
+        return true;
+    }
+
+    public function doUnreserve($moves)
+    {
+        $movesToUnreserve = $moves->filter(function ($move) {
+            if (
+                $move->state === MoveState::CANCELED
+                || ($move->state === MoveState::DONE && $move->is_scraped)
+                || $move->is_picked
+            ) {
+                return false;
+            }
+
+            if ($move->state === MoveState::DONE) {
+                throw new \Exception(__("You can not unreserve a stock move that has been set to 'Done'."));
+            }
+
+            return true;
+        });
+
+        $moveLineToUnlink = collect();
+
+        $movesNotToRecompute = collect();
+
+        foreach ($movesToUnreserve->flatMap->lines as $moveLine) {
+            if ($moveLine->is_picked) {
+                $movesNotToRecompute->push($moveLine->move_id);
+
+                continue;
+            }
+
+            $moveLineToUnlink->push($moveLine->id);
+        }
+
+        MoveLine::whereIn('id', $moveLineToUnlink)->get()->each->delete();
+
+        $movesToUnreserve
+            ->filter(fn ($move) => ! $movesNotToRecompute->contains('id', $move->id))
+            ->each(function($move) {
+                $move->computeState();
+
+                $move->save();
+            });
 
         return true;
     }
@@ -2225,4 +2258,6 @@ class InventoryManager
      * Run a manufacture rule on a line.
      */
     public function runManufactureRule($procurements) {}
+
+    public function checkQuantity($moves) {}
 }
