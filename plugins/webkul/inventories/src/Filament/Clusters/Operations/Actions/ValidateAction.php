@@ -54,17 +54,13 @@ class ValidateAction extends Action
                     ->label(__('inventories::filament/clusters/operations/actions/validate.extra-modal-footer-actions.no-backorder.label'))
                     ->color('danger')
                     ->action(function (Operation $record, Component $livewire): void {
-                        Inventory::doneTransfer($record, $this->canCreateBackOrder($record));
+                        Inventory::doneTransfer($record, true);
 
                         $livewire->updateForm();
                     }),
             ] : [])
             ->action(function (Operation $record, Component $livewire): void {
-                if ($this->canCreateBackOrder($record)) {
-                    Inventory::createBackOrder($record);
-                }
-
-                Inventory::doneTransfer($record, $this->canCreateBackOrder($record));
+                Inventory::doneTransfer($record);
 
                 $livewire->updateForm();
             })
