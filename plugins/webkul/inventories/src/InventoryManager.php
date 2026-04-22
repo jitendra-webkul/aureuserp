@@ -29,7 +29,6 @@ use Webkul\Purchase\Enums as PurchaseOrderEnums;
 use Webkul\Purchase\Facades\PurchaseOrder as PurchaseOrderFacade;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Purchase\Models\PurchaseOrder;
-use Webkul\Sale\Facades\SaleOrder as SaleFacade;
 
 class InventoryManager
 {
@@ -578,6 +577,7 @@ class InventoryManager
                 throw new \Exception(__('You cannot move the same package content more than once in the same transfer or split the same package into two location.'));
             }
         }
+
 
         $operation = $movesTodo->pluck('operation')->unique()->filter()->first();
 

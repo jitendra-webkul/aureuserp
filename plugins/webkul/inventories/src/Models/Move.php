@@ -317,7 +317,7 @@ class Move extends Model
             }
 
             if ($move->wasChanged('state')) {
-                $move->lines->each(fn ($moveLine) => $moveLine->update(['state' => $move->state]));
+                $move->lines->each(fn ($moveLine) => $moveLine->update(['state' => $moveLine->move->refresh()->state]));
 
                 if ($operation = $move->operation) {
                     $operation->refresh();
@@ -677,10 +677,6 @@ class Move extends Model
                 )
             )
         ) {
-            \Log::info([
-                'id' => $this->id,
-                'origins' => $this->moveOrigins->pluck('id')->toArray()
-            ]);
             $this->state = MoveState::WAITING;
         } else {
             $this->state = MoveState::CONFIRMED;
