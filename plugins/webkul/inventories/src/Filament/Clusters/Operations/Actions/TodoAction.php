@@ -6,13 +6,14 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Livewire\Component;
+use Throwable;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Operation;
 
 class TodoAction extends Action
 {
-    protected bool | Closure $hasDatabaseTransactions = true;
+    protected bool|Closure $hasDatabaseTransactions = true;
 
     public static function getDefaultName(): ?string
     {
@@ -36,16 +37,24 @@ class TodoAction extends Action
                     return;
                 }
 
-                $record = Inventory::confirmTransfer($record);
+                try {
+                    $record = Inventory::confirmTransfer($record);
 
-                $livewire->updateForm();
+                    $livewire->updateForm();
 
-                Notification::make()
-                    ->success()
-                    ->title(__('inventories::filament/clusters/operations/actions/todo.notification.success.title'))
-                    ->body(__('inventories::filament/clusters/operations/actions/todo.notification.success.body'))
-                    ->success()
-                    ->send();
+                    Notification::make()
+                        ->success()
+                        ->title(__('inventories::filament/clusters/operations/actions/todo.notification.success.title'))
+                        ->body(__('inventories::filament/clusters/operations/actions/todo.notification.success.body'))
+                        ->send();
+                } catch (Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->body($e->getMessage())
+                        ->send();
+
+                    $this->halt();
+                }
             })
             ->hidden(fn () => $this->getRecord()->state !== OperationState::DRAFT);
     }

@@ -1413,7 +1413,17 @@ class InventoryManager
             }
         }
 
-        dd($actionsToRun, $procurementErrors);
+        if (! empty($procurementErrors)) {
+            $errorMessage = collect($procurementErrors)->map(function ($error) {
+                if (isset($error['error'])) {
+                    return $error['error'];
+                }
+
+                return $error;
+            })->implode("\n");
+
+            throw new \Exception($errorMessage);
+        }
     }
 
     /**

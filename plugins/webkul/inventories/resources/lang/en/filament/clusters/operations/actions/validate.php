@@ -12,6 +12,10 @@ return [
     ],
 
     'notification' => [
+        'error' => [
+            'title' => 'Validation Failed',
+        ],
+
         'warning' => [
             'lines-missing' => [
                 'title' => 'No quantities are reserved',

@@ -6,16 +6,15 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Livewire\Component;
+use Throwable;
 use Webkul\Inventory\Enums\CreateBackorder;
 use Webkul\Inventory\Enums\OperationState;
-use Webkul\Inventory\Enums\ProductTracking;
-use Webkul\Inventory\Facades\Inventory;
+use Webkul\Inventory\Facades\Inventory as InventoryFaceade;
 use Webkul\Inventory\Models\Operation;
-use Webkul\Inventory\Models\ProductQuantity;
 
 class ValidateAction extends Action
 {
-    protected bool | Closure $hasDatabaseTransactions = true;
+    protected bool|Closure $hasDatabaseTransactions = true;
 
     public static function getDefaultName(): ?string
     {
@@ -34,35 +33,23 @@ class ValidateAction extends Action
 
                 return 'primary';
             })
-            ->requiresConfirmation(function (Operation $record) {
-                return $record->operationType->create_backorder === CreateBackorder::ASK
-                    && $this->canCreateBackOrder($record);
-            })
-            ->modalHeading(fn (Operation $record) => (
-                $record->operationType->create_backorder === CreateBackorder::ASK
-                && $this->canCreateBackOrder($record)
-            ) ? __('inventories::filament/clusters/operations/actions/validate.modal-heading') : null)
-            ->modalDescription(fn (Operation $record) => (
-                $record->operationType->create_backorder === CreateBackorder::ASK
-                && $this->canCreateBackOrder($record)
-            ) ? __('inventories::filament/clusters/operations/actions/validate.modal-description') : null)
-            ->extraModalFooterActions(fn (Operation $record) => (
-                $record->operationType->create_backorder === CreateBackorder::ASK
-                && $this->canCreateBackOrder($record)
-            ) ? [
+            ->requiresConfirmation(fn (Operation $record) => $this->shouldAskBackOrder($record))
+            ->modalHeading(fn (Operation $record) => $this->shouldAskBackOrder($record)
+                ? __('inventories::filament/clusters/operations/actions/validate.modal-heading')
+                : null)
+            ->modalDescription(fn (Operation $record) => $this->shouldAskBackOrder($record)
+                ? __('inventories::filament/clusters/operations/actions/validate.modal-description')
+                : null)
+            ->extraModalFooterActions(fn (Operation $record) => $this->shouldAskBackOrder($record) ? [
                 Action::make('no-backorder')
                     ->label(__('inventories::filament/clusters/operations/actions/validate.extra-modal-footer-actions.no-backorder.label'))
                     ->color('danger')
                     ->action(function (Operation $record, Component $livewire): void {
-                        Inventory::doneTransfer($record, true);
-
-                        $livewire->updateForm();
+                        $this->executeDoneTransfer($record, $livewire, cancelBackOrder: true);
                     }),
             ] : [])
             ->action(function (Operation $record, Component $livewire): void {
-                Inventory::doneTransfer($record);
-
-                $livewire->updateForm();
+                $this->executeDoneTransfer($record, $livewire);
             })
             ->hidden(function (Operation $record) {
                 return in_array($record->state, [
@@ -81,15 +68,25 @@ class ValidateAction extends Action
         return $record->moves->sum('product_uom_qty') > $record->moves->sum('quantity');
     }
 
-    /**
-     * Send a notification with the given title, body and type.
-     */
-    private function sendNotification(string $titleKey, string $bodyKey, string $type = 'info'): void
+    private function shouldAskBackOrder(Operation $record): bool
     {
-        Notification::make()
-            ->title(__($titleKey))
-            ->body(__($bodyKey))
-            ->{$type}()
-            ->send();
+        return $record->operationType->create_backorder === CreateBackorder::ASK
+            && $this->canCreateBackOrder($record);
+    }
+
+    private function executeDoneTransfer(Operation $record, Component $livewire, bool $cancelBackOrder = false): void
+    {
+        try {
+            InventoryFaceade::doneTransfer($record, $cancelBackOrder);
+
+            $livewire->updateForm();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->danger()
+                ->body($e->getMessage())
+                ->send();
+
+            $this->halt();
+        }
     }
 }

@@ -4,14 +4,16 @@ namespace Webkul\Inventory\Filament\Clusters\Operations\Actions;
 
 use Closure;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Livewire\Component;
+use Throwable;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Operation;
 
 class CancelAction extends Action
 {
-    protected bool | Closure $hasDatabaseTransactions = true;
+    protected bool|Closure $hasDatabaseTransactions = true;
 
     public static function getDefaultName(): ?string
     {
@@ -27,9 +29,18 @@ class CancelAction extends Action
             ->color('gray')
             ->requiresConfirmation()
             ->action(function (Operation $record, Component $livewire): void {
-                $record = Inventory::cancelTransfer($record);
+                try {
+                    Inventory::cancelTransfer($record);
 
-                $livewire->updateForm();
+                    $livewire->updateForm();
+                } catch (Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->body($e->getMessage())
+                        ->send();
+
+                    $this->halt();
+                }
             })
             ->visible(fn () => ! in_array($this->getRecord()->state, [
                 OperationState::DONE,
