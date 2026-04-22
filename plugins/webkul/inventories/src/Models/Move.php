@@ -635,16 +635,21 @@ class Move extends Model
     public function prepareMoveSplitVals(float $qty, ?int $forceUomId = null): array
     {
         $values = [
+            'state'                   => MoveState::DRAFT,
             'product_uom_qty'         => $qty,
+            'product_qty'             => $this->uom->computeQuantity($qty, $this->product->uom, true, 'HALF-UP'),
+            'quantity'                => 0,
+            'is_picked'               => false,
             'procure_method'          => $this->procure_method,
+            'price_unit'              => $this->price_unit,
+            'deadline'                => $this->deadline,
+            'rule_id'                 => null,
+            'origin_returned_move_id' => $this->origin_returned_move_id,
+            'move_origin_ids'         => $this->moveOrigins->pluck('id')->all(),
             'move_destination_ids'    => $this->moveDestinations
                 ->filter(fn($x) => ! in_array($x->state, [MoveState::DONE, MoveState::CANCELED]))
                 ->pluck('id')
                 ->all(),
-            'move_origin_ids'         => $this->moveOrigins->pluck('id')->all(),
-            'origin_returned_move_id' => $this->origin_returned_move_id,
-            'price_unit'              => $this->price_unit,
-            'deadline'                => $this->deadline,
         ];
 
         if ($forceUomId) {

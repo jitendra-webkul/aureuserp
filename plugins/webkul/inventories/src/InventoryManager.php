@@ -780,7 +780,7 @@ class InventoryManager
 
     public function createMovesBackOrder($moves)
     {
-        $backOrderMovesValues = [];
+        $backOrderMovesValues = collect();
 
         foreach ($moves as $move) {
             if (float_compare($move->quantity, $move->product_uom_qty, precisionRounding: 2) < 0) {
@@ -790,15 +790,13 @@ class InventoryManager
                     roundingMethod: 'HALF-UP'
                 );
 
-                $newMoveValues = $move->split($qtySplit);
-
-                $backOrderMovesValues = array_merge($backOrderMovesValues, $newMoveValues);
+               $backOrderMovesValues->push($move->split($qtySplit));
             }
         }
 
         $backOrderMoves = collect();
 
-        foreach ($backOrderMoves as $moveValues) {
+        foreach ($backOrderMovesValues as $moveValues) {
             $originIds = $moveValues['move_origin_ids'] ?? [];
             
             $destinationIds = $moveValues['move_destination_ids'] ?? [];
@@ -1139,7 +1137,7 @@ class InventoryManager
             }
         }
 
-        return $newMove;
+        return $newMove->refresh();
     }
 
     public function prepareProcurementQty($moves)
@@ -1547,6 +1545,10 @@ class InventoryManager
 
     public function assignOperation($moves, $mergeInto = null)
     {
+        if ($moves->isEmpty()) {
+            return;
+        }
+
         $groupedMoves = $moves->groupBy(fn ($move) => implode('_', $this->keyAssignPicking($move)));
 
         foreach ($groupedMoves as $moves) {

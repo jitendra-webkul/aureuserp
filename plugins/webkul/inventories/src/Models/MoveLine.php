@@ -414,7 +414,7 @@ class MoveLine extends Model
                 $isCurrentOperation = $candidate->move->operation_id !== $this->move->operation_id ? 1 : 0;
 
                 $scheduledAt = $candidate->operation_id
-                    ? ($candidate->move->operation->scheduled_date ?? $candidate->move->scheduled_at)
+                    ? ($candidate->move->operation->scheduled_at ?? $candidate->move->scheduled_at)
                     : ($candidate->move->scheduled_at ?? null);
 
                 return [
@@ -460,7 +460,7 @@ class MoveLine extends Model
 
                 $move->moveOrigins()->detach();
             });
-
+        
         MoveLine::whereIn('id', $toDeleteCandidateIds)->get()->each(fn ($moveLine) => $moveLine->delete());
 
         InventoryFacade::assignMoves($moveToReassign->unique('id'));
