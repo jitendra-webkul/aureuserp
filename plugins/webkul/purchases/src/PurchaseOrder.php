@@ -6,23 +6,22 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\In;
 use Webkul\Account\Enums as AccountEnums;
 use Webkul\Account\Facades\Account as AccountFacade;
 use Webkul\Account\Facades\Tax as TaxFacade;
 use Webkul\Account\Models\Partner;
 use Webkul\Inventory\Enums as InventoryEnums;
-use Webkul\Inventory\Enums\LocationType;
-use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Inventory\Models\OperationType;
+use Webkul\Inventory\Models\ProcurementGroup;
 use Webkul\Inventory\Models\Receipt;
 use Webkul\PluginManager\Package;
 use Webkul\Product\Enums\ProductType;
 use Webkul\Purchase\Enums as PurchaseEnums;
-use Webkul\Purchase\Enums\QtyReceivedMethod;
 use Webkul\Purchase\Filament\Admin\Clusters\Orders\Resources\PurchaseOrderResource;
 use Webkul\Purchase\Mail\VendorPurchaseOrderMail;
 use Webkul\Purchase\Models\AccountMove;
@@ -242,7 +241,7 @@ class PurchaseOrder
 
         $line = $this->computeQtyReceived($line);
 
-        if ($line->qty_received_method == QtyReceivedMethod::MANUAL) {
+        if ($line->qty_received_method == PurchaseEnums\QtyReceivedMethod::MANUAL) {
             $line->qty_received_manual = $line->qty_received ?? 0;
         }
 
@@ -365,11 +364,11 @@ class PurchaseOrder
     {
         $line->qty_received = 0.0;
 
-        if ($line->qty_received_method == QtyReceivedMethod::MANUAL) {
+        if ($line->qty_received_method == PurchaseEnums\QtyReceivedMethod::MANUAL) {
             $line->qty_received = $line->qty_received_manual ?? 0.0;
         }
 
-        if ($line->qty_received_method == QtyReceivedMethod::STOCK_MOVE) {
+        if ($line->qty_received_method == PurchaseEnums\QtyReceivedMethod::STOCK_MOVE) {
             $total = 0.0;
 
             foreach ($line->inventoryMoves as $move) {
@@ -448,6 +447,41 @@ class PurchaseOrder
         return $pdfPath;
     }
 
+    protected function getInventoryOperationType(Order $record): ?OperationType
+    {
+        $operationType = OperationType::where('type', InventoryEnums\OperationType::INCOMING)
+            ->whereHas('warehouse', function ($query) use ($record) {
+                $query->where('company_id', $record->company_id);
+            })
+            ->first();
+
+        if (! $operationType) {
+            $operationType = OperationType::where('type', InventoryEnums\OperationType::INCOMING)
+                ->whereDoesntHave('warehouse')
+                ->first();
+        }
+
+        return $operationType;
+    }
+
+    public function getDestinationLocation(Order $order): Location
+    {
+        if ($order->destination_address_id && $order->operationType->type === InventoryEnums\OperationType::DROPSHIP) {
+            return Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
+        }
+
+        return $order->operationType->destinationLocation;
+    }
+
+    public function getFinalLocation(Order $order): Location
+    {
+        if ($order->destination_address_id && $order->operationType->type === InventoryEnums\OperationType::DROPSHIP) {
+            return Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
+        }
+
+        return $order->operationType->warehouse->lotStockLocation;
+    }
+
     protected function createInventoryOperation(Order $record): void
     {
         if (! Package::isPluginInstalled('inventories')) {
@@ -461,6 +495,12 @@ class PurchaseOrder
         if (! $record->lines->contains(fn ($line) => $line->product->type === ProductType::GOODS)) {
             return;
         }
+
+        $operationType = $this->getInventoryOperationType($record);
+
+        $record->update([
+            'operation_type_id' => $operationType?->id,
+        ]);
 
         $operations = $record->operations->filter(
             fn($operation) => ! in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])
@@ -519,6 +559,31 @@ class PurchaseOrder
         return collect(array_map(fn ($val) => Move::create($val), $values));
     }
 
+    public function prepareInventoryOperation(Order $order): array
+    {
+        if (! $order->procurement_group_id) {
+            $procurementGroup = ProcurementGroup::create([
+                'name' => $order->name,
+                'partner_id' => $order->partner_id,
+            ]);
+
+            $order->update([
+                'procurement_group_id' => $procurementGroup->id,
+            ]);
+        }
+
+        return [
+            'state' => InventoryEnums\OperationState::DRAFT,
+            'date' => $order->ordered_at,
+            'origin' => $order->name,
+            'partner_id' => $order->partner_id,
+            'operation_type_id' => $order->operation_type_id,
+            'source_location_id' => $order->operationType->source_location_id,
+            'destination_location_id' => $this->getDestinationLocation($order)->id,
+            'company_id' => $order->company_id,
+        ];
+    }
+
     public function prepareInventoryMoves(OrderLine $line, $operation)
     {
         $values = [];
@@ -536,7 +601,7 @@ class PurchaseOrder
             : $line->inventoryMoves->flatMap->moveDestinations;
 
         $moveDestinations = $moveDestinations->filter(
-            fn($move) => $move->state !== MoveState::CANCELED && ! $move->isPurchaseReturn()
+            fn($move) => $move->state !== InventoryEnums\MoveState::CANCELED && ! $move->isPurchaseReturn()
         );
 
         if ($moveDestinations->isEmpty()) {
@@ -577,13 +642,13 @@ class PurchaseOrder
         [$outgoingMoves, $incomingMoves] = $this->getOutgoingIncomingMoves($line);
 
         foreach ($outgoingMoves as $move) {
-            $qtyToCompute = $move->state === MoveState::DONE ? $move->quantity : $move->product_uom_qty;
+            $qtyToCompute = $move->state === InventoryEnums\MoveState::DONE ? $move->quantity : $move->product_uom_qty;
 
             $qty -= $move->uom->computeQuantity($qtyToCompute, $line->uom, roundingMethod: 'HALF-UP');
         }
 
         foreach ($incomingMoves as $move) {
-            $qtyToCompute = $move->state === MoveState::DONE ? $move->quantity : $move->product_uom_qty;
+            $qtyToCompute = $move->state === InventoryEnums\MoveState::DONE ? $move->quantity : $move->product_uom_qty;
 
             $qty += $move->uom->computeQuantity($qtyToCompute, $line->uom, roundingMethod: 'HALF-UP');
         }
@@ -598,7 +663,7 @@ class PurchaseOrder
         $incomingMoves = collect();
 
         $relevantMoves = $line->inventoryMoves->filter(
-            fn($move) => $move->state !== MoveState::CANCELED
+            fn($move) => $move->state !== InventoryEnums\MoveState::CANCELED
                 && ! $move->is_scraped
                 && $line->product_id === $move->product_id
         );
@@ -606,7 +671,7 @@ class PurchaseOrder
         foreach ($relevantMoves as $move) {
             if ($move->isPurchaseReturn() && ($move->is_refund || ! $move->origin_returned_move_id)) {
                 $outgoingMoves->push($move);
-            } elseif ($move->destinationLocation->type !== LocationType::SUPPLIER) {
+            } elseif ($move->destinationLocation->type !== InventoryEnums\LocationType::SUPPLIER) {
                 if (! $move->origin_returned_move_id || ($move->origin_returned_move_id && $move->is_refund)) {
                     $incomingMoves->push($move);
                 }
@@ -614,6 +679,17 @@ class PurchaseOrder
         }
 
         return [$outgoingMoves, $incomingMoves];
+    }
+
+    public function getMoveDestinationsInitialDemand(OrderLine $line, $moveDestinations): float
+    {
+        $totalQty = $moveDestinations
+            ->filter(fn($move) => $move->state !== InventoryEnums\MoveState::CANCELED
+                && $move->destinationLocation->type !== InventoryEnums\LocationType::SUPPLIER
+            )
+            ->sum('product_qty');
+
+        return $line->product->uom->computeQuantity($totalQty, $line->uom, roundingMethod: 'HALF-UP');
     }
 
     protected function cancelInventoryOperations(Order $record): void

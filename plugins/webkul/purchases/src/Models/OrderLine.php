@@ -15,6 +15,7 @@ use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Move as InventoryMove;
 use Webkul\Inventory\Models\OrderPoint;
+use Webkul\Inventory\Models\ProcurementGroup;
 use Webkul\Partner\Models\Partner;
 use Webkul\Product\Enums\ProductType;
 use Webkul\Product\Models\Packaging;
@@ -64,6 +65,7 @@ class OrderLine extends Model implements Sortable
         'creator_id',
         'final_location_id',
         'order_point_id',
+        'procurement_group_id',
     ];
 
     protected $casts = [
@@ -151,6 +153,11 @@ class OrderLine extends Model implements Sortable
     public function orderPoint(): BelongsTo
     {
         return $this->belongsTo(OrderPoint::class, 'order_point_id');
+    }
+
+    public function procurementGroup(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementGroup::class, 'procurement_group_id');
     }
 
     protected static function newFactory(): OrderLineFactory
