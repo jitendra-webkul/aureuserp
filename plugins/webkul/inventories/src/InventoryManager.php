@@ -1479,8 +1479,6 @@ class InventoryManager
             foreach ($moveValues as $moveValue) {
                 $move = Move::create($moveValue);
 
-                $move->update(['state' => MoveState::CONFIRMED]);
-
                 $moves->push($move);
             }
 

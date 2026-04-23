@@ -106,16 +106,16 @@ class EditOrder extends EditRecord
 
     protected function afterSave(): void
     {
-        // try {
+        try {
             PurchaseOrder::computePurchaseOrder($this->getRecord());
-        // } catch (\Exception $e) {
-        //     Notification::make()
-        //         ->danger()
-        //         ->body($e->getMessage())
-        //         ->send();
+        } catch (\Exception $e) {
+            Notification::make()
+                ->danger()
+                ->body($e->getMessage())
+                ->send();
 
-        //     $this->halt(shouldRollbackDatabaseTransaction: true);
-        // }
+            $this->halt(shouldRollbackDatabaseTransaction: true);
+        }
     }
 
     public function updateForm(): void
