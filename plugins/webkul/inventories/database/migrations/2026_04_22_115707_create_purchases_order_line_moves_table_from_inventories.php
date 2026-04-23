@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasTable('purchases_order_item_moves') && Schema::hasTable('purchases_order_lines')) {
-            Schema::create('purchases_order_item_moves', function (Blueprint $table) {
+        if (! Schema::hasTable('purchases_order_line_moves') && Schema::hasTable('purchases_order_lines')) {
+            Schema::create('purchases_order_line_moves', function (Blueprint $table) {
                 $table->foreignId('purchase_order_line_id')
                     ->constrained('purchases_order_lines')
                     ->cascadeOnDelete();
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchases_order_item_moves');
+        Schema::dropIfExists('purchases_order_line_moves');
     }
 };

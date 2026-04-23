@@ -15,6 +15,7 @@ use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\GroupPropagation;
+use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Sale\Models\OrderLine as SaleOrderLine;
@@ -265,7 +266,7 @@ class Move extends Model
 
     public function purchaseOrderLines(): BelongsToMany
     {
-        return $this->belongsToMany(PurchaseOrderLine::class, 'purchases_order_item_moves', 'inventory_move_id', 'purchase_order_line_id');
+        return $this->belongsToMany(PurchaseOrderLine::class, 'purchases_order_line_moves', 'inventory_move_id', 'purchase_order_line_id');
     }
 
     public function saleOrderLine(): BelongsTo
@@ -297,6 +298,8 @@ class Move extends Model
 
             $move->computeReference();
 
+            $move->computeUOMId();
+
             $move->computeProductQty();
 
             $move->computeProductUOMQty();
@@ -304,8 +307,6 @@ class Move extends Model
             $move->computeProcureMethod();
 
             $move->computePartnerId();
-
-            $move->computeUOMId();
 
             $move->computeOperationTypeId();
 
@@ -319,6 +320,38 @@ class Move extends Model
         static::updated(function ($move) {
             if ($move->wasChanged('quantity')) {
                 $move->setQuantity();
+            }
+
+            $receiptMovesToReassign = collect();
+
+            $moveToRecomputeState = collect();
+
+            if ($move->wasChanged('product_uom_qty')) {
+                if (! ($move->context['do_not_unreserve'] ?? false)) {
+                    $shouldUnreserve = ! in_array($move->state, [MoveState::DRAFT, MoveState::DONE, MoveState::CANCELED])
+                        && float_compare($move->quantity, $move->product_uom_qty ?? null, precisionRounding: $move->uom->rounding) === 1;
+
+                    if ($shouldUnreserve) {
+                        InventoryFacade::doUnreserve(collect([$move]));
+
+                        if ($move->sourceLocation->type === LocationType::SUPPLIER) {
+                            $receiptMovesToReassign->push($move->refresh());
+                        }
+                    } else {
+                        if ($move->state === MoveState::ASSIGNED) {
+                            $move->update(['state' => MoveState::PARTIALLY_ASSIGNED]);
+                        }
+
+                        if (
+                            $move->sourceLocation->type === LocationType::SUPPLIER
+                            && in_array($move->state, [MoveState::PARTIALLY_ASSIGNED, MoveState::ASSIGNED])
+                        ) {
+                            $receiptMovesToReassign->push($move);
+                        } else {
+                            $moveToRecomputeState->push($move);
+                        }
+                    }
+                }
             }
 
             if ($move->wasChanged('state')) {
@@ -335,6 +368,10 @@ class Move extends Model
 
             if ($move->wasChanged('is_picked')) {
                 $move->lines->each(fn($moveLine) => $moveLine->update(['is_picked' => $move->is_picked]));
+            }
+
+            if ($receiptMovesToReassign->isNotEmpty()) {
+                InventoryFacade::assignMoves($receiptMovesToReassign);
             }
         });
 
@@ -575,7 +612,7 @@ class Move extends Model
     {
         $quantity = 0;
 
-        $this->lines->each(function ($moveLine) use (&$quantity) {
+        $this->lines()->get()->each(function ($moveLine) use (&$quantity) {
             $quantity += $moveLine->uom->computeQuantity($moveLine->qty, $this->product->uom, round: false);
         });
 
@@ -631,6 +668,8 @@ class Move extends Model
         );
 
         $newProductQty = float_round($newProductQty, precisionDigits: 2);
+
+        $this->setContext(['do_not_unreserve' => true]);
 
         $this->update(['product_uom_qty' => $newProductQty]);
 

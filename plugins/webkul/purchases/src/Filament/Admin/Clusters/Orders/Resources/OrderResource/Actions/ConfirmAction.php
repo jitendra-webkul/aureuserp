@@ -30,7 +30,7 @@ class ConfirmAction extends Action
             ->requiresConfirmation()
             ->color(fn (): string => $this->getRecord()->state === OrderState::DRAFT ? 'gray' : 'primary')
             ->action(function (Order $record, Component $livewire): void {
-                try {
+                // try {
                     $record = PurchaseOrder::confirmPurchaseOrder($record);
 
                     $livewire->updateForm();
@@ -40,14 +40,14 @@ class ConfirmAction extends Action
                         ->body(__('purchases::filament/admin/clusters/orders/resources/order/actions/confirm.action.notification.success.body'))
                         ->success()
                         ->send();
-                } catch (Throwable $e) {
-                    Notification::make()
-                        ->danger()
-                        ->body($e->getMessage())
-                        ->send();
+                // } catch (Throwable $e) {
+                //     Notification::make()
+                //         ->danger()
+                //         ->body($e->getMessage())
+                //         ->send();
 
-                    $this->halt(shouldRollBackDatabaseTransaction: true);
-                }
+                //     $this->halt(shouldRollBackDatabaseTransaction: true);
+                // }
             })
             ->visible(function () {
                 $record = $this->getRecord();

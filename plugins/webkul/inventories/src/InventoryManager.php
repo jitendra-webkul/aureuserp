@@ -216,7 +216,8 @@ class InventoryManager
         }
 
         if ($merge) {
-            $moves = $this->mergeMoves($moves, mergeInto: $mergeInto);
+            $moves = $this->mergeMoves($moves, mergeInto: $mergeInto)
+                ->map(fn($move) => Move::find($move->id));
         }
 
         $negReturnMoves = $moves->filter(fn (Move $move) => float_compare($move->product_uom_qty, 0, precisionRounding: $move->uom->rounding) < 0
@@ -408,11 +409,13 @@ class InventoryManager
                     );
 
                     if ($toUpdate->isNotEmpty()) {
-                        $toUpdate->first()->increment('quantity', $move->product->uom->computeQuantity(
-                            $missingReservedQuantity,
-                            $move->uom,
-                            roundingMethod: 'HALF-UP'
-                        ));
+                        $toUpdate->first()->update([
+                            'qty' => $toUpdate->first()->qty + $move->product->uom->computeQuantity(
+                                $missingReservedQuantity,
+                                $move->uom,
+                                roundingMethod: 'HALF-UP'
+                            ),
+                        ]);
                     } else {
                         $moveLineValsList->push($move->prepareLineValues(quantity: $missingReservedQuantity));
                     }
@@ -1786,6 +1789,8 @@ class InventoryManager
                     if (float_compare($posMove->product_uom_qty, abs($negMove->product_uom_qty), precisionRounding: $posMove->uom->rounding) >= 0) {
                         $posMove->product_uom_qty += $negMove->product_uom_qty;
 
+                        $posMove->product_qty += $negMove->product_qty;
+
                         $moveDestinationIds = $negMove->moveDestinations
                             ->filter(fn ($move) => $move->source_location_id === $posMove->destination_location_id)
                             ->pluck('id')
@@ -1824,6 +1829,8 @@ class InventoryManager
                     $negMove->price_unit = round($newTotalValue / $negMove->product_qty, $priceUnitPrecision);
 
                     $posMove->product_uom_qty = 0;
+
+                    $posMove->save();
 
                     $movesToCancel->push($posMove);
                 }
@@ -1974,9 +1981,11 @@ class InventoryManager
         $movesToUnreserve
             ->filter(fn ($move) => ! $movesNotToRecompute->contains('id', $move->id))
             ->each(function($move) {
+                $move->computeQuantity();
+
                 $move->computeState();
 
-                $move->save();
+                $move->saveQuietly();
             });
 
         return true;

@@ -6,13 +6,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\In;
 use Webkul\Account\Enums as AccountEnums;
 use Webkul\Account\Facades\Account as AccountFacade;
 use Webkul\Account\Facades\Tax as TaxFacade;
 use Webkul\Account\Models\Partner;
 use Webkul\Inventory\Enums as InventoryEnums;
-use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
@@ -447,39 +447,67 @@ class PurchaseOrder
         return $pdfPath;
     }
 
-    protected function getInventoryOperationType(Order $record): ?OperationType
+    public function createOrUpdateInventoryOperation($lines): void
     {
-        $operationType = OperationType::where('type', InventoryEnums\OperationType::INCOMING)
-            ->whereHas('warehouse', function ($query) use ($record) {
-                $query->where('company_id', $record->company_id);
-            })
-            ->first();
-
-        if (! $operationType) {
-            $operationType = OperationType::where('type', InventoryEnums\OperationType::INCOMING)
-                ->whereDoesntHave('warehouse')
-                ->first();
+        if (! Package::isPluginInstalled('inventories')) {
+            return;
         }
 
-        return $operationType;
-    }
+        foreach ($lines as $line) {
+            if (! $line->product || $line->product->type !== ProductType::GOODS) {
+                continue;
+            }
 
-    public function getDestinationLocation(Order $order): Location
-    {
-        if ($order->destination_address_id && $order->operationType->type === InventoryEnums\OperationType::DROPSHIP) {
-            return Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
+            $order = $line->order->refresh();
+
+            $rounding = $line->uom->rounding;
+
+            if (float_compare($line->product_qty, $line->qty_received, precisionRounding: $rounding) < 0) {
+                throw new \Exception(__('You cannot decrease the ordered quantity below the received quantity.\nCreate a return first.'));
+            }
+
+            $lineOperations = $line->inventoryMoves
+                ->pluck('operation')
+                ->filter()
+                ->unique('id')
+                ->filter(fn($operation) => ! in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])
+                    && in_array($operation->destinationLocation->type, [InventoryEnums\LocationType::INTERNAL, InventoryEnums\LocationType::TRANSIT, InventoryEnums\LocationType::CUSTOMER])
+                );
+
+            if ($lineOperations->isNotEmpty()) {
+                $operation = $lineOperations->first();
+            } else {
+                $operation = $order->operations
+                    ->filter(fn($operation) => ! in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])
+                        && in_array($operation->destinationLocation->type, [InventoryEnums\LocationType::INTERNAL, InventoryEnums\LocationType::TRANSIT, InventoryEnums\LocationType::CUSTOMER])
+                    )
+                    ->first();
+            }
+
+            if (! $operation) {
+                if (! ($line->product_qty > $line->qty_received)) {
+                    continue;
+                }
+
+                $operationType = $this->getInventoryOperationType($order);
+
+                $order->update([
+                    'operation_type_id' => $operationType?->id,
+                ]);
+
+                $order->refresh();
+
+                $values = $this->prepareInventoryOperation($order);
+
+                $operation = Receipt::create($values);
+            }
+
+            $moves = $this->createInventoryMoves(collect([$line]), $operation);
+
+            $moves = InventoryFacade::confirmMoves($operation->moves);
+
+            InventoryFacade::assignMoves($moves);
         }
-
-        return $order->operationType->destinationLocation;
-    }
-
-    public function getFinalLocation(Order $order): Location
-    {
-        if ($order->destination_address_id && $order->operationType->type === InventoryEnums\OperationType::DROPSHIP) {
-            return Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
-        }
-
-        return $order->operationType->warehouse->lotStockLocation;
     }
 
     protected function createInventoryOperation(Order $record): void
@@ -502,6 +530,8 @@ class PurchaseOrder
             'operation_type_id' => $operationType?->id,
         ]);
 
+        $record->refresh();
+
         $operations = $record->operations->filter(
             fn($operation) => ! in_array($operation->state, [InventoryEnums\OperationState::DONE, InventoryEnums\OperationState::CANCELED])
         );
@@ -518,7 +548,7 @@ class PurchaseOrder
 
         $moves = $this->createInventoryMoves($record->lines, $operation);
 
-        $moves = $moves->filter(fn($m) => ! in_array($m->state, [InventoryEnums\MoveState::DONE, InventoryEnums\MoveState::CANCELED]));
+        $moves = $moves->filter(fn ($m) => ! in_array($m->state, [InventoryEnums\MoveState::DONE, InventoryEnums\MoveState::CANCELED]));
 
         $moves = InventoryFacade::confirmMoves($moves);
 
@@ -530,11 +560,17 @@ class PurchaseOrder
             $move->update(['sort' => $sort]);
         }
 
-        InventoryFacade::actionAssign($moves);
+        $operation->refresh();
+
+        InventoryFacade::assignMoves($operation->moves);
+
+        $operation->refresh();
 
         $forwardOperations = Receipt::getImpactedOperations($moves);
 
-        $operations->merge($forwardOperations)->each->actionConfirm();
+        $operations->merge($forwardOperations)->each(function ($operation) {
+            InventoryFacade::confirmTransfer($operation->refresh());
+        });
 
         $url = PurchaseOrderResource::getUrl('view', ['record' => $record]);
 
@@ -544,12 +580,12 @@ class PurchaseOrder
         ]);
     }
 
-    protected function createInventoryMoves($orderLines, Receipt $operation)
+    protected function createInventoryMoves($orderLines, $operation)
     {
         $values = [];
 
         foreach ($orderLines->filter(fn($line) => ! $line->display_type) as $line) {
-            foreach ($line->prepareInventoryMoves($operation) as $val) {
+            foreach ($this->prepareInventoryMoves($line, $operation) as $val) {
                 $values[] = $val;
             }
 
@@ -570,17 +606,26 @@ class PurchaseOrder
             $order->update([
                 'procurement_group_id' => $procurementGroup->id,
             ]);
+
+            $order->lines->each(function ($line) use ($procurementGroup) {
+                $line->update([
+                    'procurement_group_id' => $procurementGroup->id,
+                ]);
+            });
         }
 
+        $operationType = $this->getInventoryOperationType($order);
+
         return [
-            'state' => InventoryEnums\OperationState::DRAFT,
-            'date' => $order->ordered_at,
-            'origin' => $order->name,
-            'partner_id' => $order->partner_id,
-            'operation_type_id' => $order->operation_type_id,
-            'source_location_id' => $order->operationType->source_location_id,
+            'state'                   => InventoryEnums\OperationState::DRAFT,
+            'date'                    => $order->ordered_at,
+            'origin'                  => $order->name,
+            'partner_id'              => $order->partner_id,
+            'operation_type_id'       => $operationType->id,
+            'source_location_id'      => $operationType->source_location_id,
             'destination_location_id' => $this->getDestinationLocation($order)->id,
-            'company_id' => $order->company_id,
+            'procurement_group_id'    => $order->procurement_group_id,
+            'company_id'              => $order->company_id,
         ];
     }
 
@@ -592,7 +637,7 @@ class PurchaseOrder
             return $values;
         }
 
-        $priceUnit = $this->getInventoryMovePriceUnit($line);
+        $priceUnit = $line->getInventoryMovePriceUnit();
 
         $qty = $this->getQtyProcurement($line);
 
@@ -633,6 +678,104 @@ class PurchaseOrder
         }
 
         return $values;
+    }
+
+    public function prepareInventoryMoveValues(OrderLine $line, $operation, $priceUnit, $productUomQty, $productUom): array
+    {
+        $this->checkOrderPointOperationType($line);
+
+        $destinationLocation  = $this->getDestinationLocation($line->order);
+
+        $finalLocation = $line->final_location_id ? $line->finalLocation : $this->getFinalLocation($line->order);
+
+        if ($finalLocation && $finalLocation->isChildOf($destinationLocation)) {
+            $destinationLocation = $finalLocation;
+        }
+
+        $datePlanned = $line->planned_at ?? $line->order->planned_at;
+
+        return [
+            'name'                    => Str::limit($line->product->name ?? '', 2000, ''),
+            'product_id'              => $line->product_id,
+            'scheduled_at'            => $datePlanned,
+            'deadline'                => $datePlanned,
+            'source_location_id'      => $line->order->operationType->source_location_id,
+            'destination_location_id' => $destinationLocation->id,
+            'final_location_id'       => $finalLocation?->id,
+            'operation_id'            => $operation->id,
+            'partner_id'              => $line->order->destination_address_id,
+            'move_destination_ids'    => $line->moveDestinations->pluck('id')->all(),
+            'state'                   => InventoryEnums\MoveState::DRAFT,
+            'purchase_order_line_id'  => $line->id,
+            'company_id'              => $line->order->company_id,
+            'price_unit'              => $priceUnit,
+            'operation_type_id'       => $line->order->operation_type_id,
+            'procurement_group_id'    => $line->order->procurement_group_id,
+            'origin'                  => $line->order->name,
+            'description_picking'     => $line->product->description_pickingin ?? $line->name,
+            'propagate_cancel'        => $line->propagate_cancel,
+            'warehouse_id'            => $line->order->operationType->warehouse_id,
+            'product_uom_qty'         => $productUomQty,
+            'product_uom'             => $productUom->id,
+            'product_packaging_id'    => $line->product_packaging_id,
+            'sort'                    => $line->sort,
+        ];
+    }
+
+    public function checkOrderPointOperationType(OrderLine $line): void
+    {
+        $warehouseLocation = $line->order->operationType->warehouse->viewLocation;
+
+        $destinationLocation = $line->moveDestinations->first()?->sourceLocation ?? $line->orderPoint?->location;
+
+        if (
+            $warehouseLocation
+            && $destinationLocation
+            && $destinationLocation->warehouse_id
+            && ! Str::contains($destinationLocation->parent_path, $warehouseLocation->parent_path)
+        ) {
+            throw new \Exception(__('The warehouse of operation type (:operation_type) is inconsistent with location (:location) of reordering rule (:reordering_rule) for product :product. Change the operation type or cancel the request for quotation.', [
+                'product'         => $line->product->name,
+                'operation_type'  => $line->order->operationType->name,
+                'location'        => $line->orderPoint->location->full_name,
+                'reordering_rule' => $line->orderPoint->name,
+            ]));
+        }
+    }
+
+    protected function getInventoryOperationType(Order $record): ?OperationType
+    {
+        $operationType = OperationType::where('type', InventoryEnums\OperationType::INCOMING)
+            ->whereHas('warehouse', function ($query) use ($record) {
+                $query->where('company_id', $record->company_id);
+            })
+            ->first();
+
+        if (! $operationType) {
+            $operationType = OperationType::where('type', InventoryEnums\OperationType::INCOMING)
+                ->whereDoesntHave('warehouse')
+                ->first();
+        }
+
+        return $operationType;
+    }
+
+    public function getDestinationLocation(Order $order): Location
+    {
+        if ($order->destination_address_id && $order->operationType->type === InventoryEnums\OperationType::DROPSHIP) {
+            return Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
+        }
+
+        return $order->operationType->destinationLocation;
+    }
+
+    public function getFinalLocation(Order $order): Location
+    {
+        if ($order->destination_address_id && $order->operationType->type === InventoryEnums\OperationType::DROPSHIP) {
+            return Location::where('type', InventoryEnums\LocationType::CUSTOMER)->first();
+        }
+
+        return $order->operationType->warehouse->lotStockLocation;
     }
 
     public function getQtyProcurement(OrderLine $line): float

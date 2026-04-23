@@ -19,6 +19,7 @@ use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\ProcurementGroup;
+use Webkul\Inventory\Models\Receipt;
 use Webkul\Purchase\Database\Factories\OrderFactory;
 use Webkul\Purchase\Enums\OrderInvoiceStatus;
 use Webkul\Purchase\Enums\OrderReceiptStatus;
@@ -186,7 +187,7 @@ class Order extends Model
 
     public function operations(): BelongsToMany
     {
-        return $this->belongsToMany(Operation::class, 'purchases_order_operations', 'purchase_order_id', 'inventory_operation_id');
+        return $this->belongsToMany(Receipt::class, 'purchases_order_operations', 'purchase_order_id', 'inventory_operation_id');
     }
 
     public function procurementGroup(): BelongsTo

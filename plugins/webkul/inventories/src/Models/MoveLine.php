@@ -224,11 +224,13 @@ class MoveLine extends Model
         });
 
         static::updated(function ($moveLine) {
-            $moveLine->move->computeQuantity();
+            if ($moveLine->wasChanged('qty') || $moveLine->wasChanged('uom_id')) {
+                $moveLine->move->computeQuantity();
 
-            $moveLine->move->computeState();
+                $moveLine->move->computeState();
 
-            $moveLine->move->save();
+                $moveLine->move->save();
+            }
         });
 
         static::deleting(function ($moveLine) {
@@ -290,7 +292,7 @@ class MoveLine extends Model
 
     public function computeIsPicked()
     {
-        $this->is_picked ??= $this->move?->is_picked;
+        $this->is_picked ??= $this->move?->is_picked ?? false;
     }
 
     public function computeSourceLocationId()
