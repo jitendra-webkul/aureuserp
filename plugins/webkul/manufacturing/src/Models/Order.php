@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\OrderPoint;
+use Webkul\Inventory\Models\ProcurementGroup;
 use Webkul\Manufacturing\Database\Factories\OrderFactory;
 use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
 use Webkul\Manufacturing\Enums\ManufacturingOrderPriority;
@@ -105,6 +106,11 @@ class Order extends Model
         return $this->belongsTo(Location::class, 'final_location_id')->withTrashed();
     }
 
+    public function productionLocation(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'production_location_id')->withTrashed();
+    }
+
     public function billOfMaterial(): BelongsTo
     {
         return $this->belongsTo(BillOfMaterial::class, 'bill_of_material_id')->withTrashed();
@@ -123,6 +129,11 @@ class Order extends Model
     public function orderPoint(): BelongsTo
     {
         return $this->belongsTo(OrderPoint::class, 'order_point_id')->withTrashed();
+    }
+
+    public function procurementGroup(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementGroup::class, 'procurement_group_id');
     }
 
     public function creator(): BelongsTo
@@ -163,10 +174,44 @@ class Order extends Model
             $authUser = Auth::user();
 
             $order->creator_id ??= $authUser?->id;
+
             $order->company_id ??= $authUser?->default_company_id;
+
             $order->priority ??= ManufacturingOrderPriority::NORMAL;
+
             $order->state ??= ManufacturingOrderState::DRAFT;
+            
+            $order->consumption ??= BillOfMaterialConsumption::FLEXIBLE;
+
             $order->started_at ??= now();
+
+            $order->computeName();
+
+            if (! $order->procurement_group_id) {
+                $order->procurement_group_id = $order->procurementGroup()->create([
+                    'name' => $order->name,
+                ])->id;
+            }
+
+            $order->computeProductionLocationId();
         });
+
+        static::saving(function ($order) {
+            $order->computeName();
+        });
+
+        static::created(function ($order) {
+            $order->update(['name' => $order->name]);
+        });
+    }
+
+    public function computeName()
+    {
+        $this->name = 'MO/'.$this->id;
+    }
+
+    public function computeProductionLocationId()
+    {
+        $this->production_location_id = Location::where('type', 'production')->where('company_id', $this->company_id)->first()?->id;
     }
 }

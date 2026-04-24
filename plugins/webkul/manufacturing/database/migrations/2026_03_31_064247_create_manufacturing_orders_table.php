@@ -24,7 +24,6 @@ return new class extends Migration
             $table->timestamp('deadline_at')->nullable();
             $table->timestamp('started_at')->useCurrent();
             $table->timestamp('finished_at')->nullable();
-            $table->unsignedBigInteger('production_location_id')->nullable()->index();
             $table->unsignedBigInteger('procurement_group_id')->nullable()->index();
 
             $table->foreignId('product_id')
@@ -55,6 +54,16 @@ return new class extends Migration
             $table->foreignId('final_location_id')
                 ->nullable()
                 ->constrained('inventories_locations')
+                ->nullOnDelete();
+
+            $table->foreignId('production_location_id')
+                ->nullable()
+                ->constrained('inventories_locations')
+                ->nullOnDelete();
+
+            $table->foreignId('procurement_group_id')
+                ->nullable()
+                ->constrained('inventories_procurement_groups')
                 ->nullOnDelete();
 
             $table->foreignId('bill_of_material_id')

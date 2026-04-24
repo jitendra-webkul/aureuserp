@@ -53,6 +53,15 @@ class WorkOrder extends Model
         'costs_per_hour'          => 'decimal:4',
     ];
 
+    protected array $context = [];
+
+    public function setContext(array $context)
+    {
+        $this->context = array_merge($this->context, $context);
+
+        return $this;
+    }
+
     public function getModelTitle(): string
     {
         return __('manufacturing::models/work-order.title');
@@ -114,7 +123,66 @@ class WorkOrder extends Model
 
         static::creating(function (self $workOrder): void {
             $workOrder->creator_id ??= Auth::id();
+
             $workOrder->state ??= WorkOrderState::PENDING;
         });
+
+        static::saving(function ($order) {
+            $order->computeName();
+
+            $order->computeBarcode();
+
+            $order->computeUOMId();
+
+            $order->computeState();
+        });
+
+        static::created(function ($order) {
+            $order->update(['name' => $order->name]);
+        });
+    }
+
+    public function computeName()
+    {
+        $this->name = $this->operation->name;
+    }
+
+    public function computeBarcode()
+    {
+        $this->barcode = 'MO/'.$this->manufacturingOrder->id.'/'.$this->id;
+    }
+
+    public function computeUOMId()
+    {
+        $this->uom_id = $this->product?->uom_id;
+    }
+
+    public function computeState()
+    {
+        if (! in_array($this->state, [WorkOrderState::PENDING, WorkOrderState::WAITING, WorkOrderState::READY])) {
+            return;
+        }
+
+        $blockedByWorkOrders = $this->blockedByWorkOrders;
+
+        if ($this->production_availability === WorkOrderProductionAvailability::ASSIGNED) {
+            $this->state = $blockedByWorkOrders->every(fn($wo) => in_array($wo->state, [WorkOrderState::DONE, WorkOrderState::CANCEL]))
+                ? WorkOrderState::READY
+                : WorkOrderState::PENDING;
+            return;
+        }
+
+        if ($this->context['no_recursion'] ?? false) {
+            return;
+        }
+
+        if (
+            $blockedByWorkOrders->isNotEmpty()
+            && ! $blockedByWorkOrders->every(fn($wo) => in_array($wo->state, [WorkOrderState::DONE, WorkOrderState::CANCEL]))
+        ) {
+            $this->state = WorkOrderState::PENDING;
+        } else {
+            $this->state = WorkOrderState::WAITING;
+        }
     }
 }

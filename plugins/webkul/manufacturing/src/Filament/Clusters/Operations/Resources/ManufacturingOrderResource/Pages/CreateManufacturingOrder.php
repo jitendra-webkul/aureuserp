@@ -12,6 +12,8 @@ class CreateManufacturingOrder extends CreateRecord
 {
     use HasRepeaterColumnManager;
 
+    protected ?bool $hasDatabaseTransactions = true;
+
     protected static string $resource = ManufacturingOrderResource::class;
 
     public static function getSubNavigationPosition(): SubNavigationPosition

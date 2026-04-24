@@ -58,7 +58,7 @@ class ManufacturingOrderResource extends Resource
 
     protected static ?string $cluster = Operations::class;
 
-    protected static ?string $recordTitleAttribute = 'reference';
+    protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 1;
 
@@ -309,7 +309,7 @@ class ManufacturingOrderResource extends Resource
         return $table
             ->reorderableColumns()
             ->columns([
-                TextColumn::make('reference')
+                TextColumn::make('name')
                     ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.table.columns.reference'))
                     ->searchable(),
                 TextColumn::make('product.name')
@@ -332,7 +332,7 @@ class ManufacturingOrderResource extends Resource
                     ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.table.columns.state'))
                     ->badge(),
             ])
-            ->recordTitleAttribute('reference')
+            ->recordTitleAttribute('name')
             ->actions([
                 ViewAction::make(),
                 EditAction::make(),
@@ -662,6 +662,7 @@ class ManufacturingOrderResource extends Resource
     protected static function getWorkOrdersRepeater(): Repeater
     {
         return Repeater::make('workOrders')
+            ->relationship('workOrders')
             ->hiddenLabel()
             ->defaultItems(0)
             ->addable(false)

@@ -14,6 +14,8 @@ class EditManufacturingOrder extends EditRecord
 {
     use HasRecordNavigationTabs, HasRepeaterColumnManager;
 
+    protected ?bool $hasDatabaseTransactions = true;
+
     protected static string $resource = ManufacturingOrderResource::class;
 
     public function getTitle(): string
