@@ -70,7 +70,8 @@ class ManufacturingServiceProvider extends PackageServiceProvider
             ->hasInstallCommand(function (InstallCommand $command): void {
                 $command
                     ->installDependencies()
-                    ->runsMigrations();
+                    ->runsMigrations()
+                    ->runsSeeders();
             })
             ->hasUninstallCommand(function (UninstallCommand $command): void {})
             ->icon('manufacturing');

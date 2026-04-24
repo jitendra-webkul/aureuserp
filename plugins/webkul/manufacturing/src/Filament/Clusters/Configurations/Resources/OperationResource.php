@@ -3,9 +3,11 @@
 namespace Webkul\Manufacturing\Filament\Clusters\Configurations\Resources;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
+use Filament\Support\Enums\Width;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteAction;
@@ -123,7 +125,9 @@ class OperationResource extends Resource
                                     ->relationship('workCenter', 'name')
                                     ->searchable()
                                     ->preload()
-                                    ->required(),
+                                    ->required()
+                                    ->createOptionForm(fn (Schema $schema): Schema => WorkCenterResource::form($schema))
+                                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge)),
 
                                 Select::make('attributeValues')
                                     ->label(__('manufacturing::filament/clusters/configurations/resources/operation.form.sections.general.fields.apply-on-variants'))

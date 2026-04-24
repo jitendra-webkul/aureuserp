@@ -146,7 +146,9 @@ class ManufacturingOrderResource extends Resource
                                         }
 
                                         $set('uom_id', $product->uom_id ?: static::getDefaultUomId());
+
                                         $set('company_id', $product->company_id ?? Auth::user()?->default_company_id);
+
                                         $billOfMaterialId = static::getDefaultBillOfMaterialId($product);
 
                                         if (! $billOfMaterialId) {
@@ -254,7 +256,7 @@ class ManufacturingOrderResource extends Resource
                                                 'name',
                                                 fn (Builder $query) => $query
                                                     ->withTrashed()
-                                                    ->where('type', 'manufacturing')
+                                                    ->where('type', 'manufacture')
                                             )
                                             ->getOptionLabelFromRecordUsing(fn (OperationType $record): string => static::getOperationTypeLabel($record))
                                             ->searchable()
@@ -267,7 +269,6 @@ class ManufacturingOrderResource extends Resource
 
                                                 $set('source_location_id', $operationType?->source_location_id);
                                                 $set('destination_location_id', $operationType?->destination_location_id);
-                                                $set('final_location_id', $operationType?->destination_location_id);
                                             }),
                                         Select::make('source_location_id')
                                             ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.miscellaneous.fields.source'))
@@ -276,9 +277,9 @@ class ManufacturingOrderResource extends Resource
                                             ->preload()
                                             ->native(false)
                                             ->wrapOptionLabels(false),
-                                        Select::make('final_location_id')
+                                        Select::make('destination_location_id')
                                             ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.miscellaneous.fields.finished-products-location'))
-                                            ->relationship('finalLocation', 'full_name', fn (Builder $query) => $query->withTrashed())
+                                            ->relationship('destinationLocation', 'full_name', fn (Builder $query) => $query->withTrashed())
                                             ->searchable()
                                             ->preload()
                                             ->native(false)
@@ -480,26 +481,29 @@ class ManufacturingOrderResource extends Resource
             return;
         }
 
+        if ($billOfMaterial->operation_type_id) {
+            $operationType = OperationType::query()->withTrashed()->find($billOfMaterial->operation_type_id);
+        } else {
+            $operationType = OperationType::query()->withTrashed()->where('type', 'manufacture')->first();
+        }
+
+        $set('operation_type_id', $operationType->id);
+
+        $set('source_location_id', $operationType?->source_location_id);
+
+        $set('destination_location_id', $operationType?->destination_location_id);
+
         $set('uom_id', $billOfMaterial->uom_id ?: static::getDefaultUomId());
+
         $set('company_id', $billOfMaterial->company_id);
+
         $set('rawMaterialMoves', static::getComponentRepeaterState($billOfMaterial, $quantity));
+
         $set('workOrders', static::getWorkOrderRepeaterState(
             $billOfMaterial,
             $product ?? $billOfMaterial->product,
             $quantity,
         ));
-
-        if (! $billOfMaterial->operation_type_id) {
-            return;
-        }
-
-        $set('operation_type_id', $billOfMaterial->operation_type_id);
-
-        $operationType = OperationType::query()->withTrashed()->find($billOfMaterial->operation_type_id);
-
-        $set('source_location_id', $operationType?->source_location_id);
-        $set('destination_location_id', $operationType?->destination_location_id);
-        $set('final_location_id', $operationType?->destination_location_id);
     }
 
     protected static function getBillOfMaterialLabel(?BillOfMaterial $billOfMaterial): string
@@ -598,20 +602,7 @@ class ManufacturingOrderResource extends Resource
             ])
             ->schema([
                 Hidden::make('name'),
-                Hidden::make('product_qty'),
-                Hidden::make('quantity'),
                 Hidden::make('source_location_id'),
-                Hidden::make('destination_location_id'),
-                Hidden::make('final_location_id'),
-                Hidden::make('operation_type_id'),
-                Hidden::make('company_id'),
-                Hidden::make('scheduled_at'),
-                Hidden::make('warehouse_id'),
-                Hidden::make('state'),
-                Hidden::make('procure_method'),
-                Hidden::make('reference'),
-                Hidden::make('creator_id'),
-                Hidden::make('bom_line_id'),
                 Hidden::make('display_from'),
                 Hidden::make('display_forecast'),
                 Select::make('product_id')
@@ -632,10 +623,7 @@ class ManufacturingOrderResource extends Resource
 
                         $uomId = $product?->uom_id ?: static::getDefaultUomId();
 
-                        $set('name', $product?->name);
                         $set('uom_id', $uomId);
-                        $set('product_qty', (float) ($get('product_uom_qty') ?: 0));
-                        $set('quantity', (float) ($get('product_uom_qty') ?: 0));
                     })
                     ->required(),
                 Placeholder::make('rendered_display_from')
@@ -647,17 +635,12 @@ class ManufacturingOrderResource extends Resource
                     ->minValue(0)
                     ->default(0)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(function (Set $set, ?string $state): void {
-                        $quantity = (float) ($state ?: 0);
-
-                        $set('product_qty', $quantity);
-                        $set('quantity', $quantity);
-                    })
                     ->required(),
                 Select::make('uom_id')
                     ->hiddenLabel()
                     ->options(function (Get $get): array {
                         $product = Product::query()->withTrashed()->find($get('product_id'));
+                        
                         $categoryId = $product?->uom?->category_id;
 
                         return UOM::query()
@@ -698,9 +681,6 @@ class ManufacturingOrderResource extends Resource
                     ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.columns.expected-duration')),
                 RepeaterTableColumn::make('rendered_display_real_duration')
                     ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.columns.real-duration')),
-                RepeaterTableColumn::make('rendered_display_lot_serial')
-                    ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.columns.lot-serial'))
-                    ->toggleable(isToggledHiddenByDefault: true),
                 RepeaterTableColumn::make('started_at')
                     ->label(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.columns.start'))
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -711,12 +691,9 @@ class ManufacturingOrderResource extends Resource
             ->schema([
                 Hidden::make('name'),
                 Hidden::make('product_id'),
-                Hidden::make('uom_id'),
                 Hidden::make('duration'),
-                Hidden::make('costs_per_hour'),
                 Hidden::make('quantity_remaining'),
                 Hidden::make('display_product'),
-                Hidden::make('display_lot_serial'),
                 Select::make('operation_id')
                     ->hiddenLabel()
                     ->options(fn (): array => Operation::query()->withTrashed()->pluck('name', 'id')->all())
@@ -757,9 +734,6 @@ class ManufacturingOrderResource extends Resource
                 Placeholder::make('rendered_display_real_duration')
                     ->hiddenLabel()
                     ->content(fn (Get $get): string => format_float_time((float) ($get('duration') ?: 0), 'minutes')),
-                Placeholder::make('rendered_display_lot_serial')
-                    ->hiddenLabel()
-                    ->content(fn (Get $get): string => (string) ($get('display_lot_serial') ?: '—')),
                 DateTimePicker::make('started_at')
                     ->hiddenLabel()
                     ->native(false)
@@ -774,32 +748,24 @@ class ManufacturingOrderResource extends Resource
     protected static function getComponentRepeaterState(BillOfMaterial $billOfMaterial, float $quantity): array
     {
         $quantityMultiplier = $billOfMaterial->getQuantityMultiplier($quantity);
-        $sourceLocationId = $billOfMaterial->operationType?->source_location_id;
-        $destinationLocationId = $billOfMaterial->operationType?->destination_location_id;
+
+        if ($billOfMaterial->operation_type_id) {
+            $operationType = $billOfMaterial->operationType;
+        } else {
+            $operationType = OperationType::query()->withTrashed()->where('type', 'manufacture')->first();
+        }
 
         return $billOfMaterial->lines()
             ->with(['product', 'uom'])
             ->orderBy('sort')
             ->get()
             ->map(fn (BillOfMaterialLine $line): array => [
-                'name'                    => $line->product?->name ?? '—',
-                'product_id'              => $line->product_id,
-                'uom_id'                  => $line->uom_id,
-                'product_qty'             => round((float) $line->quantity * $quantityMultiplier, 4),
-                'product_uom_qty'         => round((float) $line->quantity * $quantityMultiplier, 4),
-                'quantity'                => round((float) $line->quantity * $quantityMultiplier, 4),
-                'source_location_id'      => $sourceLocationId,
-                'destination_location_id' => $destinationLocationId,
-                'final_location_id'       => $destinationLocationId,
-                'operation_type_id'       => $billOfMaterial->operation_type_id,
-                'company_id'              => $billOfMaterial->company_id,
-                'scheduled_at'            => now(),
-                'bom_line_id'             => $line->id,
-                'display_component'       => $line->product?->name ?? '—',
-                'display_from'            => $billOfMaterial->operationType?->sourceLocation?->full_name ?? '—',
-                'display_to_consume'      => round((float) $line->quantity * $quantityMultiplier, 4),
-                'display_uom'             => $line->uom?->name ?? '—',
-                'display_forecast'        => '—',
+                'product_id'         => $line->product_id,
+                'uom_id'             => $line->uom_id,
+                'product_uom_qty'    => round((float) $line->quantity * $quantityMultiplier, 4),
+                'source_location_id' => $operationType->source_location_id,
+                'display_from'       => $operationType?->sourceLocation?->full_name ?? '—',
+                'display_forecast'   => '—',
             ])
             ->values()
             ->all();
@@ -814,21 +780,13 @@ class ManufacturingOrderResource extends Resource
             ->orderBy('sort')
             ->get()
             ->map(fn (Operation $operation): array => [
-                'name'                      => $operation->name,
                 'operation_id'              => $operation->id,
                 'work_center_id'            => $operation->work_center_id,
                 'product_id'                => $product?->id,
-                'uom_id'                    => $billOfMaterial->uom_id,
                 'expected_duration'         => format_float_time($operation->getExpectedDuration($product, $quantity), 'minutes'),
                 'duration'                  => 0,
-                'costs_per_hour'            => $operation->workCenter?->costs_per_hour,
                 'quantity_remaining'        => round($quantity, 4),
-                'display_operation'         => $operation->name,
-                'display_work_center'       => $operation->workCenter?->name ?? '—',
                 'display_product'           => $product?->name ?? '—',
-                'display_lot_serial'        => '—',
-                'display_start'             => '—',
-                'display_end'               => '—',
             ])
             ->values()
             ->all();
