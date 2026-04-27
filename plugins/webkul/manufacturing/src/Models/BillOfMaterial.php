@@ -14,6 +14,7 @@ use Webkul\Manufacturing\Database\Factories\BillOfMaterialFactory;
 use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
 use Webkul\Manufacturing\Enums\BillOfMaterialReadyToProduce;
 use Webkul\Manufacturing\Enums\BillOfMaterialType;
+use Webkul\Product\Enums\ProductType;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\UOM;
@@ -50,6 +51,15 @@ class BillOfMaterial extends Model
         'produce_delay'                => 'integer',
         'days_to_prepare_mo'           => 'integer',
     ];
+
+    protected array $context = [];
+
+    public function setContext(array $context)
+    {
+        $this->context = array_merge($this->context, $context);
+
+        return $this;
+    }
 
     public function getModelTitle(): string
     {
@@ -239,5 +249,219 @@ class BillOfMaterial extends Model
             $billOfMaterial->produce_delay ??= 0;
             $billOfMaterial->days_to_prepare_mo ??= 0;
         });
+    }
+
+    public static function bomFindFilters($products, $operationType = null, $companyId = null, $bomType = false)
+    {
+        $productIds     = $products->pluck('id')->all();
+        $productTmplIds = $products->pluck('product_tmpl_id')->unique()->all();
+
+        $query = static::query()
+            ->where(function ($q) use ($productIds, $productTmplIds) {
+                $q->whereIn('product_id', $productIds);
+                    // ->orWhere(function ($q2) use ($productTmplIds) {
+                    //     $q2->whereNull('product_id')
+                    //         ->whereIn('product_tmpl_id', $productTmplIds);
+                    // });
+            });
+
+        $resolvedCompanyId = $companyId ?? (static::$context['company_id'] ?? null);
+
+        if ($resolvedCompanyId) {
+            $query->where(function ($q) use ($resolvedCompanyId) {
+                $q->whereNull('company_id')
+                    ->orWhere('company_id', $resolvedCompanyId);
+            });
+        }
+
+        if ($operationType) {
+            $query->where(function ($q) use ($operationType) {
+                $q->where('operation_type_id', $operationType->id)
+                    ->orWhereNull('operation_type_id');
+            });
+        }
+
+        if ($bomType) {
+            $query->where('type', $bomType);
+        }
+
+        return $query;
+    }
+    
+
+    public static function bomFind($products, $operationType = null, $companyId = false, $bomType = false): array
+    {
+        $bomByProduct = [];
+
+        $products = $products->filter(fn ($product) => $product->type !== ProductType::SERVICE);
+
+        if ($products->isEmpty()) {
+            return $bomByProduct;
+        }
+
+        $query = static::bomFindFilters($products, operationType: $operationType, companyId: $companyId, bomType: $bomType)
+            // ->orderBy('sequence')
+            ->orderBy('product_id')
+            ->orderBy('id');
+
+        if ($products->count() === 1) {
+            $bom = $query->first();
+
+            if ($bom) {
+                $bomByProduct[$products->first()->id] = $bom;
+            }
+
+            return $bomByProduct;
+        }
+
+        $billOfMaterials = $query->get();
+
+        $productIds = $products->pluck('id')->all();
+
+        foreach ($billOfMaterials as $bom) {
+            $productsImplies = $bom->product ?: $bom->productTemplate->productVariants;
+
+            if (! $productsImplies instanceof \Illuminate\Support\Collection) {
+                $productsImplies = collect([$productsImplies]);
+            }
+
+            foreach ($productsImplies as $product) {
+                if (
+                    in_array($product->id, $productIds)
+                    && ! array_key_exists($product->id, $bomByProduct)
+                ) {
+                    $bomByProduct[$product->id] = $bom;
+                }
+            }
+        }
+
+        return $bomByProduct;
+    }
+
+    public function explode($product, $quantity, $operationType = false, $neverAttributeValues = false): array
+    {
+        $productIds = [];
+
+        $productBillOfMaterials = [];
+
+        $updateProductBillOfMaterials = function () use (&$productIds, &$productBillOfMaterials, $operationType) {
+            $products = Product::whereIn('id', $productIds)->get();
+
+            $productBillOfMaterials = array_replace(
+                $productBillOfMaterials,
+                $this->bomFind(
+                    $products,
+                    operationType: $operationType ?: $this->operationType,
+                    companyId: $this->company_id,
+                    bomType: 'phantom'
+                )
+            );
+
+            foreach ($products as $product) {
+                if (! array_key_exists($product->id, $productBillOfMaterials)) {
+                    $productBillOfMaterials[$product->id] = null;
+                }
+            }
+        };
+
+        $billOfMaterialsDone = [
+            [
+                $this,
+                [
+                    'qty'          => $quantity,
+                    'product'      => $product,
+                    'original_qty' => $quantity,
+                    'parent_line'  => false,
+                ],
+            ],
+        ];
+
+        $linesDone = [];
+
+        $lines = [];
+
+        foreach ($this->lines as $line) {
+            $productId = $line->product;
+
+            $lines[] = [$line, $product, $quantity, false];
+
+            $productIds[] = $productId->id;
+        }
+
+        $updateProductBillOfMaterials();
+
+        $productIds = [];
+
+        while (! empty($lines)) {
+            [$currentLine, $currentProduct, $currentQty, $parentLine] = $lines[0];
+
+            $lines = array_slice($lines, 1);
+
+            if ($currentLine->skipBomLine($currentProduct, $neverAttributeValues)) {
+                continue;
+            }
+
+            $lineQuantity = $currentQty * $currentLine->quantity;
+
+            if (! array_key_exists($currentLine->product_id, $productBillOfMaterials)) {
+                $updateProductBillOfMaterials();
+
+                $productIds = [];
+            }
+
+            $bom = $productBillOfMaterials[$currentLine->product_id] ?? null;
+
+            if ($bom) {
+                $convertedLineQuantity = $currentLine->uom->computeQuantity(
+                    $lineQuantity / $bom->quantity,
+                    $bom->uom
+                );
+
+                foreach ($bom->lines as $line) {
+                    $lines[] = [
+                        $line,
+                        $currentLine->product,
+                        $convertedLineQuantity,
+                        $currentLine,
+                    ];
+                }
+
+                foreach ($bom->lines as $bomLine) {
+                    if (! array_key_exists($bomLine->product_id, $productBillOfMaterials)) {
+                        $productIds[] = $bomLine->product_id;
+                    }
+                }
+
+                $billOfMaterialsDone[] = [
+                    $bom,
+                    [
+                        'qty'          => $convertedLineQuantity,
+                        'product'      => $currentProduct,
+                        'original_qty' => $quantity,
+                        'parent_line'  => $currentLine,
+                    ],
+                ];
+            } else {
+                $rounding = $currentLine->uom->rounding;
+
+                $lineQuantity = float_round(
+                    $lineQuantity,
+                    precisionRounding: $rounding,
+                    roundingMethod: 'UP'
+                );
+
+                $linesDone[] = [
+                    $currentLine,
+                    [
+                        'qty'          => $lineQuantity,
+                        'product'      => $currentProduct,
+                        'original_qty' => $quantity,
+                        'parent_line'  => $parentLine,
+                    ],
+                ];
+            }
+        }
+
+        return [$billOfMaterialsDone, $linesDone];
     }
 }

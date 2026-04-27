@@ -3,6 +3,7 @@
 namespace Webkul\Manufacturing\Filament\Clusters\Operations\Resources;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -27,14 +28,17 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Field\Filament\Forms\Components\ProgressStepper as FormProgressStepper;
 use Webkul\Field\Filament\Infolists\Components\ProgressStepper as InfolistProgressStepper;
+use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
+use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource as ConfigurationOperationResource;
 use Webkul\Manufacturing\Filament\Clusters\Operations;
 use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource\Pages\CreateManufacturingOrder;
 use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource\Pages\EditManufacturingOrder;
@@ -47,6 +51,7 @@ use Webkul\Manufacturing\Models\Operation;
 use Webkul\Manufacturing\Models\Order;
 use Webkul\Manufacturing\Models\Product;
 use Webkul\Manufacturing\Models\WorkCenter;
+use Webkul\Manufacturing\Models\WorkOrder;
 use Webkul\Product\Enums\ProductType;
 use Webkul\Support\Filament\Forms\Components\Repeater;
 use Webkul\Support\Filament\Forms\Components\Repeater\TableColumn as RepeaterTableColumn;
@@ -584,7 +589,8 @@ class ManufacturingOrderResource extends Resource
             ->relationship('rawMaterialMoves')
             ->hiddenLabel()
             ->defaultItems(0)
-            ->addable(false)
+            ->addActionLabel(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.components.add-action'))
+            ->addable(fn (?Order $record): bool => ! in_array($record?->state, [ManufacturingOrderState::DONE, ManufacturingOrderState::CANCEL]))
             ->deletable(true)
             ->reorderable(false)
             ->compact()
@@ -603,10 +609,17 @@ class ManufacturingOrderResource extends Resource
             ])
             ->schema([
                 Hidden::make('name'),
-                Hidden::make('operation_type_id'),
+                Hidden::make('operation_type_id')
+                    ->default(fn (Get $get): mixed => $get('../../operation_type_id')),
                 Hidden::make('bom_line_id'),
-                Hidden::make('source_location_id'),
-                Hidden::make('display_from'),
+                Hidden::make('source_location_id')
+                    ->default(fn (Get $get): mixed => $get('../../source_location_id')),
+                Hidden::make('display_from')
+                    ->default(function (Get $get): string {
+                        $sourceLocation = Location::query()->withTrashed()->find($get('../../source_location_id'));
+
+                        return $sourceLocation?->full_name ?? '—';
+                    }),
                 Hidden::make('display_forecast'),
                 Select::make('product_id')
                     ->hiddenLabel()
@@ -631,7 +644,15 @@ class ManufacturingOrderResource extends Resource
                     ->required(),
                 Placeholder::make('rendered_display_from')
                     ->hiddenLabel()
-                    ->content(fn (Get $get): string => (string) ($get('display_from') ?: '—')),
+                    ->content(function (Get $get): string {
+                        $sourceLocation = Location::query()->withTrashed()->find($get('source_location_id'));
+
+                        if ($sourceLocation) {
+                            return $sourceLocation->full_name;
+                        }
+
+                        return (string) ($get('display_from') ?: '—');
+                    }),
                 TextInput::make('product_uom_qty')
                     ->hiddenLabel()
                     ->numeric()
@@ -641,9 +662,10 @@ class ManufacturingOrderResource extends Resource
                     ->required(),
                 Select::make('uom_id')
                     ->hiddenLabel()
+                    ->default(fn (Get $get): mixed => $get('../../uom_id'))
                     ->options(function (Get $get): array {
                         $product = Product::query()->withTrashed()->find($get('product_id'));
-                        
+
                         $categoryId = $product?->uom?->category_id;
 
                         return UOM::query()
@@ -668,7 +690,8 @@ class ManufacturingOrderResource extends Resource
             ->relationship('workOrders')
             ->hiddenLabel()
             ->defaultItems(0)
-            ->addable(false)
+            ->addActionLabel(__('manufacturing::filament/clusters/operations/resources/manufacturing-order.form.tabs.work-orders.add-action'))
+            ->addable(fn (?Order $record): bool => ! in_array($record?->state, [ManufacturingOrderState::DONE, ManufacturingOrderState::CANCEL]))
             ->deletable(true)
             ->reorderable(false)
             ->compact()
@@ -694,10 +717,18 @@ class ManufacturingOrderResource extends Resource
             ])
             ->schema([
                 Hidden::make('name'),
-                Hidden::make('product_id'),
-                Hidden::make('duration'),
-                Hidden::make('quantity_remaining'),
-                Hidden::make('display_product'),
+                Hidden::make('product_id')
+                    ->default(fn (Get $get): mixed => $get('../../product_id')),
+                Hidden::make('duration')
+                    ->default(0),
+                Hidden::make('quantity_remaining')
+                    ->default(fn (Get $get): float => (float) ($get('../../quantity') ?: 0)),
+                Hidden::make('display_product')
+                    ->default(function (Get $get): string {
+                        $product = Product::query()->withTrashed()->find($get('../../product_id'));
+
+                        return $product?->name ?? '—';
+                    }),
                 Select::make('operation_id')
                     ->hiddenLabel()
                     ->options(fn (): array => Operation::query()->withTrashed()->pluck('name', 'id')->all())
@@ -705,6 +736,8 @@ class ManufacturingOrderResource extends Resource
                     ->preload()
                     ->native(false)
                     ->wrapOptionLabels(false)
+                    ->createOptionForm(fn (Schema $schema): Schema => ConfigurationOperationResource::form($schema->model(Operation::class)))
+                    ->createOptionAction(fn (Action $action) => $action->modalWidth(Width::SevenExtraLarge))
                     ->live()
                     ->afterStateUpdated(function (Set $set, ?string $state): void {
                         $operation = Operation::query()->withTrashed()->find($state);
@@ -723,10 +756,40 @@ class ManufacturingOrderResource extends Resource
                     ->required(),
                 Placeholder::make('rendered_display_product')
                     ->hiddenLabel()
-                    ->content(fn (Get $get): string => (string) ($get('display_product') ?: '—')),
+                    ->content(function (Get $get): string {
+                        $workOrderId = $get('id');
+
+                        if ($workOrderId) {
+                            $workOrder = WorkOrder::query()->with(['product'])->find($workOrderId);
+
+                            if ($workOrder?->product) {
+                                return $workOrder->product->name;
+                            }
+                        }
+
+                        $product = Product::query()->withTrashed()->find($get('product_id'));
+
+                        if ($product) {
+                            return $product->name;
+                        }
+
+                        return (string) ($get('display_product') ?: '—');
+                    }),
                 Placeholder::make('rendered_display_quantity_remaining')
                     ->hiddenLabel()
-                    ->content(fn (Get $get): string => number_format((float) ($get('quantity_remaining') ?: 0), 4)),
+                    ->content(function (Get $get): string {
+                        $workOrderId = $get('id');
+
+                        if ($workOrderId) {
+                            $workOrder = WorkOrder::query()->find($workOrderId);
+
+                            if ($workOrder) {
+                                return number_format((float) $workOrder->quantity_remaining, 4);
+                            }
+                        }
+
+                        return number_format((float) ($get('quantity_remaining') ?: 0), 4);
+                    }),
                 TextInput::make('expected_duration')
                     ->hiddenLabel()
                     ->default('00:00')

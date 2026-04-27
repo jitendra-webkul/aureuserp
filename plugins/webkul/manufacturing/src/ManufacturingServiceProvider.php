@@ -5,7 +5,9 @@ namespace Webkul\Manufacturing;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Foundation\AliasLoader;
 use Webkul\Inventory\Models\Warehouse;
+use Webkul\Manufacturing\Facades\Manufacturing as ManufacturingFacade;
 use Webkul\Manufacturing\Observers\WarehouseObserver;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
@@ -89,6 +91,12 @@ class ManufacturingServiceProvider extends PackageServiceProvider
         Panel::configureUsing(function (Panel $panel): void {
             $panel->plugin(ManufacturingPlugin::make());
         });
+
+        $loader = AliasLoader::getInstance();
+
+        $loader->alias('manufacturing', ManufacturingFacade::class);
+
+        $this->app->singleton('manufacturing', ManufacturingManager::class);
     }
 
     public function registerCustomCss(): void

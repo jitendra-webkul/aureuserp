@@ -112,13 +112,18 @@ class WorkOrder extends Model
         return $this->belongsToMany(self::class, 'manufacturing_work_order_dependencies', 'depends_on_work_order_id', 'work_order_id');
     }
 
+    public function getQuantityProductionAttribute()
+    {
+        return $this->manufacturingOrder->quantity;
+    }
+
     public function getQuantityRemainingAttribute()
     {
         if (! $this->manufacturingOrder->uom_id) {
             return 0;
         }
 
-        return max(float_round($this->quantity_produced - $this->quantity, precisionRounding: $this->manufacturingOrder->uom->rounding), 0);
+        return max(float_round($this->quantity_production - $this->quantity, precisionRounding: $this->manufacturingOrder->uom->rounding), 0);
     }
 
     protected static function newFactory(): WorkOrderFactory
@@ -175,9 +180,10 @@ class WorkOrder extends Model
         $blockedByWorkOrders = $this->blockedByWorkOrders;
 
         if ($this->production_availability === WorkOrderProductionAvailability::ASSIGNED) {
-            $this->state = $blockedByWorkOrders->every(fn($wo) => in_array($wo->state, [WorkOrderState::DONE, WorkOrderState::CANCEL]))
+            $this->state = $blockedByWorkOrders->every(fn ($wo) => in_array($wo->state, [WorkOrderState::DONE, WorkOrderState::CANCEL]))
                 ? WorkOrderState::READY
                 : WorkOrderState::PENDING;
+
             return;
         }
 
@@ -187,7 +193,7 @@ class WorkOrder extends Model
 
         if (
             $blockedByWorkOrders->isNotEmpty()
-            && ! $blockedByWorkOrders->every(fn($wo) => in_array($wo->state, [WorkOrderState::DONE, WorkOrderState::CANCEL]))
+            && ! $blockedByWorkOrders->every(fn ($wo) => in_array($wo->state, [WorkOrderState::DONE, WorkOrderState::CANCEL]))
         ) {
             $this->state = WorkOrderState::PENDING;
         } else {

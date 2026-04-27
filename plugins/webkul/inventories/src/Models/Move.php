@@ -15,6 +15,7 @@ use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\GroupPropagation;
+use Webkul\Inventory\Enums\RuleAction;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
@@ -274,6 +275,11 @@ class Move extends Model
         return $this->belongsTo(SaleOrderLine::class, 'sale_order_line_id');
     }
 
+    public function shouldBeAssigned()
+    {
+        return ! $this->operation_id and $this->operation_type_id;
+    }
+
     protected static function newFactory(): MoveFactory
     {
         return MoveFactory::new();
@@ -443,6 +449,35 @@ class Move extends Model
     public function prepareProcurementOrigin()
     {
         return $this->procurementGroup?->name ?? ($this->origin ?: $this->operation?->name ?: '/');
+    }
+
+    public function adjustProcureMethod($operationTypeCode = false)
+    {
+        $filters = [
+            'source_location_id' => $this->source_location_id,
+            'destination_location_id' => $this->destination_location_id,
+            'action' => ['!=', RuleAction::PUSH],
+        ];
+
+        if ($operationTypeCode) {
+            $filters['operationType.type'] = $operationTypeCode;
+        }
+
+        $rule = InventoryFacade::searchRule(collect(), $this->productPackaging, $this->product, $this->warehouse, $filters);
+
+        if (! $rule) {
+            $this->procure_method = ProcureMethod::MAKE_TO_STOCK;
+
+            return;
+        }
+
+        $this->rule_id = $rule->id;
+
+        if (in_array($rule->procure_method, [ProcureMethod::MAKE_TO_STOCK, ProcureMethod::MAKE_TO_ORDER])) {
+            $this->procure_method = $rule->procure_method;
+        } else {
+            $this->procure_method = ProcureMethod::MAKE_TO_STOCK;
+        }
     }
 
     public function setQuantity()
@@ -732,6 +767,22 @@ class Move extends Model
         }
     }
 
+    public function keyAssignPicking(): array
+    {
+        $keys = [
+            $this->procurement_group_id,
+            $this->source_location_id,
+            $this->destination_location_id,
+            $this->operation_type_id,
+        ];
+
+        if ($this->partner_id && ! $this->procurement_group_id) {
+            $keys[] = $this->partner_id;
+        }
+
+        return $keys;
+    }
+
     public function prepareProcurementValues(): array
     {
         $procurementGroup = $this->procurementGroup ?: false;
@@ -752,22 +803,22 @@ class Move extends Model
         ];
 
         if (
-            $this->location?->warehouse?->lotStock?->parent_path
+            $this->sourceLocation?->warehouse?->lotStock?->parent_path
             && str_contains(
-                $this->location->parent_path ?? '',
-                $this->location->warehouse->lotStock->parent_path
+                $this->sourceLocation->parent_path ?? '',
+                $this->sourceLocation->warehouse->lotStock->parent_path
             )
         ) {
             $datesInfo = $this->product->getDatesInfo(
                 $this->date,
-                $this->location,
+                $this->sourceLocation,
                 $this->routes
             );
         }
 
         $warehouse = $this->warehouse ?: $this->operationType?->warehouse;
 
-        if (! $this->location?->warehouse) {
+        if (! $this->sourceLocation?->warehouse) {
             $warehouse = $this->rule?->propagateWarehouse;
         }
 

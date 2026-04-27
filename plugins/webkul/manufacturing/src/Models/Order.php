@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Models\Location;
+use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\OrderPoint;
 use Webkul\Manufacturing\Database\Factories\OrderFactory;
@@ -163,6 +164,44 @@ class Order extends Model
     public function unbuildOrders(): HasMany
     {
         return $this->hasMany(UnbuildOrder::class, 'manufacturing_order_id');
+    }
+
+    public function computeInventoryOperations()
+    {
+        $operations = Operation::where('procurement_group_id', $this->procurement_group_id)
+            ->whereNotNull('procurement_group_id')
+            ->get();
+
+        $operations = $operations->merge(
+            $this->rawMaterialMoves->flatMap->moveOrigins->pluck('operation')->filter()->unique('id')
+        );
+
+        return [
+            $operations,
+            $operations->count(),
+        ];
+    }
+
+    public function getInventoryOperationsAttribute()
+    {
+        $operations = Operation::where('procurement_group_id', $this->procurement_group_id)
+            ->whereNotNull('procurement_group_id')
+            ->get();
+
+        $operations = $operations->merge(
+            $this->rawMaterialMoves->flatMap->moveOrigins->pluck('operation')->filter()->unique('id')
+        );
+
+        [$operations, $deliveryCount] = $this->computeInventoryOperations();
+
+        return $operations;
+    }
+
+    public function getDeliveryCountAttribute()
+    {
+        [$operations, $deliveryCount] = $this->computeInventoryOperations();
+
+        return $deliveryCount;
     }
 
     protected static function newFactory(): OrderFactory
@@ -357,6 +396,70 @@ class Order extends Model
                 $moveFinished->update($moveFinishedValues);
             } else {
                 $this->finishedMoves()->create($moveFinishedValues);
+            }
+        }
+    }
+
+    public function linkWorkOrdersAndMoves(): void
+    {
+        if ($this->workorders->isEmpty()) {
+            return;
+        }
+
+        $workOrderPerOperation = $this->workorders->keyBy('operation_id');
+
+        $workOrderBoms = $this->workOrders->pluck('operation.bom_id')->unique()->filter();
+
+        $lastWorkOrderPerBom   = [];
+
+        $allowWorkOrderDependencies = $this->billOfMaterial->allow_operation_dependencies;
+
+        $workOrderOrder = fn($wo) => [$wo->sort, $wo->id];
+
+        if ($allowWorkOrderDependencies) {
+            foreach ($this->workOrders->sortBy($workOrderOrder) as $workOrder) {
+                $blockedByIds = $workOrder->operation->blockedByOperations
+                    ->filter(fn($operationId) => $workOrderPerOperation->has($operationId))
+                    ->map(fn($operationId) => $workOrderPerOperation->get($operationId)->id)
+                    ->all();
+
+                $workOrder->blockedByWorkOrders()->syncWithoutDetaching($blockedByIds);
+
+                if ($workOrder->dependentWorkOrders->isEmpty()) {
+                    $lastWorkOrderPerBom[$workOrder->operation->bom_id] = $workOrder;
+                }
+            }
+        } else {
+            $previousWorkOrder = null;
+
+            foreach ($this->workOrders->sortBy($workOrderOrder) as $workOrder) {
+                if ($previousWorkOrder) {
+                    $workOrder->blockedByWorkOrders()->syncWithoutDetaching([$previousWorkOrder->id]);
+                }
+
+                $previousWorkOrder = $workOrder;
+
+                $lastWorkOrderPerBom[$workOrder->operation->bom_id] = $workOrder;
+            }
+        }
+
+        $allMoves = $this->rawMaterialMoves->merge($this->finishedMoves);
+
+        foreach ($allMoves as $move) {
+            if ($move->operation_id) {
+                $move->update([
+                    'work_order_id' => $workOrderPerOperation->has($move->operation_id)
+                        ? $workOrderPerOperation->get($move->operation_id)->id
+                        : null,
+                ]);
+            } else {
+                $bom = ($move->bomLine && $workOrderBoms->contains($move->bomLine->bom_id))
+                    ? $move->bomLine->bom_id
+                    : $this->bom_id;
+
+                $move->update([
+                    'work_order_id' => isset($lastWorkOrderPerBom[$bom]) ? $lastWorkOrderPerBom[$bom]->id : null,
+                ]);
             }
         }
     }

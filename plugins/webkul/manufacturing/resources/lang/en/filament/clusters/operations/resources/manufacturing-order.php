@@ -25,6 +25,7 @@ return [
         'tabs' => [
             'components' => [
                 'title'        => 'Components',
+                'add-action'   => 'Add a line',
                 'process-note' => 'Components will be generated as the manufacturing process is built.',
                 'columns'      => [
                     'component'  => 'Product',
@@ -36,6 +37,7 @@ return [
             ],
             'work-orders' => [
                 'title'        => 'Work Orders',
+                'add-action'   => 'Add a line',
                 'process-note' => 'Work orders will be generated after the manufacturing process is configured.',
                 'columns'      => [
                     'operation'          => 'Operation',

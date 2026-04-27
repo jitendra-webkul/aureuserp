@@ -33,7 +33,7 @@ use Webkul\Sale\Facades\SaleOrder as SaleFacade;
 
 class InventoryManager
 {
-    public function confirmTransfer(Operation $record): Operation
+    public function confirmTransfer(Operation $record, $merge = false): Operation
     {
         $this->confirmMoves($record->moves->filter(fn (Move $move) => $move->state === MoveState::DRAFT));
 
@@ -173,8 +173,8 @@ class InventoryManager
                 $movesToConfirm->push($move);
             }
 
-            if (! $move->operation_id and $move->operation_type_id) {
-                $key = implode('_', $this->keyAssignPicking($move));
+            if ($move->shouldBeAssigned()) {
+                $key = implode('_', $move->keyAssignPicking());
 
                 $movesToAssign[$key] = $move;
             }
@@ -210,6 +210,7 @@ class InventoryManager
         $movesToConfirm->merge($movesWaiting)
             ->filter(fn ($move) => $move->operationType?->reservation_method === ReservationMethod::AT_CONFIRM)
             ->each(fn (Move $move) => $move->update(['reservation_date' => now()]));
+
 
         foreach ($movesToAssign as $movesGroup) {
             $this->assignOperation(collect([$movesGroup]));
@@ -515,7 +516,7 @@ class InventoryManager
             }
         }
 
-        $moveLineValsList->each(fn($vals) => MoveLine::create($vals));
+        $moveLineValsList->each(fn ($vals) => MoveLine::create($vals));
 
         Move::whereIn('id', $partiallyAssignedMovesIds)->get()->each(fn ($move) => $move->update(['state' => MoveState::PARTIALLY_ASSIGNED]));
 
@@ -1563,7 +1564,7 @@ class InventoryManager
             return;
         }
 
-        $groupedMoves = $moves->groupBy(fn ($move) => implode('_', $this->keyAssignPicking($move)));
+        $groupedMoves = $moves->groupBy(fn ($move) => implode('_', $move->keyAssignPicking()));
 
         foreach ($groupedMoves as $moves) {
             $operation = $this->searchOperationForAssignation($moves[0]);
@@ -1646,22 +1647,6 @@ class InventoryManager
         }
 
         return $vals;
-    }
-
-    public function keyAssignPicking($move): array
-    {
-        $keys = [
-            $move->procurement_group_id,
-            $move->source_location_id,
-            $move->destination_location_id,
-            $move->operation_type_id,
-        ];
-
-        if ($move->partner_id && ! $move->procurement_group_id) {
-            $keys[] = $move->partner_id;
-        }
-
-        return $keys;
     }
 
     public function searchOperationForAssignation(Move $move)

@@ -5,7 +5,9 @@ namespace Webkul\Manufacturing\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Move as BaseMove;
+use Webkul\Manufacturing\Enums\ManufacturingOrderState;
 
 class Move extends BaseMove
 {
@@ -18,7 +20,7 @@ class Move extends BaseMove
             'unbuild_order_id',
             'consume_unbuild_order_id',
             'work_order_id',
-            'bom_line_id',
+            ';',
             'byproduct_id',
             'order_finished_lot_id',
             'cost_share',
@@ -101,5 +103,81 @@ class Move extends BaseMove
     public function moveDestinations(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'inventories_move_destinations', 'origin_move_id', 'destination_move_id');
+    }
+
+    public function shouldBeAssigned()
+    {
+        $shouldBeAssigned = parent::shouldBeAssigned();
+
+        return $shouldBeAssigned && ! ($this->order_id or $this->raw_material_order_id);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($move) {
+            $mo = $move->rawMaterialOrder ?? $move->order ?? null;
+            
+            $locationDestination = Location::find($move->destination_location_id ?? null);
+
+            if (! $mo || ($move->is_scraped ?? false) || ($locationDestination?->is_scrap ?? false)) {
+                return;
+            }
+
+            $move->name = $mo->name;
+            $move->origin = $mo->origin;
+            $move->procurement_group_id = $mo->procurement_group_id;
+            // $move->propagate_cancel  = $mo->propagate_cancel;
+
+            if (! empty($move->raw_material_order_id)) {
+                $move->destination_location_id = $mo->production_location_id;
+
+                if (empty($move->source_location_id)) {
+                    $move->source_location_id = $mo->source_location_id;
+                }
+
+                if (in_array($mo->state, [ManufacturingOrderState::PROGRESS, ManufacturingOrderState::TO_CLOSE]) && $mo->qty_producing > 0) {
+                    $move->is_picked = true;
+                }
+
+                return;
+            }
+
+            $move->source_location_id = $mo->production_location_id;
+            $move->scheduled_at = $mo->finished_at;
+            $move->deadline  = $mo->date_deadline;
+
+            if (empty($move->destination_location_id)) {
+                $move->destination_location_id = $mo->destination_location_id;
+            }
+        });
+
+        static::saving(function ($move) {
+            $move->warehouse_id = $move->operationType?->warehouse_id;
+        });
+    }
+
+    public function runProcurement()
+    {
+
+    }
+
+    public function keyAssignPicking(): array
+    {
+        $keys = parent::keyAssignPicking();
+
+        $keys[] = $this->created_order_id;
+
+        return $keys;
+    }
+
+    public function prepareProcurementValues(): array
+    {
+        $values = parent::prepareProcurementValues();
+
+        $values['bom_line_id'] = $this->bom_line_id;
+
+        return $values;
     }
 }
