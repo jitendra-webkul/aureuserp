@@ -5,8 +5,13 @@ namespace Webkul\Manufacturing\Filament\Clusters\Operations\Resources\Manufactur
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Collection;
+use Webkul\Inventory\Models\ProductQuantity;
+use Webkul\Manufacturing\Enums\ManufacturingOrderReservationState;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
 use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource;
+use Webkul\Manufacturing\Models\Move;
+use Webkul\Manufacturing\Models\WorkOrder;
 use Webkul\Support\Traits\HasRecordNavigationTabs;
 
 class OverviewManufacturingOrder extends ViewRecord
@@ -15,7 +20,27 @@ class OverviewManufacturingOrder extends ViewRecord
 
     protected static string $resource = ManufacturingOrderResource::class;
 
+    protected string $view = 'manufacturing::filament.clusters.operations.resources.manufacturing-order.pages.overview-manufacturing-order';
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bars-3-bottom-left';
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->getRecord()->load([
+            'product.uom',
+            'product.quantities',
+            'uom',
+            'billOfMaterial',
+            'rawMaterialMoves.product.uom',
+            'rawMaterialMoves.product.quantities',
+            'rawMaterialMoves.lines',
+            'workOrders.product.uom',
+            'workOrders.workCenter',
+            'workOrders.operation',
+        ]);
+    }
 
     public static function getNavigationLabel(): string
     {
@@ -25,6 +50,179 @@ class OverviewManufacturingOrder extends ViewRecord
     public function getTitle(): string
     {
         return __('manufacturing::filament/clusters/operations/resources/manufacturing-order/pages/overview-manufacturing-order.title');
+    }
+
+    public function getOverviewProductName(): string
+    {
+        return $this->getRecord()->product?->name ?? '—';
+    }
+
+    public function getOverviewUomName(): string
+    {
+        return $this->getRecord()->uom?->name ?? $this->getRecord()->product?->uom?->name ?? '—';
+    }
+
+    public function getProductAvailableQuantity(): float
+    {
+        return (float) ($this->getRecord()->product?->free_qty ?? 0);
+    }
+
+    public function getProductOnHandQuantity(): float
+    {
+        return (float) ($this->getRecord()->product?->available_qty ?? 0);
+    }
+
+    public function getReceiptDateLabel(): string
+    {
+        return ($this->getRecord()->deadline_at ?? now())->format('m/d/Y');
+    }
+
+    public function getOrderStatusLabel(): string
+    {
+        $record = $this->getRecord();
+
+        if ($record->reservation_state === ManufacturingOrderReservationState::ASSIGNED) {
+            return __('manufacturing::filament/clusters/operations/resources/manufacturing-order/pages/overview-manufacturing-order.status.ready');
+        }
+
+        return $record->state?->getLabel() ?? '—';
+    }
+
+    public function getOrderStatusColor(): string
+    {
+        $record = $this->getRecord();
+
+        if ($record->reservation_state === ManufacturingOrderReservationState::ASSIGNED) {
+            return 'success';
+        }
+
+        return $record->state?->getColor() ?? 'gray';
+    }
+
+    public function getComponentRows(): Collection
+    {
+        return $this->getRecord()->rawMaterialMoves
+            ->sortBy('id')
+            ->values();
+    }
+
+    public function getWorkOrderRows(): Collection
+    {
+        return $this->getRecord()->workOrders
+            ->sortBy('id')
+            ->values();
+    }
+
+    public function getReservedQuantity(Move $move): float
+    {
+        if (! $move->product_id) {
+            return 0.0;
+        }
+
+        return (float) ProductQuantity::query()
+            ->where('product_id', $move->product_id)
+            ->sum('reserved_quantity');
+    }
+
+    public function getComponentStatusLabel(Move $move): string
+    {
+        return $move->product && $move->product->free_qty >= $move->product_uom_qty
+            ? __('manufacturing::filament/clusters/operations/resources/manufacturing-order/pages/overview-manufacturing-order.status.available')
+            : __('manufacturing::filament/clusters/operations/resources/manufacturing-order/pages/overview-manufacturing-order.status.waiting');
+    }
+
+    public function getComponentStatusColor(Move $move): string
+    {
+        return $move->product && $move->product->free_qty >= $move->product_uom_qty
+            ? 'success'
+            : 'warning';
+    }
+
+    public function getComponentReceiptLabel(Move $move): string
+    {
+        if ($move->product && $move->product->free_qty >= $move->product_uom_qty) {
+            return __('manufacturing::filament/clusters/operations/resources/manufacturing-order/pages/overview-manufacturing-order.status.available');
+        }
+
+        return __('manufacturing::filament/clusters/operations/resources/manufacturing-order/pages/overview-manufacturing-order.receipt.expected', [
+            'date' => $this->getReceiptDateLabel(),
+        ]);
+    }
+
+    public function getComponentUnitCost(Move $move): float
+    {
+        return round((float) ($move->product?->cost ?? 0), 2);
+    }
+
+    public function getComponentTotalCost(Move $move): float
+    {
+        return round($this->getComponentUnitCost($move) * (float) $move->product_uom_qty, 2);
+    }
+
+    public function getWorkOrderUnitCost(WorkOrder $workOrder): float
+    {
+        $costPerHour = (float) ($workOrder->costs_per_hour ?: $workOrder->workCenter?->costs_per_hour ?: 0);
+
+        return round($costPerHour / 60, 2);
+    }
+
+    public function getWorkOrderTotalCost(WorkOrder $workOrder): float
+    {
+        $costPerHour = (float) ($workOrder->costs_per_hour ?: $workOrder->workCenter?->costs_per_hour ?: 0);
+
+        return round(((float) $workOrder->expected_duration / 60) * $costPerHour, 2);
+    }
+
+    public function getTotalOperationDuration(): float
+    {
+        return (float) $this->getWorkOrderRows()->sum('expected_duration');
+    }
+
+    public function getTotalOperationDurationLabel(): string
+    {
+        return format_float_time($this->getTotalOperationDuration(), 'minutes');
+    }
+
+    public function getTotalOperationCost(): float
+    {
+        return round(
+            $this->getWorkOrderRows()->sum(fn (WorkOrder $workOrder): float => $this->getWorkOrderTotalCost($workOrder)),
+            2,
+        );
+    }
+
+    public function getTotalComponentCost(): float
+    {
+        return round(
+            $this->getComponentRows()->sum(fn (Move $move): float => $this->getComponentTotalCost($move)),
+            2,
+        );
+    }
+
+    public function getUnitCost(): float
+    {
+        $quantity = (float) ($this->getRecord()->quantity ?: 0);
+
+        if ($quantity <= 0) {
+            return 0;
+        }
+
+        return round($this->getTotalMoCost() / $quantity, 2);
+    }
+
+    public function getTotalMoCost(): float
+    {
+        return round($this->getTotalComponentCost() + $this->getTotalOperationCost(), 2);
+    }
+
+    public function getTotalBomCost(): float
+    {
+        return $this->getTotalMoCost();
+    }
+
+    public function getParentProductCost(): float
+    {
+        return round((float) ($this->getRecord()->product?->cost ?? 0) * (float) $this->getRecord()->quantity, 2);
     }
 
     protected function getHeaderActions(): array

@@ -165,9 +165,7 @@ class ManufacturingOrderResource extends Resource
                                         }
 
                                         if ($get('bill_of_material_id') !== $billOfMaterialId) {
-                                            $set('bill_of_material_id', $billOfMaterialId, shouldCallUpdatedHooks: true);
-
-                                            return;
+                                            $set('bill_of_material_id', $billOfMaterialId);
                                         }
 
                                         static::applyBillOfMaterialDefaults(

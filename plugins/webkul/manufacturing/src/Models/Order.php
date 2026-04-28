@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Operation;
@@ -169,6 +170,18 @@ class Order extends Model
         return $this->hasMany(UnbuildOrder::class, 'manufacturing_order_id');
     }
 
+    public function inventoryOperations(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Operation::class,
+            ProcurementGroup::class,
+            'id',
+            'procurement_group_id',
+            'procurement_group_id',
+            'id'
+        );
+    }
+
     public function computeInventoryOperations()
     {
         $operations = Operation::where('procurement_group_id', $this->procurement_group_id)
@@ -226,7 +239,7 @@ class Order extends Model
             $order->priority ??= ManufacturingOrderPriority::NORMAL;
 
             $order->state ??= ManufacturingOrderState::DRAFT;
-            
+
             $order->consumption ??= BillOfMaterialConsumption::FLEXIBLE;
 
             $order->started_at ??= now();
@@ -273,7 +286,7 @@ class Order extends Model
     {
         $this->name = 'MO/'.$this->id;
     }
-    
+
     public function shouldPostponeDateFinished($dateFinished): bool
     {
         return $dateFinished->equalTo($this->started_at);
@@ -291,7 +304,7 @@ class Order extends Model
     public function computeDeadlineAt()
     {
         $deadline = $this->finishedMoves
-            ->filter(fn($move) => $move->deadline)
+            ->filter(fn ($move) => $move->deadline)
             ->min('deadline');
 
         $this->deadline_at = $deadline ?? $this->deadline_at;
@@ -304,7 +317,7 @@ class Order extends Model
         }
 
         $daysDelay = $this->bom->produce_delay ?? 0;
-        
+
         $finishedAt = Carbon::parse($this->started_at)->addDays($daysDelay);
 
         if ($this->shouldPostponeDateFinished($finishedAt)) {
@@ -324,7 +337,7 @@ class Order extends Model
     public function computeIsPlanned()
     {
         $this->is_planned = $this->workOrders->isNotEmpty()
-            && $this->workOrders->some(fn($wo) => $wo->started_at && $wo->finished_at);
+            && $this->workOrders->some(fn ($wo) => $wo->started_at && $wo->finished_at);
     }
 
     public function computeFinishedMoves(): void
@@ -373,7 +386,7 @@ class Order extends Model
         if ($groupOrders->count() > 1) {
             $additionalDestinationIds = $groupOrders->first()
                 ->finishedMoves
-                ->filter(fn($move) => $move->product_id === $this->product_id)
+                ->filter(fn ($move) => $move->product_id === $this->product_id)
                 ->flatMap->moveDestinations
                 ->pluck('id')
                 ->all();
@@ -449,11 +462,11 @@ class Order extends Model
         $movesFinishedValues = $this->getMovesFinishedValues();
 
         $movesByproductDict = $this->finishedMoves
-            ->filter(fn($move) => $move->byproduct_id)
+            ->filter(fn ($move) => $move->byproduct_id)
             ->keyBy('byproduct_id');
 
         $moveFinished = $this->finishedMoves
-            ->filter(fn($move) => $move->product_id === $this->product_id)
+            ->filter(fn ($move) => $move->product_id === $this->product_id)
             ->first();
 
         foreach ($movesFinishedValues as $moveFinishedValues) {
@@ -477,17 +490,17 @@ class Order extends Model
 
         $workOrderBoms = $this->workOrders->pluck('operation.bom_id')->unique()->filter();
 
-        $lastWorkOrderPerBom   = [];
+        $lastWorkOrderPerBom = [];
 
         $allowWorkOrderDependencies = $this->billOfMaterial->allow_operation_dependencies;
 
-        $workOrderOrder = fn($wo) => [$wo->sort, $wo->id];
+        $workOrderOrder = fn ($wo) => [$wo->sort, $wo->id];
 
         if ($allowWorkOrderDependencies) {
             foreach ($this->workOrders->sortBy($workOrderOrder) as $workOrder) {
                 $blockedByIds = $workOrder->operation->blockedByOperations
-                    ->filter(fn($operationId) => $workOrderPerOperation->has($operationId))
-                    ->map(fn($operationId) => $workOrderPerOperation->get($operationId)->id)
+                    ->filter(fn ($operationId) => $workOrderPerOperation->has($operationId))
+                    ->map(fn ($operationId) => $workOrderPerOperation->get($operationId)->id)
                     ->all();
 
                 $workOrder->blockedByWorkOrders()->syncWithoutDetaching($blockedByIds);
