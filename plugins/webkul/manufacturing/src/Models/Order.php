@@ -9,12 +9,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Auth;
+use Webkul\Inventory\Enums\MoveState;
+use Webkul\Manufacturing\Models\Move;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\OrderPoint;
 use Webkul\Manufacturing\Database\Factories\OrderFactory;
 use Webkul\Manufacturing\Enums\BillOfMaterialConsumption;
+use Webkul\Manufacturing\Enums\BillOfMaterialReadyToProduce;
 use Webkul\Manufacturing\Enums\ManufacturingOrderPriority;
 use Webkul\Manufacturing\Enums\ManufacturingOrderReservationState;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
@@ -220,6 +223,11 @@ class Order extends Model
         return $deliveryCount;
     }
 
+    public function shouldPostponeDateFinished($dateFinished): bool
+    {
+        return $dateFinished->equalTo($this->started_at);
+    }
+
     protected static function newFactory(): OrderFactory
     {
         return OrderFactory::new();
@@ -281,6 +289,12 @@ class Order extends Model
 
         static::updated(function ($order) {
             $order->computeFinishedMoves();
+
+            if ($order->wasChanged('state')) {
+                $order->computeReservationState();
+
+                $order->saveQuietly();
+            }
         });
     }
 
@@ -289,9 +303,32 @@ class Order extends Model
         $this->name = 'MO/'.$this->id;
     }
 
-    public function shouldPostponeDateFinished($dateFinished): bool
+    public function computeReservationState(): void
     {
-        return $dateFinished->equalTo($this->started_at);
+        if (in_array($this->state, [ManufacturingOrderState::DRAFT, ManufacturingOrderState::DONE, ManufacturingOrderState::CANCEL])) {
+            $this->reservation_state = null;
+
+            return;
+        }
+
+        $relevantMoveState = Move::getRelevantStateAmongMoves(
+            $this->rawMaterialMoves->filter(fn($move) => ! $move->is_picked)
+        );
+
+        if ($relevantMoveState === MoveState::PARTIALLY_ASSIGNED) {
+            if (
+                $this->workOrders->pluck('operation_id')->filter()->isNotEmpty()
+                && $this->billOfMaterial->ready_to_produce === BillOfMaterialReadyToProduce::ASAP
+            ) {
+                $this->reservation_state = $this->getReadyToProduceState();
+            } else {
+                $this->reservation_state = MoveState::CONFIRMED;
+            }
+        } elseif ($relevantMoveState !== MoveState::DRAFT) {
+            $this->reservation_state = ManufacturingOrderReservationState::from($relevantMoveState->value);
+        } else {
+            $this->reservation_state = null;
+        }
     }
 
     public function computeStartedAt()
@@ -371,6 +408,37 @@ class Order extends Model
                 ->whereNotNull('bom_line_id')
                 ->delete();
         }
+    }
+
+    public function getReadyToProduceState()
+    {
+        $operations = $this->workOrders
+            ->pluck('operation')
+            ->filter()
+            ->values();
+
+        if ($operations->count() === 1) {
+            $movesInFirstOperation = $this->rawMaterialMoves;
+        } else {
+            $firstOperation = $operations->first();
+
+            $movesInFirstOperation = $this->rawMaterialMoves
+                ->filter(fn ($move) => $move->operation_id === $firstOperation->id);
+        }
+
+        $movesInFirstOperation = $movesInFirstOperation->filter(
+            fn ($move) =>
+                $move->bom_line_id
+                && ! $move->bomLine->skipBomLine(
+                    $this->product
+                )
+        );
+
+        if ($movesInFirstOperation->every(fn ($move) => $move->state === MoveState::ASSIGNED)) {
+            return ManufacturingOrderReservationState::ASSIGNED;
+        }
+
+        return ManufacturingOrderReservationState::CONFIRMED;
     }
 
     public function getMoveFinishedValues(

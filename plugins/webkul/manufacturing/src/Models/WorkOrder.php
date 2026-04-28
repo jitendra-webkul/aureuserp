@@ -141,18 +141,30 @@ class WorkOrder extends Model
             $workOrder->state ??= WorkOrderState::PENDING;
         });
 
-        static::saving(function ($order) {
-            $order->computeName();
+        static::saving(function ($workOrder) {
+            $workOrder->computeName();
 
-            $order->computeBarcode();
+            $workOrder->computeBarcode();
 
-            $order->computeUOMId();
+            $workOrder->computeUOMId();
 
-            $order->computeState();
+            $workOrder->computeState();
         });
 
-        static::created(function ($order) {
-            $order->update(['name' => $order->name]);
+        static::created(function ($workOrder) {
+            $workOrder->update(['name' => $workOrder->name]);
+        });
+
+        static::updated(function ($workOrder) {
+            if ($workOrder->wasChanged('state') || $workOrder->wasChanged('production_availability')) {
+                $workOrder->dependentWorkOrders->each(function ($dependentWorkOrder) {
+                    $dependentWorkOrder->setContext(['no_recursion' => true]);
+
+                    $dependentWorkOrder->computeState();
+
+                    $dependentWorkOrder->save();
+                });
+            }
         });
     }
 

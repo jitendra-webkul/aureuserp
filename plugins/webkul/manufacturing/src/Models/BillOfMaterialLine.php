@@ -81,4 +81,9 @@ class BillOfMaterialLine extends Model
             $line->company_id ??= $line->company_id ?? $authUser?->default_company_id;
         });
     }
+
+    public function skipBomLine($product)
+    {
+        return false;
+    }
 }

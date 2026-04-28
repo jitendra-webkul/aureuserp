@@ -2040,8 +2040,8 @@ class InventoryManager
                 return $mostImportantMove->state ?? MoveState::DRAFT;
             }
         } elseif (
-            $firstMove->state !== MoveState::ASSIGNED &&
-            $movesTodo->some(fn ($move) => in_array($move->state, [MoveState::ASSIGNED, MoveState::PARTIALLY_ASSIGNED]))
+            $firstMove->state !== MoveState::ASSIGNED
+            && $movesTodo->some(fn ($move) => in_array($move->state, [MoveState::ASSIGNED, MoveState::PARTIALLY_ASSIGNED]))
         ) {
             return MoveState::PARTIALLY_ASSIGNED;
         } else {

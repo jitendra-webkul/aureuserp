@@ -1105,4 +1105,9 @@ class Move extends Model
             range(0, (int) $quantity - 1)
         );
     }
+
+    public static function getRelevantStateAmongMoves($moves): \BackedEnum
+    {
+        return InventoryFacade::getRelevantStateAmongMoves($moves);
+    }
 }
