@@ -14,14 +14,12 @@ return new class extends Migration
         Schema::table('inventories_move_lines', function (Blueprint $table) {
             $table->foreignId('work_order_id')
                 ->nullable()
-                ->after('lot_id')
                 ->constrained('manufacturing_work_orders')
                 ->nullOnDelete()
                 ->noActionOnUpdate();
 
             $table->foreignId('order_id')
                 ->nullable()
-                ->after('work_order_id')
                 ->constrained('manufacturing_orders')
                 ->nullOnDelete()
                 ->noActionOnUpdate();
