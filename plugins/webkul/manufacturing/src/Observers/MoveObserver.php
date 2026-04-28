@@ -5,9 +5,8 @@ namespace Webkul\Manufacturing\Observers;
 use Webkul\Inventory\Models\Move as InventoryMove;
 use Webkul\Manufacturing\Models\Move as ManufacturingMove;
 use Webkul\Manufacturing\Enums\WorkOrderProductionAvailability;
-use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class MoveObserver implements ShouldHandleEventsAfterCommit
+class MoveObserver
 {
     public function updated(InventoryMove $move): void
     {
