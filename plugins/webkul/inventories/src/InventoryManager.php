@@ -976,7 +976,7 @@ class InventoryManager
         if ($backOrderMoves) {
             $movesToBackOrder = $backOrderMoves->filter(fn($move) => $move->operation_id === $record->id);
         } else {
-            $movesToBackOrder = $record->moves->filter(
+            $movesToBackOrder = $record->moves()->get()->filter(
                 fn ($move) => ! in_array($move->state, [MoveState::DONE, MoveState::CANCELED])
             );
         }
