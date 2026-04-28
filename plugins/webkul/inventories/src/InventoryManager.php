@@ -176,7 +176,7 @@ class InventoryManager
             if ($move->shouldBeAssigned()) {
                 $key = implode('_', $move->keyAssignPicking());
 
-                $movesToAssign[$key] = $move;
+                $movesToAssign[$key][] = $move;
             }
         }
 
@@ -213,7 +213,7 @@ class InventoryManager
 
 
         foreach ($movesToAssign as $movesGroup) {
-            $this->assignOperation(collect([$movesGroup]));
+            $this->assignOperation(collect($movesGroup));
         }
 
         if ($merge) {
@@ -1549,6 +1549,10 @@ class InventoryManager
 
         if (isset($procurement['values']['work_order_id'])) {
             $moveValues['work_order_id'] = $procurement['values']['work_order_id'];
+        }
+
+        if (isset($procurement['values']['bom_line_id'])) {
+            $moveValues['bom_line_id'] = $procurement['values']['bom_line_id'];
         }
 
         if ($rule->location_dest_from_rule) {

@@ -70,6 +70,7 @@ class Move extends Model
         'procurement_group_id',
         'purchase_order_line_id',
         'sale_order_line_id',
+        'bom_line_id',
     ];
 
     protected $casts = [
@@ -780,6 +781,10 @@ class Move extends Model
             $keys[] = $this->partner_id;
         }
 
+        if ($this->created_order_id) {
+            $keys[] = $this->created_order_id;
+        }
+
         return $keys;
     }
 
@@ -828,7 +833,7 @@ class Move extends Model
             $moveDestinations = collect([$this]);
         }
 
-        return [
+        $values = [
             'planned'           => $datesInfo['planned'] ?? null,
             'ordered_at'        => $datesInfo['ordered_at'] ?? null,
             'deadline'          => $this->deadline,
@@ -839,6 +844,12 @@ class Move extends Model
             'order_point'       => $this->orderPoint,
             'product_packaging' => $this->productPackaging,
         ];
+
+        if ($this->bom_line_id) {
+            $values['bom_line_id'] = $this->bom_line_id;
+        }
+
+        return $values;
     }
 
     public function prepareLineValues($quantity = null, $reservedQuantity = null): array

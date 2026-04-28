@@ -20,7 +20,7 @@ class Move extends BaseMove
             'unbuild_order_id',
             'consume_unbuild_order_id',
             'work_order_id',
-            ';',
+            'bom_line_id',
             'byproduct_id',
             'order_finished_lot_id',
             'cost_share',

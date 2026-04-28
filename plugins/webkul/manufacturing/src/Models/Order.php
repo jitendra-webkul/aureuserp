@@ -2,6 +2,7 @@
 
 namespace Webkul\Manufacturing\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,7 @@ class Order extends Model
         'consumption',
         'quantity',
         'quantity_in_progress',
+        'is_planned',
         'deadline_at',
         'started_at',
         'finished_at',
@@ -59,6 +61,7 @@ class Order extends Model
         'state'                => ManufacturingOrderState::class,
         'reservation_state'    => ManufacturingOrderReservationState::class,
         'consumption'          => BillOfMaterialConsumption::class,
+        'is_planned'           => 'boolean',
         'quantity'             => 'decimal:4',
         'quantity_in_progress' => 'decimal:4',
         'deadline_at'          => 'datetime',
@@ -230,6 +233,12 @@ class Order extends Model
 
             $order->computeName();
 
+            $order->computeStartedAt();
+
+            $order->computeFinishedAt();
+
+            $order->computeDeadlineAt();
+
             if (! $order->procurement_group_id) {
                 $order->procurement_group_id = $order->procurementGroup()->create([
                     'name' => $order->name,
@@ -237,16 +246,26 @@ class Order extends Model
             }
 
             $order->computeProductionLocationId();
-
-            $order->computeFinishedMoves();
         });
 
         static::saving(function ($order) {
             $order->computeName();
+
+            $order->computeIsPlanned();
+
+            $order->computeFinishedAt();
+
+            $order->computeDeadlineAt();
         });
 
         static::created(function ($order) {
             $order->update(['name' => $order->name]);
+
+            $order->computeFinishedMoves();
+        });
+
+        static::updated(function ($order) {
+            $order->computeFinishedMoves();
         });
     }
 
@@ -254,10 +273,58 @@ class Order extends Model
     {
         $this->name = 'MO/'.$this->id;
     }
+    
+    public function shouldPostponeDateFinished($dateFinished): bool
+    {
+        return $dateFinished->equalTo($this->started_at);
+    }
+
+    public function computeStartedAt()
+    {
+        if ($defaultDateDeadline = ($this->context['default_deadline'] ?? false)) {
+            return Carbon::parse($defaultDateDeadline)->subHour();
+        }
+
+        return now();
+    }
+
+    public function computeDeadlineAt()
+    {
+        $deadline = $this->finishedMoves
+            ->filter(fn($move) => $move->deadline)
+            ->min('deadline');
+
+        $this->deadline_at = $deadline ?? $this->deadline_at;
+    }
+
+    public function computeFinishedAt()
+    {
+        if (! $this->started_at || $this->is_planned || $this->state === ManufacturingOrderState::DONE) {
+            return;
+        }
+
+        $daysDelay = $this->bom->produce_delay ?? 0;
+        
+        $finishedAt = Carbon::parse($this->started_at)->addDays($daysDelay);
+
+        if ($this->shouldPostponeDateFinished($finishedAt)) {
+            $workOrderExpectedDuration = $this->workOrders->sum('expected_duration');
+
+            $finishedAt = $finishedAt->addMinutes($workOrderExpectedDuration ?: 60);
+        }
+
+        $this->finished_at = $finishedAt;
+    }
 
     public function computeProductionLocationId()
     {
         $this->production_location_id = Location::where('type', 'production')->where('company_id', $this->company_id)->first()?->id;
+    }
+
+    public function computeIsPlanned()
+    {
+        $this->is_planned = $this->workOrders->isNotEmpty()
+            && $this->workOrders->some(fn($wo) => $wo->started_at && $wo->finished_at);
     }
 
     public function computeFinishedMoves(): void
@@ -402,11 +469,11 @@ class Order extends Model
 
     public function linkWorkOrdersAndMoves(): void
     {
-        if ($this->workorders->isEmpty()) {
+        if ($this->workOrders->isEmpty()) {
             return;
         }
 
-        $workOrderPerOperation = $this->workorders->keyBy('operation_id');
+        $workOrderPerOperation = $this->workOrders->keyBy('operation_id');
 
         $workOrderBoms = $this->workOrders->pluck('operation.bom_id')->unique()->filter();
 
@@ -435,6 +502,10 @@ class Order extends Model
             foreach ($this->workOrders->sortBy($workOrderOrder) as $workOrder) {
                 if ($previousWorkOrder) {
                     $workOrder->blockedByWorkOrders()->syncWithoutDetaching([$previousWorkOrder->id]);
+
+                    $workOrder->computeState();
+
+                    $workOrder->save();
                 }
 
                 $previousWorkOrder = $workOrder;
