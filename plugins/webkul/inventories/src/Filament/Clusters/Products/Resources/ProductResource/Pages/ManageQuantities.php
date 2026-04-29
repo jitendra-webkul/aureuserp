@@ -182,7 +182,6 @@ class ManageQuantities extends ManageRelatedRecords
                             }
                         }),
                     )
-                    ->getOptionLabelUsing(fn ($record) => $record?->name)
                     ->searchable()
                     ->reactive()
                     ->preload()

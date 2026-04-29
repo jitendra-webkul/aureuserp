@@ -76,19 +76,19 @@ class ValidateAction extends Action
 
     private function executeDoneTransfer(Operation $record, Component $livewire, bool $cancelBackOrder = false): void
     {
-        try {
+        // try {
             InventoryFaceade::doneTransfer($record, $cancelBackOrder);
 
             $livewire->updateForm();
-        } catch (Throwable $e) {
-            Notification::make()
-                ->danger()
-                ->body($e->getMessage())
-                ->send();
+        // } catch (Throwable $e) {
+        //     Notification::make()
+        //         ->danger()
+        //         ->body($e->getMessage())
+        //         ->send();
 
-            $livewire->unmountAction();
+        //     $livewire->unmountAction();
 
-            $this->halt(shouldRollBackDatabaseTransaction: true);
-        }
+        //     $this->halt(shouldRollBackDatabaseTransaction: true);
+        // }
     }
 }

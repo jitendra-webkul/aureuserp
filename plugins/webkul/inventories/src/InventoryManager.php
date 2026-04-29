@@ -579,7 +579,7 @@ class InventoryManager
 
         $resultPackages = $movesTodo->flatMap->lines
             ->filter(fn($moveLine) => $moveLine->is_picked)
-            ->pluck('result_package_id')
+            ->pluck('resultPackage')
             ->filter()
             ->unique('id')
             ->filter(fn($package) => $package->quantities->count() > 1);
