@@ -1,5 +1,7 @@
 <?php
 
 return [
-    'assigned' => 'Assigned',
+    'confirmed' => 'Waiting',
+    'assigned'  => 'Ready',
+    'waiting'   => 'Waiting another operation',
 ];

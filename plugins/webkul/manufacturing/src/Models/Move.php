@@ -149,7 +149,7 @@ class Move extends BaseMove
                     $move->source_location_id = $mo->source_location_id;
                 }
 
-                if (in_array($mo->state, [ManufacturingOrderState::PROGRESS, ManufacturingOrderState::TO_CLOSE]) && $mo->qty_producing > 0) {
+                if (in_array($mo->state, [ManufacturingOrderState::PROGRESS, ManufacturingOrderState::TO_CLOSE]) && $mo->quantity_producing > 0) {
                     $move->is_picked = true;
                 }
 

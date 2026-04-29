@@ -409,10 +409,10 @@ class WorkOrder extends Model
             throw new \Exception(__('You cannot start a work order that is already done or cancelled'));
         }
 
-        if ($this->product_tracking === ProductTracking::SERIAL && $this->qty_producing == 0) {
-            $this->manufacturingOrder->update(['qty_producing' => 1]);
-        } elseif ($this->qty_producing == 0) {
-            $this->manufacturingOrder->update(['qty_producing' => $this->qty_remaining]);
+        if ($this->product_tracking === ProductTracking::SERIAL && $this->quantity_producing == 0) {
+            $this->manufacturingOrder->update(['quantity_producing' => 1]);
+        } elseif ($this->quantity_producing == 0) {
+            $this->manufacturingOrder->update(['quantity_producing' => $this->quantity_remaining]);
         }
 
         if ($this->shouldStartTimer()) {
@@ -477,17 +477,17 @@ class WorkOrder extends Model
         }
 
         $moves = $this->rawMaterialMoves->merge(
-            $this->production->moveByproducts->filter(fn ($move) => $move->mo_operation_id === $this->operation_id)
+            $this->manufacturingOrder->moveByproducts->filter(fn ($move) => $move->mo_operation_id === $this->operation_id)
         );
 
         foreach ($moves as $move) {
             if (! $move->is_picked) {
                 $qtyAvailable = float_is_zero(
-                    $this->production->qty_producing,
-                    precisionRounding: $this->production->uom->rounding
+                    $this->manufacturingOrder->quantity_producing,
+                    precisionRounding: $this->manufacturingOrder->uom->rounding
                 )
-                    ? $this->production->quantity
-                    : $this->production->qty_producing;
+                    ? $this->manufacturingOrder->quantity
+                    : $this->manufacturingOrder->quantity_producing;
 
                 $newQty = float_round(
                     $qtyAvailable * $move->unit_factor,
@@ -503,17 +503,22 @@ class WorkOrder extends Model
         $this->endAll(collect([$this]));
 
         $vals = [
-            'qty_produced'  => $this->qty_produced ?: ($this->qty_producing ?: $this->qty_production),
-            'state'         => WorkOrderState::DONE,
-            'date_finished' => $dateFinished,
-            'costs_hour'    => $this->workcenter->costs_hour,
+            'quantity_produced' => $this->quantity_produced ?: ($this->quantity_producing ?: $this->quantity_production),
+            'state'             => WorkOrderState::DONE,
+            'finished_at'       => $dateFinished,
+            'costs_per_hour'    => $this->workCenter->costs_per_hour,
         ];
 
-        if (! $this->date_start || $dateFinished < Carbon::parse($this->date_start)) {
-            $vals['date_start'] = $dateFinished;
+        if (! $this->started_at || $dateFinished < Carbon::parse($this->started_at)) {
+            $vals['started_at'] = $dateFinished;
         }
 
         $this->update($vals);
+    }
+
+    public function endAll($workOrders): void
+    {
+        self::endPrevious($workOrders, endAll: true);
     }
 
     public static function endPrevious($workOrders, bool $endAll = false): void

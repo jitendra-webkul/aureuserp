@@ -355,7 +355,7 @@ class Order extends Model
 
         if (
             $this->workOrders->isEmpty()
-            && $this->floatCompare($this->qty_producing, $this->product_qty, precisionRounding: $this->uom->rounding) >= 0
+            && float_compare($this->quantity_producing, $this->product_qty, precisionRounding: $this->uom->rounding) >= 0
         ) {
             $this->state = ManufacturingOrderState::TO_CLOSE;
 
@@ -370,7 +370,7 @@ class Order extends Model
 
         if (
             $this->uom_id &&
-            ! float_is_zero($this->qty_producing, precisionRounding: $this->uom->rounding)
+            ! float_is_zero($this->quantity_producing, precisionRounding: $this->uom->rounding)
         ) {
             $this->state = ManufacturingOrderState::PROGRESS;
 
@@ -403,7 +403,7 @@ class Order extends Model
             ) {
                 $this->reservation_state = $this->getReadyToProduceState();
             } else {
-                $this->reservation_state = MoveState::CONFIRMED;
+                $this->reservation_state = ManufacturingOrderReservationState::CONFIRMED;
             }
         } elseif ($relevantMoveState !== MoveState::DRAFT) {
             $this->reservation_state = ManufacturingOrderReservationState::from($relevantMoveState->value);
