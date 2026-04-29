@@ -23,6 +23,7 @@ return new class extends Migration
             $table->timestamp('finished_at')->nullable();
             $table->decimal('duration', 15, 4)->nullable();
             $table->decimal('duration_per_unit', 15, 4)->nullable();
+            $table->integer('duration_percent')->nullable();
             $table->decimal('costs_per_hour', 15, 4)->nullable();
 
             $table->foreignId('work_center_id')

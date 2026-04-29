@@ -77,28 +77,60 @@ class WorkCenterProductivityLog extends Model
 
             $productivityLog->creator_id ??= $user?->id;
 
+            $productivityLog->assigned_user_id ??= $user?->id;
+
             $productivityLog->company_id ??= $user?->default_company_id;
 
             $productivityLog->description ??= "Time Tracking: {$user->name}";
+
+            $productivityLog->loss_type ??= $productivityLog->loss->loss_type ?? 'other';
         });
 
         static::created(function (self $productivityLog): void {
             if ($workCenter = $productivityLog->workCenter) {
-                $workCenter->computeState();
+                $workCenter->computeWorkingState();
 
                 $workCenter->save();
             }
         });
 
-        static::created(function (self $productivityLog): void {
+        static::saving(function (self $productivityLog): void {
+            $productivityLog->computeDuration();
+        });
+
+        static::updated(function (self $productivityLog): void {
             if ($productivityLog->wasChanged('finished_at') || $productivityLog->wasChanged('loss_type')) {
                 if ($workCenter = $productivityLog->workCenter) {
-                    $workCenter->computeState();
+                    $workCenter->computeWorkingState();
 
                     $workCenter->save();
                 }
             }
+
+            if ($productivityLog->wasChanged('duration')) {
+                $productivityLog->workOrder->computeDuration();
+
+                $productivityLog->workOrder->save();
+
+            }
         });
+    }
+
+    public function computeDuration()
+    {
+        if ($this->started_at && $this->finished_at) {
+            $start = $this->started_at->copy()->setMicrosecond(0);
+
+            $end = $this->finished_at->copy()->setMicrosecond(0);
+
+            $this->duration = $this->loss->convertToDuration(
+                $start,
+                $end,
+                $this->workCenter
+            );
+        } else {
+            $this->duration = 0.0;
+        }
     }
 
     public function closeTimer(): void

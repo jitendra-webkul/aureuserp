@@ -25,6 +25,8 @@ class Calendar extends Model
         'two_weeks_calendar',
         'flexible_hours',
         'full_time_required_hours',
+        'resource_type',
+        'resource_id',
         'creator_id',
         'company_id',
     ];
@@ -42,6 +44,11 @@ class Calendar extends Model
     public function attendance()
     {
         return $this->hasMany(CalendarAttendance::class);
+    }
+
+    public function resource()
+    {
+        return $this->morphTo();
     }
 
     protected static function boot()

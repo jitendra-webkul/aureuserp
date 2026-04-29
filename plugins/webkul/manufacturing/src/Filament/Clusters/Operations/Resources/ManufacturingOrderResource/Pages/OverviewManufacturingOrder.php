@@ -2,13 +2,10 @@
 
 namespace Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource\Pages;
 
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Collection;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Manufacturing\Enums\ManufacturingOrderReservationState;
-use Webkul\Manufacturing\Enums\ManufacturingOrderState;
 use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource;
 use Webkul\Manufacturing\Models\Move;
 use Webkul\Manufacturing\Models\WorkOrder;
@@ -119,9 +116,14 @@ class OverviewManufacturingOrder extends ViewRecord
             return 0.0;
         }
 
-        return (float) ProductQuantity::query()
-            ->where('product_id', $move->product_id)
-            ->sum('reserved_quantity');
+        $query = ProductQuantity::query()
+            ->where('product_id', $move->product_id);
+
+        if ($move->source_location_id) {
+            $query->where('location_id', $move->source_location_id);
+        }
+
+        return (float) $query->sum('reserved_quantity');
     }
 
     public function getComponentStatusLabel(Move $move): string

@@ -27,9 +27,9 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Size;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,9 +38,9 @@ use Webkul\Field\Filament\Forms\Components\ProgressStepper as FormProgressSteppe
 use Webkul\Field\Filament\Infolists\Components\ProgressStepper as InfolistProgressStepper;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Models\Location;
-use Webkul\Manufacturing\Models\Move;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
+use Webkul\Manufacturing\Enums\WorkCenterWorkingState;
 use Webkul\Manufacturing\Enums\WorkOrderState;
 use Webkul\Manufacturing\Filament\Clusters\Configurations\Resources\OperationResource as ConfigurationOperationResource;
 use Webkul\Manufacturing\Filament\Clusters\Operations;
@@ -52,6 +52,7 @@ use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrd
 use Webkul\Manufacturing\Filament\Clusters\Operations\Resources\ManufacturingOrderResource\Pages\ViewManufacturingOrder;
 use Webkul\Manufacturing\Models\BillOfMaterial;
 use Webkul\Manufacturing\Models\BillOfMaterialLine;
+use Webkul\Manufacturing\Models\Move;
 use Webkul\Manufacturing\Models\Operation;
 use Webkul\Manufacturing\Models\Order;
 use Webkul\Manufacturing\Models\Product;
@@ -689,7 +690,7 @@ class ManufacturingOrderResource extends Resource
                     ->required()
                     ->visible(fn (?Move $record): bool => $record?->id && $record?->state !== MoveState::DRAFT)
                     ->disabled(fn (?Move $record): bool => in_array($record?->state, [MoveState::DONE, MoveState::CANCELED])),
-                    // ->suffixAction(fn (Move $record) => static::getMoveLinesAction($record)),
+                // ->suffixAction(fn (Move $record) => static::getMoveLinesAction($record)),
                 Select::make('uom_id')
                     ->hiddenLabel()
                     ->default(fn (Get $get): mixed => $get('../../uom_id'))
@@ -780,7 +781,7 @@ class ManufacturingOrderResource extends Resource
                         $set('work_center_id', $operation?->work_center_id);
                     })
                     ->required()
-                    ->disabled(fn ($record): bool => ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
+                    ->disabled(fn ($record): bool => $record && ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
                 Select::make('work_center_id')
                     ->hiddenLabel()
                     ->options(fn (): array => WorkCenter::query()->withTrashed()->pluck('name', 'id')->all())
@@ -789,7 +790,7 @@ class ManufacturingOrderResource extends Resource
                     ->native(false)
                     ->wrapOptionLabels(false)
                     ->required()
-                    ->disabled(fn ($record): bool => ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
+                    ->disabled(fn ($record): bool => $record && ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
                 Placeholder::make('rendered_display_product')
                     ->hiddenLabel()
                     ->content(function (Get $get): string {
@@ -830,12 +831,12 @@ class ManufacturingOrderResource extends Resource
                     ->hiddenLabel()
                     ->native(false)
                     ->seconds(false)
-                    ->disabled(fn ($record): bool => ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
+                    ->disabled(fn ($record): bool => $record && ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
                 DateTimePicker::make('finished_at')
                     ->hiddenLabel()
                     ->native(false)
                     ->seconds(false)
-                    ->disabled(fn ($record): bool => ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
+                    ->disabled(fn ($record): bool => $record && ! in_array($record->state, [WorkOrderState::PENDING, WorkOrderState::WAITING])),
                 TextInput::make('expected_duration')
                     ->hiddenLabel()
                     ->default('00:00')
@@ -851,16 +852,102 @@ class ManufacturingOrderResource extends Resource
                 Placeholder::make('state')
                     ->hiddenLabel()
                     ->badge()
-                    ->suffixAction(function ($record) {
-                        return Action::make('action')
-                            ->icon('heroicon-m-play')
+                    ->suffixActions([
+                        Action::make('button_start')
+                            ->icon('heroicon-m-play-circle')
                             ->color('success')
+                            ->size(Size::ExtraLarge)
                             ->databaseTransaction()
-                            ->action(function (Set $set, $state) use($record) {
-                                
-                            });
-                    }),
+                            ->visible(function (?WorkOrder $record): bool {
+                                if (! $record) {
+                                    return false;
+                                }
+
+                                $productionState = $record->manufacturingOrder?->state;
+
+                                return ! in_array($productionState, [
+                                    ManufacturingOrderState::DRAFT,
+                                    ManufacturingOrderState::DONE,
+                                    ManufacturingOrderState::CANCEL,
+                                ], true)
+                                    && $record->working_state !== WorkCenterWorkingState::BLOCKED
+                                    && ! in_array($record->state, [WorkOrderState::DONE, WorkOrderState::CANCEL], true)
+                                    && ! $record->is_user_working;
+                            })
+                            ->action(function (WorkOrder $record, Set $set): void {
+                                $record->start();
+
+                                $record->refresh();
+
+                                static::syncWorkOrderDisplayState($set, $record);
+                            }),
+                        Action::make('button_pending')
+                            ->icon('heroicon-m-pause-circle')
+                            ->color('warning')
+                            ->size(Size::ExtraLarge)
+                            ->databaseTransaction()
+                            ->visible(function (?WorkOrder $record): bool {
+                                if (! $record) {
+                                    return false;
+                                }
+
+                                $productionState = $record->manufacturingOrder?->state;
+
+                                return ! in_array($productionState, [
+                                    ManufacturingOrderState::DRAFT,
+                                    ManufacturingOrderState::DONE,
+                                    ManufacturingOrderState::CANCEL,
+                                ], true)
+                                    && $record->working_state !== WorkCenterWorkingState::BLOCKED
+                                    && $record->is_user_working;
+                            })
+                            ->action(function (WorkOrder $record, Set $set): void {
+                                $record->pending();
+
+                                $record->refresh();
+
+                                static::syncWorkOrderDisplayState($set, $record);
+                            }),
+                        Action::make('button_done')
+                            ->icon('heroicon-m-check-circle')
+                            ->label('Done')
+                            ->color('primary')
+                            ->size(Size::ExtraLarge)
+                            ->databaseTransaction()
+                            ->visible(function (?WorkOrder $record): bool {
+                                if (! $record) {
+                                    return false;
+                                }
+
+                                $productionState = $record->manufacturingOrder?->state;
+
+                                return ! in_array($productionState, [
+                                    ManufacturingOrderState::DRAFT,
+                                    ManufacturingOrderState::DONE,
+                                    ManufacturingOrderState::CANCEL,
+                                ], true)
+                                    && $record->working_state !== WorkCenterWorkingState::BLOCKED
+                                    && $record->is_user_working;
+                            })
+                            ->action(function (WorkOrder $record, Set $set): void {
+                                $record->finish();
+
+                                $record->refresh();
+
+                                static::syncWorkOrderDisplayState($set, $record);
+                            }),
+                    ]),
             ]);
+    }
+
+    protected static function syncWorkOrderDisplayState(Set $set, WorkOrder $workOrder): void
+    {
+        $set('state', $workOrder->state?->value);
+        $set('started_at', $workOrder->started_at);
+        $set('finished_at', $workOrder->finished_at);
+        $set('duration', (float) ($workOrder->duration ?: 0));
+        $set('quantity_remaining', (float) $workOrder->quantity_remaining);
+        $set('display_product', $workOrder->product?->name ?? '—');
     }
 
     protected static function getComponentRepeaterState(BillOfMaterial $billOfMaterial, float $quantity): array

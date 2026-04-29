@@ -164,7 +164,7 @@ class WorkCenter extends Model implements Sortable
     public function computeWorkingState(): void
     {
         $productivityLog = $this->productivityLogs()
-            ->whereNull('date_end')
+            ->whereNull('finished_at')
             ->first();
 
         if (! $productivityLog) {

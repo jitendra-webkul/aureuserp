@@ -143,7 +143,8 @@ class WorkCenterResource extends Resource
                                     ->label(__('manufacturing::filament/clusters/configurations/resources/work-center.form.sections.general.fields.calendar'))
                                     ->options(fn (): array => Calendar::withTrashed()->pluck('name', 'id')->all())
                                     ->searchable()
-                                    ->preload(),
+                                    ->preload()
+                                    ->required(),
 
                                 Select::make('company_id')
                                     ->label(__('manufacturing::filament/clusters/configurations/resources/work-center.form.sections.general.fields.company'))

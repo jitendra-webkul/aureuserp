@@ -10,13 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Enums\ProductTracking;
-use Webkul\Support\Models\CalendarLeave;
 use Webkul\Manufacturing\Database\Factories\WorkOrderFactory;
+use Webkul\Manufacturing\Enums\ManufacturingOrderState;
+use Webkul\Manufacturing\Enums\WorkCenterWorkingState;
 use Webkul\Manufacturing\Enums\WorkOrderProductionAvailability;
 use Webkul\Manufacturing\Enums\WorkOrderState;
 use Webkul\Security\Models\User;
-use Webkul\Manufacturing\Enums\ManufacturingOrderState;
-use Webkul\Manufacturing\Enums\WorkCenterWorkingState;
+use Webkul\Support\Models\CalendarLeave;
 use Webkul\Support\Models\UOM;
 
 class WorkOrder extends Model
@@ -36,6 +36,7 @@ class WorkOrder extends Model
         'finished_at',
         'duration',
         'duration_per_unit',
+        'duration_percent',
         'costs_per_hour',
         'work_center_id',
         'product_id',
@@ -55,6 +56,7 @@ class WorkOrder extends Model
         'finished_at'             => 'datetime',
         'duration'                => 'decimal:4',
         'duration_per_unit'       => 'decimal:4',
+        'duration_percent'        => 'integer',
         'costs_per_hour'          => 'decimal:4',
     ];
 
@@ -127,6 +129,11 @@ class WorkOrder extends Model
         return $this->workCenter->working_state;
     }
 
+    public function getProductionStateAttribute()
+    {
+        return $this->manufacturingOrder->state;
+    }
+
     public function getProductTrackingAttribute()
     {
         return $this->product->tracking;
@@ -172,6 +179,17 @@ class WorkOrder extends Model
         return $isUserWorking;
     }
 
+    public function getDisplayNameAttribute()
+    {
+        $displayName = "{$this->manufacturingOrder->name} - {$this->name}";
+
+        if ($this->context['prefix_product'] ?? false) {
+            $displayName = "{$this->product->name} - {$this->manufacturingOrder->name} - {$this->name}";
+        }
+
+        return $displayName;
+    }
+
     protected static function newFactory(): WorkOrderFactory
     {
         return WorkOrderFactory::new();
@@ -195,6 +213,8 @@ class WorkOrder extends Model
             $workOrder->computeUOMId();
 
             $workOrder->computeState();
+
+            $workOrder->computeDuration();
         });
 
         static::created(function ($workOrder) {
@@ -235,6 +255,25 @@ class WorkOrder extends Model
         $this->uom_id = $this->product?->uom_id;
     }
 
+    public function computeDuration(): void
+    {
+        $this->duration = $this->productivityLogs->sum('duration');
+
+        $this->duration_per_unit = round($this->duration / max($this->quantity_produced, 1), 2);
+
+        if ($this->expected_duration) {
+            $this->duration_percent = max(
+                -2147483648,
+                min(
+                    2147483647,
+                    100 * ($this->expected_duration - $this->duration) / $this->expected_duration
+                )
+            );
+        } else {
+            $this->duration_percent = 0;
+        }
+    }
+
     public function computeState()
     {
         if (! in_array($this->state, [WorkOrderState::PENDING, WorkOrderState::WAITING, WorkOrderState::READY])) {
@@ -268,9 +307,9 @@ class WorkOrder extends Model
     public function computeWorkingUsers(): array
     {
         $workingUsers = $this->productivityLogs
-            ->filter(fn($log) => ! $log->finished_at)
+            ->filter(fn ($log) => ! $log->finished_at)
             ->sortBy('started_at')
-            ->pluck('creator')
+            ->pluck('assignedUser')
             ->unique('id');
 
         $lastWorkingUser = null;
@@ -278,17 +317,17 @@ class WorkOrder extends Model
         if ($workingUsers->isNotEmpty()) {
             $lastWorkingUser = $workingUsers->last();
         } elseif ($this->productivityLogs->isNotEmpty()) {
-            $timesWithEnd = $this->productivityLogs->filter(fn($log) => $log->finished_at);
+            $timesWithEnd = $this->productivityLogs->filter(fn ($log) => $log->finished_at);
 
             $lastWorkingUser = $timesWithEnd->isNotEmpty()
-                ? $timesWithEnd->sortBy('finished_at')->last()->creator
-                : $this->productivityLogs->last()->creator;
+                ? $timesWithEnd->sortBy('finished_at')->last()->assignedUser
+                : $this->productivityLogs->last()->assignedUser;
         } else {
             $lastWorkingUser = null;
         }
 
         $isUserWorking = $this->productivityLogs->some(
-            fn($x) => $x->creator_id === Auth::id()
+            fn ($x) => $x->assigned_user_id === Auth::id()
                 && ! $x->finished_at
                 && in_array($x->loss_type, ['productive', 'performance'])
         );
@@ -300,13 +339,40 @@ class WorkOrder extends Model
         ];
     }
 
+    public function calculateDateFinished(?Carbon $startedAt = null): Carbon
+    {
+        $workCenter = ($this->context['new_work_center_id'] ?? false)
+            ? WorkCenter::find($this->context['new_work_center_id'])
+            : $this->workCenter;
+
+        $start = $startedAt ?? Carbon::parse($this->started_at);
+
+        if (1 || ! $workCenter->calendar_id) {
+            $durationInSeconds = $this->expected_duration * 60;
+
+            return $start->clone()->addSeconds($durationInSeconds);
+        }
+
+        return $workCenter->calendar->planHours(
+            $this->expected_duration / 60.0,
+            $start,
+            computeLeaves: true,
+            domain: [['time_type', 'in', ['leave', 'other']]]
+        );
+    }
+
+    public function shouldStartTimer(): bool
+    {
+        return true;
+    }
+
     public function start(bool $raiseOnInvalidState = false): void
     {
         if ($this->working_state === WorkCenterWorkingState::BLOCKED) {
             throw new \Exception(__('Please unblock the work center to start the work order.'));
         }
 
-        if ($this->times->filter(fn($time) => $time->user_id === Auth::id() && ! $time->finished_at)->isNotEmpty()) {
+        if ($this->productivityLogs->filter(fn ($time) => $time->user_id === Auth::id() && ! $time->finished_at)->isNotEmpty()) {
             return;
         }
 
@@ -345,12 +411,13 @@ class WorkOrder extends Model
 
         if (! $this->calendar_leave_id) {
             $leave = CalendarLeave::create([
-                'name'        => $this->display_name,
-                'calendar_id' => $this->workCenter->calendar->id,
-                'date_from'   => $dateStart,
-                'date_to'     => $dateStart->clone()->addMinutes($this->duration_expected),
-                'resource_id' => $this->workCenter->resource->id,
-                'time_type'   => 'other',
+                'name'          => $this->name,
+                'calendar_id'   => $this->workCenter->calendar_id,
+                'date_from'     => $dateStart,
+                'date_to'       => $dateStart->clone()->addMinutes((float) $this->expected_duration),
+                'resource_id'   => $this->workCenter->getKey(),
+                'resource_type' => $this->workCenter->getMorphClass(),
+                'time_type'     => 'other',
             ]);
 
             $values['finished_at'] = $leave->date_to;
@@ -376,13 +443,15 @@ class WorkOrder extends Model
         static::endPrevious(collect([$this]));
     }
 
+    public function finish(): void {}
+
     public static function endPrevious($workOrders, bool $endAll = false): void
     {
         $query = WorkCenterProductivityLog::whereIn('work_order_id', $workOrders->pluck('id'))
             ->whereNull('finished_at');
 
         if (! $endAll) {
-            $query->where('user_id', Auth::id())->limit(1);
+            $query->where('assigned_user_id', Auth::id())->limit(1);
         }
 
         $query->get()->each(fn ($log) => $log->closeTimer());

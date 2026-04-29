@@ -43,4 +43,28 @@ class WorkCenterProductivityLoss extends Model
     {
         return $this->hasMany(WorkCenterProductivityLog::class, 'loss_id');
     }
+
+    public function convertToDuration($startDate, $endDate, $workCenter = null): float
+    {
+        $duration = 0;
+
+        // TODO: implement this
+        if (
+            false
+            && ! in_array($this->loss_type, ['productive', 'performance'])
+            && $workCenter?->calendar_id
+        ) {
+            $data = $workCenter->getWorkDaysDataBatch($startDate, $endDate);
+
+            $hours = $data[$workCenter->id]['hours'] ?? 0;
+
+            $duration = max($duration, $hours * 60);
+        } else {
+            $minutes = ($endDate->getTimestamp() - $startDate->getTimestamp()) / 60;
+
+            $duration = max($duration, $minutes);
+        }
+
+        return round($duration, 2);
+    }
 }
