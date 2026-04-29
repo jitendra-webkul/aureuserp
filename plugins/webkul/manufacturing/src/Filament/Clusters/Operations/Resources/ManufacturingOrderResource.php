@@ -103,8 +103,15 @@ class ManufacturingOrderResource extends Resource
                     ->hiddenLabel()
                     ->inline()
                     ->options(ManufacturingOrderState::options())
-                    ->options(function ($record): array {
+                    ->options(function (?Order $record, Get $get): array {
                         $options = ManufacturingOrderState::options();
+                        $currentState = $get('state');
+
+                        if ($currentState && ! $currentState instanceof ManufacturingOrderState) {
+                            $currentState = ManufacturingOrderState::from($currentState);
+                        }
+
+                        $currentState ??= $record?->state;
 
                         if (! $record) {
                             unset(
@@ -113,16 +120,14 @@ class ManufacturingOrderResource extends Resource
                                 $options[ManufacturingOrderState::CANCEL->value],
                             );
                         } else {
-                            if ($record->state !== ManufacturingOrderState::TO_CLOSE) {
-                                unset($options[ManufacturingOrderState::TO_CLOSE->value]);
+                            foreach ([ManufacturingOrderState::PROGRESS, ManufacturingOrderState::TO_CLOSE, ManufacturingOrderState::CANCEL] as $state) {
+                                if ($currentState !== $state) {
+                                    unset($options[$state->value]);
+                                }
                             }
 
-                            if ($record->state !== ManufacturingOrderState::PROGRESS) {
-                                unset($options[ManufacturingOrderState::PROGRESS->value]);
-                            }
-
-                            if ($record->state !== ManufacturingOrderState::CANCEL) {
-                                unset($options[ManufacturingOrderState::CANCEL->value]);
+                            if ($currentState) {
+                                $options[$currentState->value] = $currentState->getLabel();
                             }
                         }
 
@@ -878,8 +883,10 @@ class ManufacturingOrderResource extends Resource
                                 $record->start();
 
                                 $record->refresh();
+                                $record->manufacturingOrder?->refresh();
 
                                 static::syncWorkOrderDisplayState($set, $record);
+                                static::syncManufacturingOrderDisplayState($set, $record->manufacturingOrder);
                             }),
                         Action::make('button_pending')
                             ->icon('heroicon-m-pause-circle')
@@ -905,8 +912,10 @@ class ManufacturingOrderResource extends Resource
                                 $record->pending();
 
                                 $record->refresh();
+                                $record->manufacturingOrder?->refresh();
 
                                 static::syncWorkOrderDisplayState($set, $record);
+                                static::syncManufacturingOrderDisplayState($set, $record->manufacturingOrder);
                             }),
                         Action::make('button_done')
                             ->icon('heroicon-m-check-circle')
@@ -933,8 +942,10 @@ class ManufacturingOrderResource extends Resource
                                 $record->finish();
 
                                 $record->refresh();
+                                $record->manufacturingOrder?->refresh();
 
                                 static::syncWorkOrderDisplayState($set, $record);
+                                static::syncManufacturingOrderDisplayState($set, $record->manufacturingOrder);
                             }),
                     ]),
             ]);
@@ -948,6 +959,20 @@ class ManufacturingOrderResource extends Resource
         $set('duration', (float) ($workOrder->duration ?: 0));
         $set('quantity_remaining', (float) $workOrder->quantity_remaining);
         $set('display_product', $workOrder->product?->name ?? '—');
+    }
+
+    protected static function syncManufacturingOrderDisplayState(Set $set, ?Order $order): void
+    {
+        if (! $order) {
+            return;
+        }
+
+        $set('../../state', $order->state?->value);
+        $set('../../started_at', $order->started_at);
+        $set('../../finished_at', $order->finished_at);
+        $set('../../deadline_at', $order->deadline_at);
+        $set('../../quantity_producing', (float) ($order->quantity_producing ?: 0));
+        $set('../../reservation_state', $order->reservation_state?->value);
     }
 
     protected static function getComponentRepeaterState(BillOfMaterial $billOfMaterial, float $quantity): array
