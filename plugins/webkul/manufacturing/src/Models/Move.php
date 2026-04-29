@@ -19,6 +19,7 @@ class Move extends BaseMove
             'raw_material_order_id',
             'unbuild_order_id',
             'consume_unbuild_order_id',
+            'mo_operation_id',
             'work_order_id',
             'bom_line_id',
             'byproduct_id',
@@ -58,6 +59,11 @@ class Move extends BaseMove
     public function consumeUnbuildOrder(): BelongsTo
     {
         return $this->belongsTo(UnbuildOrder::class, 'consume_unbuild_order_id');
+    }
+
+    public function moOperation(): BelongsTo
+    {
+        return $this->belongsTo(Operation::class, 'mo_operation_id');
     }
 
     public function workOrder(): BelongsTo

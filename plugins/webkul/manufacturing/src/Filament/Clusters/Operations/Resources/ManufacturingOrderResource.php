@@ -661,7 +661,7 @@ class ManufacturingOrderResource extends Resource
                         $set('uom_id', $uomId);
                     })
                     ->required()
-                    ->disabled(fn (?Move $record): bool => $record?->id && $record?->state !== MoveState::DRAFT),
+                    ->disabled(fn ($record): bool => $record instanceof Move && $record->id && $record->state !== MoveState::DRAFT),
                 Placeholder::make('rendered_display_from')
                     ->hiddenLabel()
                     ->content(function (Get $get): string {
@@ -680,7 +680,7 @@ class ManufacturingOrderResource extends Resource
                     ->default(0)
                     ->live(onBlur: true)
                     ->required()
-                    ->disabled(fn (?Move $record): bool => $record?->id && $record?->state !== MoveState::DRAFT),
+                    ->disabled(fn ($record): bool => $record instanceof Move && $record->id && $record->state !== MoveState::DRAFT),
                 TextInput::make('quantity')
                     ->hiddenLabel()
                     ->numeric()
@@ -688,8 +688,8 @@ class ManufacturingOrderResource extends Resource
                     ->maxValue(99999999999)
                     ->default(0)
                     ->required()
-                    ->visible(fn (?Move $record): bool => $record?->id && $record?->state !== MoveState::DRAFT)
-                    ->disabled(fn (?Move $record): bool => in_array($record?->state, [MoveState::DONE, MoveState::CANCELED])),
+                    ->visible(fn ($record): bool => $record instanceof Move && $record->id && $record->state !== MoveState::DRAFT)
+                    ->disabled(fn ($record): bool => $record instanceof Move && in_array($record->state, [MoveState::DONE, MoveState::CANCELED])),
                 // ->suffixAction(fn (Move $record) => static::getMoveLinesAction($record)),
                 Select::make('uom_id')
                     ->hiddenLabel()
@@ -709,7 +709,7 @@ class ManufacturingOrderResource extends Resource
                     ->native(false)
                     ->wrapOptionLabels(false)
                     ->required()
-                    ->disabled(fn (?Move $record): bool => $record?->id && $record?->state !== MoveState::DRAFT),
+                    ->disabled(fn ($record): bool => $record instanceof Move && $record->id && $record->state !== MoveState::DRAFT),
                 Placeholder::make('rendered_display_forecast')
                     ->hiddenLabel()
                     ->content(fn (Get $get): string => (string) ($get('display_forecast') ?: '—')),

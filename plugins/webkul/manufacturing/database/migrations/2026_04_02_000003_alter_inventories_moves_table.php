@@ -42,6 +42,12 @@ return new class extends Migration
                 ->nullOnDelete()
                 ->noActionOnUpdate();
 
+            $table->foreignId('mo_operation_id')
+                ->nullable()
+                ->constrained('manufacturing_operations')
+                ->nullOnDelete()
+                ->noActionOnUpdate();
+
             $table->foreignId('work_order_id')
                 ->nullable()
                 ->constrained('manufacturing_work_orders')

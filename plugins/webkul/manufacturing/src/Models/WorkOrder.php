@@ -109,6 +109,11 @@ class WorkOrder extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function rawMaterialMoves(): HasMany
+    {
+        return $this->hasMany(Move::class, 'work_order_id');
+    }
+
     public function blockedByWorkOrders(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'manufacturing_work_order_dependencies', 'work_order_id', 'depends_on_work_order_id');
@@ -361,6 +366,26 @@ class WorkOrder extends Model
         );
     }
 
+    public function calculateExpectedDuration(?Carbon $dateStart = null, ?Carbon $dateFinished = null): float
+    {
+        $start = $dateStart ?? Carbon::parse($this->started_at);
+
+        $finished = $dateFinished ?? Carbon::parse($this->finished_at);
+
+        //TODO: Implement this
+        if (true || ! $this->workCenter->calendar_id) {
+            return $finished->diffInSeconds($start) / 60;
+        }
+
+        $interval = $this->workCenter->calendar->getWorkDurationData(
+            $start,
+            $finished,
+            domain: [['time_type', 'in', ['leave', 'other']]]
+        );
+
+        return $interval['hours'] * 60;
+    }
+
     public function shouldStartTimer(): bool
     {
         return true;
@@ -443,7 +468,53 @@ class WorkOrder extends Model
         static::endPrevious(collect([$this]));
     }
 
-    public function finish(): void {}
+    public function finish(): void
+    {
+        $dateFinished = now();
+
+        if (in_array($this->state, [WorkOrderState::DONE, WorkOrderState::CANCEL])) {
+            return;
+        }
+
+        $moves = $this->rawMaterialMoves->merge(
+            $this->production->moveByproducts->filter(fn ($move) => $move->mo_operation_id === $this->operation_id)
+        );
+
+        foreach ($moves as $move) {
+            if (! $move->is_picked) {
+                $qtyAvailable = float_is_zero(
+                    $this->production->qty_producing,
+                    precisionRounding: $this->production->uom->rounding
+                )
+                    ? $this->production->quantity
+                    : $this->production->qty_producing;
+
+                $newQty = float_round(
+                    $qtyAvailable * $move->unit_factor,
+                    precisionRounding: $move->uom->rounding
+                );
+
+                $move->setQuantityDone($newQty);
+            }
+        }
+
+        $moves->each->update(['is_picked' => true]);
+
+        $this->endAll(collect([$this]));
+
+        $vals = [
+            'qty_produced'  => $this->qty_produced ?: ($this->qty_producing ?: $this->qty_production),
+            'state'         => WorkOrderState::DONE,
+            'date_finished' => $dateFinished,
+            'costs_hour'    => $this->workcenter->costs_hour,
+        ];
+
+        if (! $this->date_start || $dateFinished < Carbon::parse($this->date_start)) {
+            $vals['date_start'] = $dateFinished;
+        }
+
+        $this->update($vals);
+    }
 
     public static function endPrevious($workOrders, bool $endAll = false): void
     {

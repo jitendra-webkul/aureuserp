@@ -224,6 +224,12 @@ class Order extends Model
         return $deliveryCount;
     }
 
+    public function getMoveByproductsAttribute()
+    {
+        return $this->finishedMoves
+            ->filter(fn ($move) => $move->product_id !== $this->product_id);
+    }
+
     public function shouldPostponeDateFinished($dateFinished): bool
     {
         return $dateFinished->equalTo($this->started_at);
