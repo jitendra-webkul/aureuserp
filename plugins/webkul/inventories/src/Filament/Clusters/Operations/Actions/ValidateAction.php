@@ -9,7 +9,7 @@ use Livewire\Component;
 use Throwable;
 use Webkul\Inventory\Enums\CreateBackorder;
 use Webkul\Inventory\Enums\OperationState;
-use Webkul\Inventory\Facades\Inventory as InventoryFaceade;
+use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Inventory\Models\Operation;
 
 class ValidateAction extends Action
@@ -44,6 +44,7 @@ class ValidateAction extends Action
                 Action::make('no-backorder')
                     ->label(__('inventories::filament/clusters/operations/actions/validate.extra-modal-footer-actions.no-backorder.label'))
                     ->color('danger')
+                    ->databaseTransaction()
                     ->action(function (Operation $record, Component $livewire): void {
                         $this->executeDoneTransfer($record, $livewire, cancelBackOrder: true);
                     }),
@@ -76,19 +77,19 @@ class ValidateAction extends Action
 
     private function executeDoneTransfer(Operation $record, Component $livewire, bool $cancelBackOrder = false): void
     {
-        // try {
-            InventoryFaceade::doneTransfer($record, $cancelBackOrder);
+        try {
+            InventoryFacade::doneTransfer($record, $cancelBackOrder);
 
             $livewire->updateForm();
-        // } catch (Throwable $e) {
-        //     Notification::make()
-        //         ->danger()
-        //         ->body($e->getMessage())
-        //         ->send();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->danger()
+                ->body($e->getMessage())
+                ->send();
 
-        //     $livewire->unmountAction();
+            $this->halt(shouldRollBackDatabaseTransaction: true);
+        }
 
-        //     $this->halt(shouldRollBackDatabaseTransaction: true);
-        // }
+        $livewire->unmountAction();
     }
 }

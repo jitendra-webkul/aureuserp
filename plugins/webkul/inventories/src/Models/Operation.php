@@ -16,6 +16,7 @@ use Webkul\Inventory\Database\Factories\OperationFactory;
 use Webkul\Inventory\Enums\MoveType;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationState;
+use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Partner\Models\Partner;
 use Webkul\PluginManager\Package;
@@ -314,16 +315,31 @@ class Operation extends Model
             return;
         }
 
-        if ($this->moves->every(fn ($move) => $move->state === MoveState::CONFIRMED)) {
-            $this->state = OperationState::CONFIRMED;
-        } elseif ($this->moves->every(fn ($move) => $move->state === MoveState::DONE)) {
-            $this->state = OperationState::DONE;
-        } elseif ($this->moves->every(fn ($move) => $move->state === MoveState::CANCELED)) {
+        if ($this->moves->isEmpty() || $this->moves->some(fn($move) => $move->state === MoveState::DRAFT)) {
+            $this->state = OperationState::DRAFT;
+        } elseif ($this->moves->every(fn($move) => $move->state === MoveState::CANCELED)) {
             $this->state = OperationState::CANCELED;
+        } elseif ($this->moves->every(fn($move) => in_array($move->state, [MoveState::CANCELED, MoveState::DONE]))) {
+            $allDoneAreScraped = $this->moves->every(fn($move) => $move->state === MoveState::DONE ? $move->is_scraped : true);
+
+            $anyCancelNotScrapped = $this->moves->some(fn($move) => $move->state === MoveState::CANCELED && ! $move->is_scraped);
+
+            $this->state = ($allDoneAreScraped && $anyCancelNotScrapped)
+                ? OperationState::CANCELED
+                : OperationState::DONE;
+        } elseif ($this->moves->every(fn($move) => $move->state === MoveState::CONFIRMED)) {
+            $this->state = OperationState::CONFIRMED;
         } elseif (
-            $this->moves->contains(fn ($move) => $move->state === MoveState::ASSIGNED || $move->state === MoveState::PARTIALLY_ASSIGNED)
+            $this->sourceLocation->shouldBypassReservation() &&
+            $this->moves->every(fn($move) => $move->procure_method === ProcureMethod::MAKE_TO_STOCK)
         ) {
             $this->state = OperationState::ASSIGNED;
+        } else {
+            $relevantMoveState = InventoryFacade::getRelevantStateAmongMoves($this->moves);
+
+            $this->state = $relevantMoveState === MoveState::PARTIALLY_ASSIGNED
+                ? OperationState::ASSIGNED
+                : OperationState::from($relevantMoveState->value);
         }
     }
 
