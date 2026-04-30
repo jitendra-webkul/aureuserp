@@ -44,6 +44,7 @@ class ValidateAction extends Action
                 Action::make('no-backorder')
                     ->label(__('inventories::filament/clusters/operations/actions/validate.extra-modal-footer-actions.no-backorder.label'))
                     ->color('danger')
+                    ->cancelParentActions()
                     ->databaseTransaction()
                     ->action(function (Operation $record, Component $livewire): void {
                         $this->executeDoneTransfer($record, $livewire, cancelBackOrder: true);
@@ -87,9 +88,9 @@ class ValidateAction extends Action
                 ->body($e->getMessage())
                 ->send();
 
+            $livewire->unmountAction();
+
             $this->halt(shouldRollBackDatabaseTransaction: true);
         }
-
-        $livewire->unmountAction();
     }
 }
