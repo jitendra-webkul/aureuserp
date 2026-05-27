@@ -5,7 +5,9 @@
     $hasAnyCountedMoveLine = $moveLines->contains(fn ($moveLine) => (float) ($countedMoveLineQuantities[$moveLine->id] ?? 0) > 0);
 @endphp
 
-<main class="min-h-screen bg-gray-50 p-2" x-data="barcodeScanner('barcode', 'scan')">
+<main @class([
+    'min-h-screen bg-gray-50 p-2',
+]) x-data="barcodeScanner('barcode', 'scan')">
     @include('barcode::components.header.web', [
         'title' => $operation->name,
         'subtitle' => $operation->partner?->name ?? $operation->origin,
@@ -175,6 +177,8 @@
                     </div>
                 </x-filament::section>
             @endif
+
+            <div class="h-12" aria-hidden="true"></div>
         </section>
 
         <footer class="fixed inset-x-0 bottom-0 z-20 grid grid-cols-2 gap-2 border-t border-gray-200 bg-white px-2 py-2 shadow-[0_-4px_16px_rgba(15,23,42,0.08)]">
