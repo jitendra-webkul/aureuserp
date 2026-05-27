@@ -59,4 +59,11 @@ class BarcodeServiceProvider extends PackageServiceProvider
             $panel->plugin(BarcodePlugin::make());
         });
     }
+
+    public function registerCustomCss()
+    {
+        FilamentAsset::register([
+            Css::make('accounting', __DIR__.'/../resources/dist/accounting.css'),
+        ], 'accounting');
+    }
 }

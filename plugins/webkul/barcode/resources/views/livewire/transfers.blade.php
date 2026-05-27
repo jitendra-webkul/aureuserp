@@ -1,5 +1,5 @@
 <div>
-    <main class="barcode-page" x-data="barcodeScanner('search', 'openOperation')">
+    <main class="min-h-screen p-2" x-data="barcodeScanner('search', 'openOperation')">
         @include('barcode::components.header.web', [
             'title' => $operationType->name,
             'breadcrumbs' => [
@@ -9,9 +9,9 @@
             'showBarcode' => true,
         ])
 
-        <div id="barcode-reader" class="barcode-reader" x-show="active" x-cloak></div>
+        <div id="barcode-reader" class="mb-3 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs" x-show="active" x-cloak></div>
 
-        <div class="scanner-notice" x-show="scannerError" x-cloak>
+        <div class="mb-3" x-show="scannerError" x-cloak>
             <x-filament::callout icon="heroicon-o-exclamation-triangle" color="warning">
                 <x-slot name="heading">
                     Camera unavailable
@@ -23,9 +23,9 @@
             </x-filament::callout>
         </div>
 
-    <div class="search-row">
-        <form class="scan-form" wire:submit="openOperation">
-            <x-filament::input.wrapper class="scan-field">
+        <div class="mb-3">
+            <form wire:submit="openOperation">
+                <x-filament::input.wrapper>
                 <x-slot name="suffix">
                     <x-filament::icon-button
                         color="primary"
@@ -33,7 +33,7 @@
                         :label="__('barcode::app.operation-search.open')"
                         type="submit"
                         size="sm"
-                        class="scan-submit-button"
+                        class="h-10 w-10"
                     />
                 </x-slot>
 
@@ -43,23 +43,23 @@
                     :placeholder="__('barcode::app.navigation.search')"
                 />
             </x-filament::input.wrapper>
-        </form>
-    </div>
+            </form>
+        </div>
 
-    @if ($operationNotice)
-        <x-filament::callout icon="heroicon-o-information-circle" :color="$operationNoticeColor" class="notice">
-            <x-slot name="heading">
-                {{ __('barcode::app.operation-search.open') }}
-            </x-slot>
+        @if ($operationNotice)
+            <x-filament::callout icon="heroicon-o-information-circle" :color="$operationNoticeColor" class="mb-3">
+                <x-slot name="heading">
+                    {{ __('barcode::app.operation-search.open') }}
+                </x-slot>
 
-            <x-slot name="description">
-                {{ $operationNotice }}
-            </x-slot>
-        </x-filament::callout>
-    @endif
+                <x-slot name="description">
+                    {{ $operationNotice }}
+                </x-slot>
+            </x-filament::callout>
+        @endif
 
         @if ($transfers->isEmpty())
-            <section class="transfer-empty-state">
+            <section class="flex justify-center pt-3">
                 <x-filament::empty-state
                     icon="heroicon-o-inbox"
                     :heading="__('barcode::app.transfers.empty')"
@@ -70,18 +70,22 @@
                 </x-filament::empty-state>
             </section>
         @else
-            <section class="transfer-grid">
+            <section class="grid gap-2">
                 @foreach ($transfers as $transfer)
-                <a class="transfer-card" href="{{ route('barcode.operation', [$operationType, $transfer, 'scan' => $search]) }}" wire:navigate>
-                    <div class="transfer-main">
-                        <strong>{{ $transfer->name }}</strong>
-                        <span class="transfer-partner">{{ $transfer->partner?->name ?? $transfer->origin }}</span>
-                    </div>
-                    <div class="transfer-meta">
-                        <span class="state-badge">{{ $transfer->state?->value }}</span>
-                        <time>{{ $transfer->scheduled_at?->format('M d') }}</time>
-                    </div>
-                </a>
+                    <a class="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-950 no-underline shadow-xs" href="{{ route('barcode.operation', [$operationType, $transfer, 'scan' => $search]) }}" wire:navigate>
+                        <div class="min-w-0">
+                            <strong class="block text-base leading-5 font-semibold">{{ $transfer->name }}</strong>
+                            <span class="mt-1 block text-sm text-gray-600">{{ $transfer->partner?->name ?? $transfer->origin }}</span>
+                        </div>
+                        <div class="flex shrink-0 flex-col items-end gap-2 text-right">
+                            @if ($transfer->state)
+                                <x-filament::badge :color="$transfer->state->getColor()">
+                                    {{ $transfer->state->getLabel() }}
+                                </x-filament::badge>
+                            @endif
+                            <time class="text-xs text-gray-500">{{ $transfer->scheduled_at?->format('M d') }}</time>
+                        </div>
+                    </a>
                 @endforeach
             </section>
         @endif

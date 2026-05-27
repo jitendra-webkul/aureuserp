@@ -31,16 +31,16 @@ class Login extends BaseLogin
 
     public function getTitle(): string
     {
-        return 'Barcode Login';
+        return __('barcode::app.auth.login-title');
     }
 
     public function getHeading(): string
     {
-        return 'Sign in to Barcode';
+        return __('barcode::app.auth.login-heading');
     }
 
     public function getSubheading(): ?string
     {
-        return 'Continue to the barcode operations app.';
+        return __('barcode::app.auth.login-subheading');
     }
 }

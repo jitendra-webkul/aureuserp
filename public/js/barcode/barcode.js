@@ -54,7 +54,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         async toggle($wire) {
-            if (this.active) {
+            if (this.active || this.scannerError) {
+                this.scannerError = '';
                 await this.stop();
 
                 return;

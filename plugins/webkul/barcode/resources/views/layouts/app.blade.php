@@ -50,10 +50,10 @@
 
         @livewireStyles
     </head>
-    <body class="fi-body fi-panel-admin barcode-app" x-data="{ sidebarOpen: false }">
-        <div class="barcode-shell">
+    <body class="fi-body fi-panel-admin bg-gray-50 text-gray-950" x-data="{ sidebarOpen: false }">
+        <div class="min-h-screen">
             <div
-                class="barcode-sidebar-overlay"
+                class="fixed inset-0 z-39 bg-slate-900/45"
                 x-show="sidebarOpen"
                 x-transition.opacity
                 x-on:click="sidebarOpen = false"
@@ -61,21 +61,21 @@
             ></div>
 
             <aside
-                class="barcode-sidebar-mobile"
+                class="fixed top-0 left-0 z-40 w-[calc(100vw-40px)] max-w-80 will-change-transform"
                 x-show="sidebarOpen"
-                x-transition:enter="barcode-sidebar-slide-enter"
-                x-transition:enter-start="barcode-sidebar-slide-enter-start"
-                x-transition:enter-end="barcode-sidebar-slide-enter-end"
-                x-transition:leave="barcode-sidebar-slide-leave"
-                x-transition:leave-start="barcode-sidebar-slide-leave-start"
-                x-transition:leave-end="barcode-sidebar-slide-leave-end"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="-translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="-translate-x-full"
                 x-on:keydown.escape.window="sidebarOpen = false"
                 x-cloak
             >
                 @include('barcode::components.sidebar.web')
             </aside>
 
-            <div class="barcode-content">
+            <div class="min-w-0 flex-1">
                 {{ $slot }}
             </div>
         </div>

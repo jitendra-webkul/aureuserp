@@ -54,7 +54,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         async toggle($wire) {
-            if (this.active) {
+            if (this.active || this.scannerError) {
+                this.scannerError = '';
                 await this.stop();
 
                 return;
@@ -102,7 +103,12 @@ document.addEventListener('alpine:init', () => {
             this.active = false;
 
             if (this.scanner) {
-                await this.scanner.stop();
+                try {
+                    await this.scanner.stop();
+                } catch (error) {
+                    console.warn('Barcode scanner failed to stop cleanly.', error);
+                }
+
                 this.scanner.clear();
                 this.scanner = null;
             }
