@@ -13,17 +13,6 @@ document.addEventListener('alpine:init', () => {
         actionMenuOpen: false,
 
         init() {
-            this.handleNativeScanRequest = async () => {
-                this.scannerError = '';
-
-                if (this.active || this.processing) {
-                    return;
-                }
-
-                await this.start(this.$wire);
-            };
-
-            window.addEventListener('barcode-native-scan-request', this.handleNativeScanRequest);
         },
 
         requestAction(key, label) {
@@ -106,7 +95,6 @@ document.addEventListener('alpine:init', () => {
                 console.error('Barcode scanner failed to start.', error);
                 this.scanner = null;
                 this.renderScannerError('Unable to access the camera. Check camera permission and try again.');
-                window.BarcodeNative?.toast?.('Unable to access the camera.', 'short');
             }
         },
 
@@ -128,35 +116,9 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-const dispatchNativeScanRequestFromHash = () => {
-    if (window.location.hash !== '#scan-barcode') {
-        return;
-    }
-
-    const hashlessUrl = `${window.location.pathname}${window.location.search}`;
-
-    window.dispatchEvent(new CustomEvent('barcode-native-scan-request'));
-    window.history.replaceState({}, document.title, hashlessUrl);
-};
-
-window.addEventListener('hashchange', dispatchNativeScanRequestFromHash);
-window.addEventListener('load', dispatchNativeScanRequestFromHash);
-
 window.BarcodeUiState = window.BarcodeUiState || {
     lastLocatedRecordKey: null,
 };
-
-window.addEventListener('barcode-native-feedback', (event) => {
-    const detail = event.detail ?? {};
-
-    if (detail.vibrate) {
-        window.BarcodeNative?.vibrate?.();
-    }
-
-    if (detail.message) {
-        window.BarcodeNative?.toast?.(detail.message, detail.duration ?? 'short');
-    }
-});
 
 window.addEventListener('barcode-record-located', (event) => {
     const recordKey = `${event.detail.targetId}:${event.detail.locatedAt}`;

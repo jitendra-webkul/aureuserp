@@ -9,7 +9,6 @@ class Navigation
      *     id: string,
      *     label: string,
      *     icon: string,
-     *     native_icon: string,
      *     href: string|null,
      *     active: bool,
      *     disabled: bool
@@ -24,7 +23,6 @@ class Navigation
                 'id'          => 'inventory-operations',
                 'label'       => 'Inventory Operations',
                 'icon'        => 'heroicon-m-arrows-right-left',
-                'native_icon' => 'swap_horiz',
                 'href'        => route('barcode.dashboard'),
                 'active'      => str_starts_with($currentRoute, 'barcode.dashboard')
                     || str_starts_with($currentRoute, 'barcode.transfers')
@@ -35,7 +33,6 @@ class Navigation
                 'id'          => 'manufacturing-orders',
                 'label'       => 'Manufacturing Orders',
                 'icon'        => 'heroicon-m-wrench-screwdriver',
-                'native_icon' => 'build',
                 'href'        => null,
                 'active'      => false,
                 'disabled'    => true,
@@ -44,7 +41,6 @@ class Navigation
                 'id'          => 'inventory-adjustments',
                 'label'       => 'Inventory Adjustments',
                 'icon'        => 'heroicon-m-clipboard-document-list',
-                'native_icon' => 'inventory_2',
                 'href'        => route('barcode.adjustments'),
                 'active'      => str_starts_with($currentRoute, 'barcode.adjustments'),
                 'disabled'    => false,

@@ -1,6 +1,5 @@
 <div>
     <main class="barcode-page" x-data="barcodeScanner('search', 'openOperation')">
-    @if (! \Webkul\Barcode\Support\NativeApp::usesNativeNavigation())
         @include('barcode::components.header.web', [
             'title' => $operationType->name,
             'breadcrumbs' => [
@@ -9,7 +8,6 @@
             ],
             'showBarcode' => true,
         ])
-    @endif
 
         <div id="barcode-reader" class="barcode-reader" x-show="active" x-cloak></div>
 

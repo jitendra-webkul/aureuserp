@@ -51,7 +51,6 @@ class Adjustments extends Component
             $this->search = '';
             $this->notice = __('barcode::app.adjustments.location-scanned', ['location' => $location->full_name ?: $location->name]);
             $this->noticeColor = 'info';
-            $this->dispatchNativeFeedback($this->notice, true);
 
             return;
         }
@@ -68,7 +67,6 @@ class Adjustments extends Component
             if ($matchingQuantities->isEmpty()) {
                 $this->notice = __('barcode::app.adjustments.product-not-found');
                 $this->noticeColor = 'warning';
-                $this->dispatchNativeFeedback($this->notice, false);
 
                 return;
             }
@@ -89,7 +87,6 @@ class Adjustments extends Component
             if ($matchingQuantities->isEmpty()) {
                 $this->notice = __('barcode::app.adjustments.lot-not-found');
                 $this->noticeColor = 'warning';
-                $this->dispatchNativeFeedback($this->notice, false);
 
                 return;
             }
@@ -101,7 +98,6 @@ class Adjustments extends Component
 
         $this->notice = __('barcode::app.scan.not-found');
         $this->noticeColor = 'warning';
-        $this->dispatchNativeFeedback($this->notice, false);
     }
 
     public function clearFilters(): void
@@ -123,7 +119,6 @@ class Adjustments extends Component
         $this->selectedQuantityId = $quantityId;
         $this->notice = __('barcode::app.adjustments.count-saved');
         $this->noticeColor = 'success';
-        $this->dispatchNativeFeedback($this->notice, true);
     }
 
     public function adjustQuantityCount(int $quantityId, float $amount): void
@@ -169,7 +164,6 @@ class Adjustments extends Component
 
         $this->notice = __('barcode::app.adjustments.count-saved');
         $this->noticeColor = 'success';
-        $this->dispatchNativeFeedback($this->notice, true);
 
         $this->discardQuantityEdit();
     }
@@ -206,7 +200,6 @@ class Adjustments extends Component
         $this->selectedQuantityId = $quantityId;
         $this->notice = __('barcode::app.adjustments.count-applied');
         $this->noticeColor = 'success';
-        $this->dispatchNativeFeedback($this->notice, true);
     }
 
     public function render(): View
@@ -369,14 +362,5 @@ class Adjustments extends Component
         $barcode = preg_replace('/\s+/', ' ', $barcode) ?: '';
 
         return trim($barcode, " \t\n\r\0\x0B#");
-    }
-
-    private function dispatchNativeFeedback(?string $message, bool $vibrate = false, string $duration = 'short'): void
-    {
-        if (! $message) {
-            return;
-        }
-
-        $this->dispatch('barcode-native-feedback', message: $message, vibrate: $vibrate, duration: $duration);
     }
 }

@@ -1,16 +1,14 @@
 <main class="barcode-page adjustment-screen {{ $editingQuantity ? 'is-editing-move' : '' }}" x-data="barcodeScanner('search', 'scan')">
-    @if (! \Webkul\Barcode\Support\NativeApp::usesNativeNavigation())
-        @include('barcode::components.header.web', [
-            'title' => __('barcode::app.adjustments.title'),
-            'breadcrumbs' => [
-                ['label' => __('barcode::app.title'), 'href' => route('barcode.dashboard')],
-                ['label' => __('barcode::app.adjustments.title')],
-            ],
-            'showBarcode' => $editingQuantity ? null : true,
-            'showCancel' => $editingQuantity ? true : null,
-            'cancelAction' => 'discardQuantityEdit',
-        ])
-    @endif
+    @include('barcode::components.header.web', [
+        'title' => __('barcode::app.adjustments.title'),
+        'breadcrumbs' => [
+            ['label' => __('barcode::app.title'), 'href' => route('barcode.dashboard')],
+            ['label' => __('barcode::app.adjustments.title')],
+        ],
+        'showBarcode' => $editingQuantity ? null : true,
+        'showCancel' => $editingQuantity ? true : null,
+        'cancelAction' => 'discardQuantityEdit',
+    ])
 
     @if ($editingQuantity)
         @php

@@ -44,7 +44,6 @@ class Transfers extends Component
 
             $this->operationNotice = __('barcode::app.operation-search.not-found');
             $this->operationNoticeColor = 'warning';
-            $this->dispatchNativeFeedback($this->operationNotice);
 
             return null;
         }
@@ -63,7 +62,6 @@ class Transfers extends Component
 
         $this->operationNotice = __('barcode::app.operation-search.multiple-found', ['count' => $operations->count()]);
         $this->operationNoticeColor = 'info';
-        $this->dispatchNativeFeedback($this->operationNotice);
 
         return null;
     }
@@ -252,14 +250,5 @@ class Transfers extends Component
         $barcode = preg_replace('/^packing\s+slip\s*/i', '', $barcode) ?: $barcode;
 
         return trim($barcode, " \t\n\r\0\x0B#");
-    }
-
-    private function dispatchNativeFeedback(?string $message, bool $vibrate = false, string $duration = 'short'): void
-    {
-        if (! $message) {
-            return;
-        }
-
-        $this->dispatch('barcode-native-feedback', message: $message, vibrate: $vibrate, duration: $duration);
     }
 }

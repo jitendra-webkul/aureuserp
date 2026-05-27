@@ -1,13 +1,11 @@
 <div>
     <main class="barcode-page">
-        @unless (\Webkul\Barcode\Support\NativeApp::usesNativeNavigation())
-            @include('barcode::components.header.web', [
-                'title' => __('barcode::app.dashboard.operations'),
-                'breadcrumbs' => [
-                    ['label' => __('barcode::app.title')],
-                ],
-            ])
-        @endunless
+        @include('barcode::components.header.web', [
+            'title' => __('barcode::app.dashboard.operations'),
+            'breadcrumbs' => [
+                ['label' => __('barcode::app.title')],
+            ],
+        ])
 
         <section class="operation-grid">
             @forelse ($operationTypes as $operationType)
