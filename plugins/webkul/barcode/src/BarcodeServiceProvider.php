@@ -25,7 +25,6 @@ class BarcodeServiceProvider extends PackageServiceProvider
     public function configureCustomPackage(Package $package): void
     {
         $package->name(static::$name)
-            ->isCore()
             ->hasViews()
             ->hasTranslations()
             ->hasRoute('web')
@@ -58,12 +57,5 @@ class BarcodeServiceProvider extends PackageServiceProvider
         Panel::configureUsing(function (Panel $panel): void {
             $panel->plugin(BarcodePlugin::make());
         });
-    }
-
-    public function registerCustomCss()
-    {
-        FilamentAsset::register([
-            Css::make('accounting', __DIR__.'/../resources/dist/accounting.css'),
-        ], 'accounting');
     }
 }

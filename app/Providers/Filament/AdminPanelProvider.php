@@ -57,6 +57,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('Barcode')
+                    ->icon('icon-dashboard'),
+                NavigationGroup::make()
                     ->label(__('admin.navigation.dashboard'))
                     ->icon('icon-dashboard'),
                 NavigationGroup::make()

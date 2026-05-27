@@ -18,6 +18,13 @@ return [
         'login-subheading'  => 'Continue to the barcode operations app.',
     ],
 
+    'filament' => [
+        'navigation' => [
+            'group' => 'Barcode',
+            'label' => 'Barcode App',
+        ],
+    ],
+
     'dashboard' => [
         'operations' => 'Operations',
         'empty'      => 'No operations available.',
