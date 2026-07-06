@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Webkul\Security\Filament\Resources\TeamResource\Pages\ManageTeams;
 use Webkul\Security\Models\Team;
+use Webkul\Support\Enums\NavigationGroup;
 
 class TeamResource extends Resource
 {
@@ -34,9 +35,9 @@ class TeamResource extends Resource
         return __('security::filament/resources/team.navigation.title');
     }
 
-    public static function getNavigationGroup(): string
+    public static function getNavigationGroup(): string | \UnitEnum
     {
-        return __('security::filament/resources/team.navigation.group');
+        return NavigationGroup::Setting;
     }
 
     public static function form(Schema $schema): Schema

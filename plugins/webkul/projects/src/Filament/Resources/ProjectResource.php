@@ -67,6 +67,7 @@ use Webkul\Project\Settings\TaskSettings;
 use Webkul\Project\Settings\TimeSettings;
 use Webkul\Security\Filament\Resources\CompanyResource;
 use Webkul\Security\Filament\Resources\UserResource;
+use Webkul\Support\Enums\NavigationGroup;
 
 class ProjectResource extends Resource
 {
@@ -85,9 +86,9 @@ class ProjectResource extends Resource
         return __('projects::filament/resources/project.navigation.title');
     }
 
-    public static function getNavigationGroup(): string
+    public static function getNavigationGroup(): string | \UnitEnum
     {
-        return __('projects::filament/resources/project.navigation.group');
+        return NavigationGroup::Project;
     }
 
     public static function getGloballySearchableAttributes(): array

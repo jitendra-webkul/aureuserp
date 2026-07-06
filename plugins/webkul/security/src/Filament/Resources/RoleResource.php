@@ -36,12 +36,18 @@ use Webkul\Security\Filament\Resources\RoleResource\Pages\EditRole;
 use Webkul\Security\Filament\Resources\RoleResource\Pages\ListRoles;
 use Webkul\Security\Filament\Resources\RoleResource\Pages\ViewRole;
 use Webkul\Security\Models\Role;
+use Webkul\Support\Enums\NavigationGroup;
 
 class RoleResource extends RolesRoleResource
 {
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): string | \UnitEnum
+    {
+        return NavigationGroup::Setting;
+    }
 
     protected static bool $isGloballySearchable = false;
 

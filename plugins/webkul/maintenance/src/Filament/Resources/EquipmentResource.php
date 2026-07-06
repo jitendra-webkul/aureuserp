@@ -31,17 +31,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Auth;
 use Webkul\Maintenance\Filament\Resources\EquipmentResource\Pages\CreateEquipment;
 use Webkul\Maintenance\Filament\Resources\EquipmentResource\Pages\EditEquipment;
 use Webkul\Maintenance\Filament\Resources\EquipmentResource\Pages\ListEquipment;
 use Webkul\Maintenance\Filament\Resources\EquipmentResource\Pages\ViewEquipment;
 use Webkul\Maintenance\Models\Equipment;
 use Webkul\Maintenance\Models\EquipmentCategory;
+use Webkul\Support\Enums\NavigationGroup;
 
 class EquipmentResource extends Resource
 {
-
     protected static ?string $model = Equipment::class;
 
     protected static ?string $slug = 'maintenance/equipments';
@@ -55,9 +54,9 @@ class EquipmentResource extends Resource
         return __('maintenance::models/equipment.title');
     }
 
-    public static function getNavigationGroup(): string
+    public static function getNavigationGroup(): string | \UnitEnum
     {
-        return __('maintenance::filament/resources/equipment.navigation.group');
+        return NavigationGroup::Maintenance;
     }
 
     public static function getNavigationLabel(): string

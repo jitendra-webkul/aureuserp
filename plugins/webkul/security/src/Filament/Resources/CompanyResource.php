@@ -51,6 +51,7 @@ use Webkul\Security\Filament\Resources\CompanyResource\RelationManagers\Branches
 use Webkul\Security\Settings\UserSettings;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Currency;
+use Webkul\Support\Enums\NavigationGroup;
 
 class CompanyResource extends Resource
 {
@@ -72,9 +73,9 @@ class CompanyResource extends Resource
         return __('security::filament/resources/company.navigation.title');
     }
 
-    public static function getNavigationGroup(): string
+    public static function getNavigationGroup(): string | \UnitEnum
     {
-        return __('security::filament/resources/company.navigation.group');
+        return NavigationGroup::Setting;
     }
 
     public static function getGloballySearchableAttributes(): array
