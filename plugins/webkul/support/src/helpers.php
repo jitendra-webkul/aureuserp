@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Number;
+use Illuminate\Support\Collection;
 use Webkul\Support\SettingsRegistry;
 
 if (! function_exists('settings')) {
@@ -253,5 +254,19 @@ if (! function_exists('current_company_id')) {
     function current_company_id(): ?int
     {
         return app(\Webkul\Support\Services\CompanyContext::class)->currentId();
+    }
+}
+
+if (! function_exists('allowed_companies')) {
+    function allowed_companies(): Collection
+    {
+        return app(\Webkul\Support\Services\CompanyContext::class)->allowedCompanies();
+    }
+}
+
+if (! function_exists('allowed_company_ids')) {
+    function allowed_company_ids(): array
+    {
+        return app(\Webkul\Support\Services\CompanyContext::class)->allowedIds();
     }
 }

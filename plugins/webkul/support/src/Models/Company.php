@@ -170,6 +170,12 @@ class Company extends Model implements Sortable
             }
         });
 
+        static::saving(function ($company) {
+            $company->currency->update([
+                'active' => true,
+            ]);
+        });
+
         static::saved(function ($company) {
             Partner::updateOrCreate(
                 [

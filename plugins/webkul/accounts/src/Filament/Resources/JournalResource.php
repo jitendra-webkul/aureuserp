@@ -366,8 +366,18 @@ class JournalResource extends Resource
                                                 Select::make('company_id')
                                                     ->label(__('accounts::filament/resources/journal.form.general.fields.company'))
                                                     ->disabled()
+                                                    ->relationship(
+                                                        'company',
+                                                        'name',
+                                                        modifyQueryUsing: fn (Builder $query) => $query->withTrashed()
+                                                    )
+                                                    ->getOptionLabelFromRecordUsing(function ($record): string {
+                                                        return $record->name.($record->trashed() ? ' (Deleted)' : '');
+                                                    })
+                                                    ->disableOptionWhen(function ($label) {
+                                                        return str_contains($label, ' (Deleted)');
+                                                    })
                                                     ->dehydrated()
-                                                    ->options(fn () => Company::pluck('name', 'id'))
                                                     ->default(current_company_id())
                                                     ->required(),
                                             ]),
