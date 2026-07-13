@@ -37,7 +37,7 @@ class SupportServiceProvider extends PackageServiceProvider
             ->isCore()
             ->hasViews()
             ->hasTranslations()
-            ->hasRoutes(['api'])
+            ->hasRoutes(['api', 'web'])
             ->hasMigrations([
                 '2024_11_05_105102_create_plugins_table',
                 '2024_11_05_105112_create_plugin_dependencies_table',
@@ -70,6 +70,7 @@ class SupportServiceProvider extends PackageServiceProvider
                 '2026_04_02_000001_create_calendars_table',
                 '2026_04_29_065935_add_resource_columns_in_calendar_leaves_table',
                 '2026_05_01_065935_add_resource_columns_in_calendar_attendances_table',
+                '2026_07_10_000000_fix_unit_of_measures_factor_precision',
             ])
             ->runsMigrations()
             ->hasSettings([

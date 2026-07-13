@@ -112,7 +112,9 @@ class Tax extends Model implements Sortable
     public function evalTaxAmountFixedAmount($batch, $rawBase, $evaluationContext)
     {
         if ($this->amount_type === AmountType::FIXED) {
-            return $evaluationContext['quantity'] + $this->amount;
+            $sign = $evaluationContext['price_unit'] < 0.0 ? -1 : 1;
+
+            return $sign * $evaluationContext['quantity'] * $this->amount;
         }
     }
 

@@ -285,7 +285,7 @@ class Operation extends Model
                 $operation->wasChanged('source_location_id')
                 || $operation->wasChanged('destination_location_id')
             ) {
-                $operation->moves->each(function ($move) use ($operation) {
+                $operation->moves()->get()->each(function ($move) use ($operation) {
                     $move->source_location_id = $operation->source_location_id ?? $operation->operationType?->source_location_id;
 
                     $move->destination_location_id = $operation->destination_location_id ?? $operation->operationType?->destination_location_id;
@@ -325,7 +325,6 @@ class Operation extends Model
         $movesToConfirm = $this->moves->filter(fn ($move) => $move->state === MoveState::DRAFT && $move->quantity);
 
         InventoryFacade::confirmMoves($movesToConfirm);
-
     }
 
     public function updateName()

@@ -106,7 +106,9 @@ class PurchaseOrder
 
         $this->createInventoryOperation($record);
 
-        return $record;
+        $this->computeReceiptStatus($record->refresh())->save();
+
+        return $record->refresh();
     }
 
     public function canUserApprove($user): bool
@@ -223,7 +225,9 @@ class PurchaseOrder
             $record->untaxed_amount += $line->price_subtotal;
             $record->tax_amount += $line->price_tax;
             $record->total_amount += $line->price_total;
-            $record->total_cc_amount += $line->price_total;
+            $record->total_cc_amount += (float) $record->currency_rate
+                ? $line->price_total / $record->currency_rate
+                : $line->price_total;
         }
 
         $record = $this->computeReceiptStatus($record);
@@ -247,25 +251,34 @@ class PurchaseOrder
 
         $line->qty_to_invoice = $line->qty_received - $line->qty_invoiced;
 
-        $subTotal = $line->price_unit * $line->product_qty;
+        $priceUnit = $line->discount > 0
+            ? $line->price_unit * (1 - ($line->discount / 100))
+            : $line->price_unit;
 
-        $discountAmount = 0;
+        if ($line->taxes->isEmpty()) {
+            $subTotal = $priceUnit * $line->product_qty;
 
-        if ($line->discount > 0) {
-            $discountAmount = $subTotal * ($line->discount / 100);
+            $line->price_subtotal = round($subTotal, 4);
 
-            $subTotal = $subTotal - $discountAmount;
+            $line->price_tax = 0;
+
+            $line->price_total = round($subTotal, 4);
+        } else {
+            $taxResult = TaxFacade::computeAll(
+                $line->taxes,
+                $priceUnit,
+                $line->order->currency,
+                $line->product_qty,
+                $line->product,
+                $line->order->partner,
+            );
+
+            $line->price_subtotal = round($taxResult['total_excluded'], 4);
+
+            $line->price_tax = round($taxResult['total_included'] - $taxResult['total_excluded'], 4);
+
+            $line->price_total = round($taxResult['total_included'], 4);
         }
-
-        $taxIds = $line->taxes->pluck('id')->toArray();
-
-        [$subTotal, $taxAmount] = TaxFacade::collect($taxIds, $subTotal, $line->product_qty);
-
-        $line->price_subtotal = round($subTotal, 4);
-
-        $line->price_tax = $taxAmount;
-
-        $line->price_total = $subTotal + $taxAmount;
 
         $line->save();
 
@@ -292,7 +305,7 @@ class PurchaseOrder
             $order->invoice_status = PurchaseEnums\OrderInvoiceStatus::TO_INVOICED;
         } elseif ($order->lines->every(function ($line) use ($floatIsZero, $precision) {
             return $floatIsZero($line->qty_to_invoice, $precision);
-        }) && $order->accountMoves->isNotEmpty()) {
+        }) && $order->accountMoves()->exists()) {
             $order->invoice_status = PurchaseEnums\OrderInvoiceStatus::INVOICED;
         } else {
             $order->invoice_status = PurchaseEnums\OrderInvoiceStatus::NO;

@@ -133,15 +133,14 @@ class QuotationResource extends Resource
                     ->options(function ($record) {
                         $options = OrderState::options();
 
-                        if (
-                            $record
-                            && $record->state != OrderState::CANCEL->value
-                        ) {
-                            unset($options[OrderState::CANCEL->value]);
-                        }
-
                         if ($record == null) {
                             unset($options[OrderState::CANCEL->value]);
+                        } else {
+                            if ($record->state !== OrderState::CANCEL) {
+                                unset($options[OrderState::CANCEL->value]);
+                            } else {
+                                unset($options[OrderState::SALE->value]);
+                            }
                         }
 
                         return $options;
@@ -679,8 +678,10 @@ class QuotationResource extends Resource
                     ->options(function ($record) {
                         $options = OrderState::options();
 
-                        if ($record->state != OrderState::CANCEL->value) {
+                        if ($record->state !== OrderState::CANCEL) {
                             unset($options[OrderState::CANCEL->value]);
+                        } else {
+                            unset($options[OrderState::SALE->value]);
                         }
 
                         return $options;
@@ -1285,6 +1286,10 @@ class QuotationResource extends Resource
                             return null;
                         }
 
+                        if ($record && $record?->state !== OrderState::DRAFT) {
+                            return null;
+                        }
+
                         $productId = $get('product_id');
 
                         if (! $productId) {
@@ -1338,7 +1343,7 @@ class QuotationResource extends Resource
                             'heroicon-o-exclamation-triangle',
                             null,
                             (new ComponentAttributeBag)
-                                ->color(IconComponent::class, 'danger')
+                                ->color(IconComponent::class, 'warning')
                                 ->class(['fi-text-color-600'])
                                 ->merge([
                                     'style'         => 'color: var(--text)',
@@ -2010,25 +2015,29 @@ class QuotationResource extends Resource
 
         $discountValue = floatval($get($prefix.'discount') ?? 0);
 
-        $subTotal = $priceUnit * $quantity;
-
-        if ($discountValue > 0) {
-            $discountAmount = $subTotal * ($discountValue / 100);
-
-            $subTotal -= $discountAmount;
-        }
+        $discountedUnit = $discountValue > 0 ? $priceUnit * (1 - ($discountValue / 100)) : $priceUnit;
 
         $taxIds = $get($prefix.'taxes') ?? [];
 
-        [$subTotal, $taxAmount] = Tax::collect($taxIds, $subTotal, $quantity);
+        $taxes = \Webkul\Account\Models\Tax::whereIn('id', $taxIds)->get();
 
-        $total = $subTotal + $taxAmount;
+        if ($taxes->isEmpty()) {
+            $subTotal = round($discountedUnit * $quantity, 4);
 
-        $set($prefix.'price_subtotal', round($subTotal, 4));
+            $set($prefix.'price_subtotal', $subTotal);
 
-        $set($prefix.'price_tax', round($taxAmount, 4));
+            $set($prefix.'price_tax', 0);
 
-        $set($prefix.'price_total', round($total, 4));
+            $set($prefix.'price_total', $subTotal);
+        } else {
+            $taxResult = Tax::computeAll($taxes, $discountedUnit, null, $quantity);
+
+            $set($prefix.'price_subtotal', round($taxResult['total_excluded'], 4));
+
+            $set($prefix.'price_tax', round($taxResult['total_included'] - $taxResult['total_excluded'], 4));
+
+            $set($prefix.'price_total', round($taxResult['total_included'], 4));
+        }
 
         [$margin, $marginPercentage] = static::calculateMargin($priceUnit, $purchasePrice, $quantity, $discountValue);
 

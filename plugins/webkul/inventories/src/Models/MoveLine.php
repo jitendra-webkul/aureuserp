@@ -281,7 +281,7 @@ class MoveLine extends Model
 
         static::deleted(function ($moveLine) {
             if (
-                ! float_is_zero($moveLine->uom_qty, precisionRounding: 2)
+                ! float_is_zero($moveLine->uom_qty, precisionRounding: $moveLine->product->uom->rounding)
                 && $moveLine->move_id
                 && ! $moveLine->move->shouldBypassReservation($moveLine->location)
             ) {

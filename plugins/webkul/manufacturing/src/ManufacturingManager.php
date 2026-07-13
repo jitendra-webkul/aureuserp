@@ -54,6 +54,8 @@ class ManufacturingManager
             $move->save();
         });
 
+        $order->load('rawMaterialMoves', 'finishedMoves');
+
         $movesToConfirm = $order->rawMaterialMoves->merge($order->finishedMoves)->sortBy('id')->unique('id');
 
         $this->confirmMoves($movesToConfirm, merge: false);

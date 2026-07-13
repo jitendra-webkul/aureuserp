@@ -89,6 +89,7 @@ class OrderLine extends Model implements Sortable
     protected $casts = [
         'state'                => OrderState::class,
         'qty_delivered_method' => QtyDeliveredMethod::class,
+        'customer_lead'        => 'float',
     ];
 
     public $sortable = [
