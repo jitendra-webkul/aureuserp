@@ -38,6 +38,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Webkul\Support\Models\Scopes\AllowedCompanyScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
@@ -67,7 +68,9 @@ class CompanyResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->ownership();
+        return parent::getEloquentQuery()
+            ->ownership()
+            ->withoutGlobalScope(AllowedCompanyScope::class);
     }
 
     public static function getNavigationLabel(): string

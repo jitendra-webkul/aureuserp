@@ -34,6 +34,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Webkul\Support\Models\Scopes\AllowedCompanyScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -219,7 +220,7 @@ class UserResource extends Resource
                                     ->schema([
                                         Select::make('allowed_companies')
                                             ->label(__('security::filament/resources/user.form.sections.multi-company.allowed-companies'))
-                                            ->relationship('allowedCompanies', 'name')
+                                            ->relationship('allowedCompanies', 'name', fn (Builder $query) => $query->withoutGlobalScope(AllowedCompanyScope::class))
                                             ->multiple()
                                             ->preload()
                                             ->searchable(),
@@ -228,7 +229,7 @@ class UserResource extends Resource
                                             ->relationship(
                                                 'defaultCompany',
                                                 'name',
-                                                modifyQueryUsing: fn (Builder $query) => $query->withTrashed(),
+                                                modifyQueryUsing: fn (Builder $query) => $query->withTrashed()->withoutGlobalScope(AllowedCompanyScope::class),
                                             )
                                             ->getOptionLabelFromRecordUsing(function ($record): string {
                                                 return $record->name.($record->trashed() ? ' (Deleted)' : '');
@@ -334,12 +335,12 @@ class UserResource extends Resource
                     ->options(PermissionType::class)
                     ->preload(),
                 SelectFilter::make('default_company')
-                    ->relationship('defaultCompany', 'name')
+                    ->relationship('defaultCompany', 'name', fn (Builder $query) => $query->withoutGlobalScope(AllowedCompanyScope::class))
                     ->label(__('security::filament/resources/user.table.filters.default-company'))
                     ->searchable()
                     ->preload(),
                 SelectFilter::make('allowed_companies')
-                    ->relationship('allowedCompanies', 'name')
+                    ->relationship('allowedCompanies', 'name', fn (Builder $query) => $query->withoutGlobalScope(AllowedCompanyScope::class))
                     ->label(__('security::filament/resources/user.table.filters.allowed-companies'))
                     ->multiple()
                     ->searchable()

@@ -16,10 +16,11 @@ use Webkul\Partner\Models\Partner;
 use Webkul\Security\Models\User;
 use Webkul\Security\Traits\HasOwnershipScope;
 use Webkul\Support\Database\Factories\CompanyFactory;
+use Webkul\Support\Traits\RestrictToAllowedCompanies;
 
 class Company extends Model implements Sortable
 {
-    use HasChatter, HasCustomFields, HasFactory, HasOwnershipScope, SoftDeletes, SortableTrait;
+    use HasChatter, HasCustomFields, HasFactory, HasOwnershipScope, RestrictToAllowedCompanies, SoftDeletes, SortableTrait;
 
     protected static function ownershipScopeIsGlobal(): bool
     {
@@ -177,7 +178,7 @@ class Company extends Model implements Sortable
         });
 
         static::saved(function ($company) {
-            Partner::updateOrCreate(
+            Partner::withoutGlobalScopes()->updateOrCreate(
                 [
                     'id' => $company->partner_id,
                 ],

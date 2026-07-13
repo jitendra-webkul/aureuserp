@@ -40,13 +40,23 @@ class CompanyContext
         return $this->allowed = $user->allowedCompanies()->get();
     }
 
-    protected function seesAllCompanies($user): bool
+    public function seesAllCompanies($user): bool
     {
         if ($this->bypassed()) {
             return true;
         }
 
-        return method_exists($user, 'hasRole') && $user->hasRole(['admin', 'super_admin']);
+        return method_exists($user, 'hasRole') && $user->hasRole($this->adminRoleNames());
+    }
+
+    public function adminRoleNames(): array
+    {
+        return array_values(array_filter([
+            config('filament-shield.panel_user.name'),
+            config('filament-shield.super_admin.name'),
+            'admin',
+            'super_admin',
+        ]));
     }
 
     public function allowedIds(): array

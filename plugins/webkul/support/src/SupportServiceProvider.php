@@ -87,7 +87,7 @@ class SupportServiceProvider extends PackageServiceProvider
                 return null;
             }
 
-            if ($user && method_exists($user, 'hasRole') && $user->hasRole('super_admin')) {
+            if ($user && method_exists($user, 'hasRole') && $user->hasRole(array_filter([config('filament-shield.super_admin.name'), 'super_admin']))) {
                 return true;
             }
 

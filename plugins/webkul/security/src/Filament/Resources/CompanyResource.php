@@ -3,6 +3,7 @@
 namespace Webkul\Security\Filament\Resources;
 
 use Illuminate\Database\Eloquent\Builder;
+use Webkul\Support\Models\Scopes\AllowedCompanyScope;
 use Illuminate\Database\Eloquent\Model;
 use Webkul\Security\Filament\Resources\CompanyResource\Pages\CreateCompany;
 use Webkul\Security\Filament\Resources\CompanyResource\Pages\EditCompany;
@@ -25,7 +26,9 @@ class CompanyResource extends BaseCompanyResource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->ownership();
+        return parent::getEloquentQuery()
+            ->ownership()
+            ->withoutGlobalScope(AllowedCompanyScope::class);
     }
 
     public static function getNavigationLabel(): string
