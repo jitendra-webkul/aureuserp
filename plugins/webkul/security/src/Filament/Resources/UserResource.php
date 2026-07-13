@@ -312,9 +312,10 @@ class UserResource extends Resource
                     ->sortable(),
                 TextColumn::make('defaultCompany.name')
                     ->label(__('security::filament/resources/user.table.columns.default-company'))
-                    ->sortable(),
+                    ->getStateUsing(fn ($record) => $record->defaultCompany()->withoutGlobalScope(AllowedCompanyScope::class)->value('name')),
                 TextColumn::make('allowedCompanies.name')
                     ->label(__('security::filament/resources/user.table.columns.allowed-company'))
+                    ->getStateUsing(fn ($record) => $record->allowedCompanies()->withoutGlobalScope(AllowedCompanyScope::class)->pluck('name')->all())
                     ->badge()
                     ->listWithLineBreaks(),
                 TextColumn::make('created_at')
