@@ -8,12 +8,9 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Webkul\Support\Filament\Resources\CompanyResource;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Scopes\AllowedCompanyScope;
-use Webkul\TableViews\Filament\Concerns\HasTableViews;
 
 class ListCompanies extends ListRecords
 {
-    use HasTableViews;
-
     protected static string $resource = CompanyResource::class;
 
     public function getTabs(): array
