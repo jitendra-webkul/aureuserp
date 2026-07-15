@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Models\Location;
@@ -21,6 +23,8 @@ use Webkul\Support\Models\UOM;
  */
 class MoveLineFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = MoveLine::class;
 
     public function definition(): array
@@ -47,7 +51,6 @@ class MoveLineFactory extends Factory
             'partner_id'              => null,
             'source_location_id'      => Location::factory(),
             'destination_location_id' => Location::factory(),
-            'company_id'              => Company::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\BankStatement;
 use Webkul\Account\Models\BankStatementLine;
@@ -16,6 +18,8 @@ use Webkul\Support\Models\Currency;
  */
 class BankStatementLineFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = BankStatementLine::class;
 
     /**
@@ -28,7 +32,6 @@ class BankStatementLineFactory extends Factory
         return [
             'sort'                => 0,
             'journal_id'          => Journal::factory(),
-            'company_id'          => Company::factory(),
             'statement_id'        => BankStatement::factory(),
             'partner_id'          => null,
             'currency_id'         => Currency::factory(),

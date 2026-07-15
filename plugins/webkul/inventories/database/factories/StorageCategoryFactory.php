@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\AllowNewProduct;
 use Webkul\Inventory\Models\StorageCategory;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Company;
  */
 class StorageCategoryFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -34,7 +38,6 @@ class StorageCategoryFactory extends Factory
             'max_weight'         => 0.0,
 
             // Relationships
-            'company_id' => Company::factory(),
             'creator_id' => User::query()->value('id') ?? User::factory(),
         ];
     }

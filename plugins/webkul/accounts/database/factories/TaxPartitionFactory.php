@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Enums\DocumentType;
 use Webkul\Account\Enums\RepartitionType;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Company;
 
 class TaxPartitionFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = TaxPartition::class;
 
     public function definition(): array
@@ -20,7 +24,6 @@ class TaxPartitionFactory extends Factory
         return [
             'account_id'         => Account::factory(),
             'tax_id'             => Tax::factory(),
-            'company_id'         => Company::factory(),
             'sort'               => 0,
             'repartition_type'   => RepartitionType::BASE,
             'document_type'      => DocumentType::INVOICE,

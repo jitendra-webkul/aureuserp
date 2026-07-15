@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\MoveType;
 use Webkul\Inventory\Enums\OperationState;
@@ -17,6 +19,8 @@ use Webkul\Support\Models\Company;
  */
 class OperationFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Operation::class;
 
     public function definition(): array
@@ -42,7 +46,6 @@ class OperationFactory extends Factory
             'back_order_id'           => null,
             'return_id'               => null,
             'partner_id'              => null,
-            'company_id'              => Company::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];
     }

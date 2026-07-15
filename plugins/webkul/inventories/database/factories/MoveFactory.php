@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\ProcureMethod;
@@ -22,6 +24,8 @@ use Webkul\Support\Models\UOM;
  */
 class MoveFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Move::class;
 
     public function definition(): array
@@ -62,7 +66,6 @@ class MoveFactory extends Factory
             'warehouse_id'            => null,
             'product_packaging_id'    => null,
             'scrap_id'                => null,
-            'company_id'              => Company::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];
     }

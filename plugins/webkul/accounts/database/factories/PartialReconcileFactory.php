@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\FullReconcile;
 use Webkul\Account\Models\MoveLine;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Currency;
  */
 class PartialReconcileFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = PartialReconcile::class;
 
     /**
@@ -33,7 +37,6 @@ class PartialReconcileFactory extends Factory
             'exchange_move_id'       => null,
             'debit_currency_id'      => Currency::factory(),
             'credit_currency_id'     => Currency::factory(),
-            'company_id'             => Company::factory(),
             'creator_id'             => User::query()->value('id') ?? User::factory(),
             'max_date'               => fake()->date(),
             'amount'                 => $amount,

@@ -2,6 +2,8 @@
 
 namespace Webkul\Employee\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Employee\Models\WorkLocation;
 use Webkul\Security\Models\User;
@@ -9,6 +11,8 @@ use Webkul\Support\Models\Company;
 
 class WorkLocationFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -24,7 +28,6 @@ class WorkLocationFactory extends Factory
     public function definition(): array
     {
         return [
-            'company_id'      => Company::factory(),
             'user_id'         => User::query()->value('id') ?? User::factory(),
             'name'            => fake()->name,
             'location_type'   => fake()->word,

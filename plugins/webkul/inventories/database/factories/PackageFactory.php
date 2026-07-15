@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\PackageUse;
 use Webkul\Inventory\Models\Location;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Company;
  */
 class PackageFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Package::class;
 
     public function definition(): array
@@ -27,7 +31,6 @@ class PackageFactory extends Factory
             // Relationships
             'package_type_id' => PackageType::factory(),
             'location_id'     => Location::factory(),
-            'company_id'      => Company::factory(),
             'creator_id'      => User::query()->value('id') ?? User::factory(),
         ];
     }

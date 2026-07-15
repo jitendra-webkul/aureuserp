@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\RuleAction;
@@ -19,6 +21,8 @@ use Webkul\Support\Models\Company;
  */
 class RuleFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Rule::class;
 
     public function definition(): array
@@ -45,7 +49,6 @@ class RuleFactory extends Factory
             'partner_address_id'      => null,
             'warehouse_id'            => null,
             'propagate_warehouse_id'  => null,
-            'company_id'              => Company::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];
     }

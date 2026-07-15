@@ -2,6 +2,8 @@
 
 namespace Webkul\Recruitment\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Employee\Models\Employee;
 use Webkul\Partner\Models\Partner;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Company;
  */
 class CandidateFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Candidate::class;
 
     public function definition(): array
@@ -32,7 +36,6 @@ class CandidateFactory extends Factory
             'candidate_properties' => null,
 
             // Relationships
-            'company_id'  => Company::factory(),
             'partner_id'  => Partner::query()->value('id') ?? Partner::factory(),
             'degree_id'   => Degree::factory(),
             'manager_id'  => null,

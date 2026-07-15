@@ -2,6 +2,8 @@
 
 namespace Webkul\Manufacturing\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Manufacturing\Enums\WorkCenterWorkingState;
 use Webkul\Manufacturing\Models\WorkCenter;
@@ -14,6 +16,8 @@ use Webkul\Support\Models\Company;
  */
 class WorkCenterFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = WorkCenter::class;
 
     public function definition(): array
@@ -31,7 +35,6 @@ class WorkCenterFactory extends Factory
             'setup_time'       => fake()->randomFloat(4, 0, 60),
             'cleanup_time'     => fake()->randomFloat(4, 0, 60),
             'oee_target'       => fake()->randomFloat(2, 50, 95),
-            'company_id'       => Company::query()->value('id') ?? Company::factory(),
             'calendar_id'      => Calendar::query()->value('id') ?? Calendar::factory(),
             'creator_id'       => User::query()->value('id') ?? User::factory(),
         ];

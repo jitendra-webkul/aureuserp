@@ -2,6 +2,8 @@
 
 namespace Webkul\Project\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Project\Models\ProjectStage;
 use Webkul\Security\Models\User;
@@ -12,6 +14,8 @@ use Webkul\Support\Models\Company;
  */
 class ProjectStageFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -31,7 +35,6 @@ class ProjectStageFactory extends Factory
             'sort'         => fake()->randomNumber(),
             'is_active'    => true,
             'is_collapsed' => false,
-            'company_id'   => Company::factory(),
             'creator_id'   => User::query()->value('id') ?? User::factory(),
         ];
     }

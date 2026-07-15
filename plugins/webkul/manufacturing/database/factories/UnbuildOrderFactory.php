@@ -2,6 +2,8 @@
 
 namespace Webkul\Manufacturing\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Lot;
@@ -18,6 +20,8 @@ use Webkul\Support\Models\UOM;
  */
 class UnbuildOrderFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = UnbuildOrder::class;
 
     public function definition(): array
@@ -27,7 +31,6 @@ class UnbuildOrderFactory extends Factory
             'state'                   => UnbuildOrderState::DRAFT,
             'quantity'                => fake()->randomFloat(4, 1, 10),
             'product_id'              => Product::query()->value('id') ?? Product::factory(),
-            'company_id'              => Company::query()->value('id') ?? Company::factory(),
             'uom_id'                  => UOM::query()->value('id') ?? UOM::factory(),
             'bill_of_material_id'     => BillOfMaterial::factory(),
             'manufacturing_order_id'  => null,

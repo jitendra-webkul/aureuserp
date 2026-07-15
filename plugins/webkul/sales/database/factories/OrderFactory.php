@@ -2,6 +2,8 @@
 
 namespace Webkul\Sale\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Schema;
 use Webkul\Account\Models\FiscalPosition;
@@ -24,6 +26,8 @@ use Webkul\Support\Models\UTMSource;
  */
 class OrderFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -66,7 +70,6 @@ class OrderFactory extends Factory
             'amount_total'            => $amountTotal,
             'utm_source_id'           => null,
             'medium_id'               => null,
-            'company_id'              => Company::factory(),
             'partner_id'              => $partner,
             'journal_id'              => null,
             'partner_invoice_id'      => $partner,

@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\PaymentTerm;
 use Webkul\Security\Models\User;
@@ -9,12 +11,13 @@ use Webkul\Support\Models\Company;
 
 class PaymentTermFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = PaymentTerm::class;
 
     public function definition(): array
     {
         return [
-            'company_id'          => Company::factory(),
             'sort'                => fake()->randomNumber(),
             'discount_days'       => fake()->randomElement([0, 10, 15, 30]),
             'creator_id'          => User::query()->value('id') ?? User::factory(),

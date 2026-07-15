@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Models\Location;
@@ -16,6 +18,8 @@ use Webkul\Support\Models\Company;
  */
 class LocationFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Location::class;
 
     public function definition(): array
@@ -40,7 +44,6 @@ class LocationFactory extends Factory
             'parent_id'                  => null,
             'storage_category_id'        => null,
             'warehouse_id'               => null,
-            'company_id'                 => Company::factory(),
             'creator_id'                 => User::query()->value('id') ?? User::factory(),
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Enums\InstallmentMode;
 use Webkul\Account\Enums\PaymentType;
@@ -19,6 +21,8 @@ use Webkul\Support\Models\Currency;
  */
 class PaymentRegisterFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = PaymentRegister::class;
 
     /**
@@ -36,7 +40,6 @@ class PaymentRegisterFactory extends Factory
             'partner_bank_id'             => null,
             'custom_user_currency_id'     => null,
             'source_currency_id'          => Currency::factory(),
-            'company_id'                  => Company::factory(),
             'partner_id'                  => Partner::query()->value('id') ?? Partner::factory(),
             'payment_method_line_id'      => PaymentMethodLine::factory(),
             'writeoff_account_id'         => null,

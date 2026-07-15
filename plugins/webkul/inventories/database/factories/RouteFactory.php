@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Route;
 use Webkul\Inventory\Models\Warehouse;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Company;
  */
 class RouteFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Route::class;
 
     public function definition(): array
@@ -28,7 +32,6 @@ class RouteFactory extends Factory
             // Relationships
             'supplied_warehouse_id' => null,
             'supplier_warehouse_id' => null,
-            'company_id'            => Company::factory(),
             'creator_id'            => User::query()->value('id') ?? User::factory(),
         ];
     }

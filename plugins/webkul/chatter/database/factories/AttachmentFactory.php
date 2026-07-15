@@ -2,6 +2,8 @@
 
 namespace Webkul\Chatter\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Chatter\Models\Attachment;
 use Webkul\Chatter\Models\Message;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Company;
  */
 class AttachmentFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Attachment::class;
 
     public function definition(): array
@@ -27,7 +31,6 @@ class AttachmentFactory extends Factory
 
             // Relationships
             'message_id' => Message::factory(),
-            'company_id' => Company::factory(),
             'creator_id' => User::query()->value('id') ?? User::factory(),
         ];
     }

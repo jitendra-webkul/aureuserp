@@ -2,6 +2,8 @@
 
 namespace Webkul\Manufacturing\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Lot;
@@ -22,6 +24,8 @@ use Webkul\Support\Models\UOM;
  */
 class OrderFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Order::class;
 
     public function definition(): array
@@ -49,7 +53,6 @@ class OrderFactory extends Factory
             'final_location_id'       => null,
             'bill_of_material_id'     => BillOfMaterial::factory(),
             'assigned_user_id'        => User::query()->value('id'),
-            'company_id'              => Company::query()->value('id') ?? Company::factory(),
             'order_point_id'          => OrderPoint::query()->value('id'),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];

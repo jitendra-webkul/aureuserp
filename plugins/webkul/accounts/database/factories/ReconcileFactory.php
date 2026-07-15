@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\Reconcile;
 use Webkul\Security\Models\User;
@@ -12,6 +14,8 @@ use Webkul\Support\Models\Company;
  */
 class ReconcileFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Reconcile::class;
 
     /**
@@ -23,7 +27,6 @@ class ReconcileFactory extends Factory
     {
         return [
             'sort'                              => 0,
-            'company_id'                        => Company::factory(),
             'past_months_limit'                 => 18,
             'creator_id'                        => User::query()->value('id') ?? User::factory(),
             'rule_type'                         => 'invoice_matching',

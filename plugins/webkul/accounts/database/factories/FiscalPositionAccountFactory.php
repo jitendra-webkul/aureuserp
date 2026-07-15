@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\Account;
 use Webkul\Account\Models\FiscalPosition;
@@ -11,13 +13,14 @@ use Webkul\Support\Models\Company;
 
 class FiscalPositionAccountFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = FiscalPositionAccount::class;
 
     public function definition(): array
     {
         return [
             'fiscal_position_id'     => FiscalPosition::factory(),
-            'company_id'             => Company::factory(),
             'account_source_id'      => Account::factory(),
             'account_destination_id' => Account::factory(),
             'creator_id'             => User::query()->value('id') ?? User::factory(),

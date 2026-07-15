@@ -2,6 +2,8 @@
 
 namespace Webkul\Maintenance\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Maintenance\Models\Equipment;
 use Webkul\Maintenance\Models\EquipmentCategory;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Company;
  */
 class EquipmentFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Equipment::class;
 
     public function definition(): array
@@ -39,7 +43,6 @@ class EquipmentFactory extends Factory
             'owner_user_id'           => null,
             'maintenance_team_id'     => null,
             'technician_user_id'      => null,
-            'company_id'              => Company::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];
     }

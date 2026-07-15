@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Enums\OrderPointTrigger;
 use Webkul\Inventory\Models\Location;
@@ -18,6 +20,8 @@ use Webkul\Support\Models\Company;
  */
 class OrderPointFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = OrderPoint::class;
 
     public function definition(): array
@@ -37,7 +41,6 @@ class OrderPointFactory extends Factory
             'warehouse_id'        => Warehouse::factory(),
             'location_id'         => Location::factory(),
             'route_id'            => null,
-            'company_id'          => Company::factory(),
             'creator_id'          => User::query()->value('id') ?? User::factory(),
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Enums\PaymentStatus;
 use Webkul\Account\Enums\PaymentType;
@@ -21,6 +23,8 @@ use Webkul\Support\Models\Currency;
  */
 class PaymentFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Payment::class;
 
     /**
@@ -33,7 +37,6 @@ class PaymentFactory extends Factory
         return [
             'move_id'                             => null,
             'journal_id'                          => Journal::factory(),
-            'company_id'                          => Company::factory(),
             'partner_bank_id'                     => null,
             'paired_internal_transfer_payment_id' => null,
             'payment_method_line_id'              => PaymentMethodLine::factory(),

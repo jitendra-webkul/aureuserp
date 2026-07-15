@@ -2,6 +2,8 @@
 
 namespace Webkul\Sale\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Sale\Models\AdvancedPaymentInvoice;
 use Webkul\Security\Models\User;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Currency;
  */
 class AdvancedPaymentInvoiceFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -36,7 +40,6 @@ class AdvancedPaymentInvoiceFactory extends Factory
             'consolidated_billing'   => false,
             'amount'                 => $amount,
             'currency_id'            => Currency::factory(),
-            'company_id'             => Company::factory(),
             'creator_id'             => User::query()->value('id') ?? User::factory(),
         ];
     }

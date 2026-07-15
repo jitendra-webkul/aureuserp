@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Enums\DisplayType;
 use Webkul\Account\Enums\MoveState;
@@ -21,6 +23,8 @@ use Webkul\Support\Models\UOM;
  */
 class MoveLineFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = MoveLine::class;
 
     /**
@@ -37,7 +41,6 @@ class MoveLineFactory extends Factory
             'sort'                     => 0,
             'move_id'                  => Move::factory(),
             'journal_id'               => Journal::factory(),
-            'company_id'               => Company::factory(),
             'company_currency_id'      => Currency::factory(),
             'reconcile_id'             => null,
             'payment_id'               => null,

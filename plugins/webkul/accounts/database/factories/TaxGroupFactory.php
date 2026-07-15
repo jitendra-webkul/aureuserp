@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\TaxGroup;
 use Webkul\Security\Models\User;
@@ -10,13 +12,14 @@ use Webkul\Support\Models\Country;
 
 class TaxGroupFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = TaxGroup::class;
 
     public function definition(): array
     {
         return [
             'sort'               => 0,
-            'company_id'         => Company::factory(),
             'country_id'         => Country::factory(),
             'creator_id'         => User::query()->value('id') ?? User::factory(),
             'name'               => fake()->words(2, true),

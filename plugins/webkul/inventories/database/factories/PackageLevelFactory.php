@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Operation;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Company;
  */
 class PackageLevelFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = PackageLevel::class;
 
     public function definition(): array
@@ -23,7 +27,6 @@ class PackageLevelFactory extends Factory
             'package_id'              => Package::factory(),
             'operation_id'            => Operation::factory(),
             'destination_location_id' => Location::factory(),
-            'company_id'              => Company::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];
     }

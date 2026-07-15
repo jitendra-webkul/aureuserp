@@ -2,6 +2,8 @@
 
 namespace Webkul\Analytic\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Analytic\Models\Record;
 use Webkul\Partner\Models\Partner;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Company;
  */
 class RecordFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Record::class;
 
     public function definition(): array
@@ -26,7 +30,6 @@ class RecordFactory extends Factory
 
             // Relationships
             'partner_id' => null,
-            'company_id' => Company::factory(),
             'user_id'    => null,
             'creator_id' => User::query()->value('id') ?? User::factory(),
         ];

@@ -2,6 +2,8 @@
 
 namespace Webkul\Recruitment\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Employee\Models\Department;
 use Webkul\Recruitment\Enums\ApplicationStatus;
@@ -20,6 +22,8 @@ use Webkul\Support\Models\UTMSource;
  */
 class ApplicantFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Applicant::class;
 
     public function definition(): array
@@ -47,7 +51,6 @@ class ApplicantFactory extends Factory
             'candidate_id'     => Candidate::factory(),
             'stage_id'         => Stage::factory(),
             'last_stage_id'    => null,
-            'company_id'       => Company::factory(),
             'recruiter_id'     => User::query()->value('id') ?? User::factory(),
             'job_id'           => JobPosition::factory(),
             'department_id'    => Department::factory(),

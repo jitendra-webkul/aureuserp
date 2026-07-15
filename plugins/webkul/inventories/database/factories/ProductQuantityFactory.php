@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Lot;
@@ -17,6 +19,8 @@ use Webkul\Support\Models\Company;
  */
 class ProductQuantityFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = ProductQuantity::class;
 
     public function definition(): array
@@ -39,7 +43,6 @@ class ProductQuantityFactory extends Factory
             'package_id'          => null,
             'partner_id'          => null,
             'user_id'             => null,
-            'company_id'          => Company::factory(),
             'creator_id'          => User::query()->value('id') ?? User::factory(),
         ];
     }

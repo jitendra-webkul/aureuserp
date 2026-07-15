@@ -2,6 +2,8 @@
 
 namespace Webkul\Purchase\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Enums\OrderState;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Currency;
  */
 class OrderFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -40,7 +44,6 @@ class OrderFactory extends Factory
             'currency_rate'   => 1.0,
             'partner_id'      => Partner::query()->value('id') ?? Partner::factory(),
             'currency_id'     => Currency::factory(),
-            'company_id'      => Company::factory(),
             'creator_id'      => User::query()->value('id') ?? User::factory(),
         ];
     }

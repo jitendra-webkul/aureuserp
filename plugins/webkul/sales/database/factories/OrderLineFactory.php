@@ -2,6 +2,8 @@
 
 namespace Webkul\Sale\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Schema;
 use Webkul\Inventory\Models\Route;
@@ -24,6 +26,8 @@ use Webkul\Support\Models\UOM;
  */
 class OrderLineFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -85,7 +89,6 @@ class OrderLineFactory extends Factory
             'create_date'                  => fake()->dateTimeBetween('-30 days', 'now'),
             'write_date'                   => fake()->dateTimeBetween('-30 days', 'now'),
             'order_id'                     => Order::factory(),
-            'company_id'                   => Company::factory(),
             'currency_id'                  => Currency::factory(),
             'order_partner_id'             => Partner::query()->value('id') ?? Partner::factory(),
             'salesman_id'                  => User::query()->value('id') ?? User::factory(),

@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Enums\AutoPost;
 use Webkul\Account\Enums\MoveState;
@@ -21,6 +23,8 @@ use Webkul\Support\Models\Currency;
  */
 class MoveFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Move::class;
 
     /**
@@ -33,7 +37,6 @@ class MoveFactory extends Factory
         return [
             'sort'                              => 0,
             'journal_id'                        => Journal::factory(),
-            'company_id'                        => Company::factory(),
             'campaign_id'                       => null,
             'tax_cash_basis_origin_move_id'     => null,
             'auto_post_origin_id'               => null,

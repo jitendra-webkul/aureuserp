@@ -2,6 +2,8 @@
 
 namespace Webkul\Project\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Partner\Models\Partner;
 use Webkul\Project\Models\Project;
@@ -14,6 +16,8 @@ use Webkul\Support\Models\Company;
  */
 class ProjectFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -44,7 +48,6 @@ class ProjectFactory extends Factory
             'is_active'               => true,
             'stage_id'                => ProjectStage::factory(),
             'partner_id'              => Partner::query()->value('id') ?? Partner::factory(),
-            'company_id'              => Company::factory(),
             'user_id'                 => User::query()->value('id') ?? User::factory(),
             'creator_id'              => User::query()->value('id') ?? User::factory(),
         ];

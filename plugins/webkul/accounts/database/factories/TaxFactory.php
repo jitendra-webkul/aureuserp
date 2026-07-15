@@ -2,6 +2,8 @@
 
 namespace Webkul\Account\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Enums\AmountType;
 use Webkul\Account\Enums\TaxIncludeOverride;
@@ -14,13 +16,14 @@ use Webkul\Support\Models\Country;
 
 class TaxFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = Tax::class;
 
     public function definition(): array
     {
         return [
             'sort'                             => 0,
-            'company_id'                       => Company::factory(),
             'tax_group_id'                     => TaxGroup::factory(),
             'cash_basis_transition_account_id' => null,
             'country_id'                       => null,

@@ -2,6 +2,8 @@
 
 namespace Webkul\Partner\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Partner\Enums\AccountType;
 use Webkul\Partner\Models\Industry;
@@ -15,6 +17,8 @@ use Webkul\Support\Models\Company;
  */
 class PartnerFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -44,7 +48,6 @@ class PartnerFactory extends Factory
             'creator_id'       => User::query()->value('id') ?? User::factory(),
             'user_id'          => User::query()->value('id') ?? User::factory(),
             'title_id'         => Title::factory(),
-            'company_id'       => Company::factory(),
             'industry_id'      => Industry::factory(),
         ];
     }

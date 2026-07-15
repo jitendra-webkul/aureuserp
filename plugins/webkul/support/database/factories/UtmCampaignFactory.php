@@ -2,6 +2,8 @@
 
 namespace Webkul\Support\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
@@ -10,6 +12,8 @@ use Webkul\Support\Models\UtmStage;
 
 class UtmCampaignFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = UtmCampaign::class;
 
     public function definition(): array
@@ -23,7 +27,6 @@ class UtmCampaignFactory extends Factory
             'title'            => fake()->sentence(4),
             'is_active'        => true,
             'is_auto_campaign' => false,
-            'company_id'       => Company::factory(),
         ];
     }
 

@@ -2,6 +2,8 @@
 
 namespace Webkul\Payment\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Account\Models\BankStatement;
 use Webkul\Account\Models\Journal;
@@ -17,6 +19,8 @@ use Webkul\Support\Models\Currency;
  */
 class PaymentTransactionFactory extends Factory
 {
+    use HasCompanyDefault;
+
     protected $model = PaymentTransaction::class;
 
     /**
@@ -32,7 +36,6 @@ class PaymentTransactionFactory extends Factory
             'sort'                => 0,
             'move_id'             => Move::factory(),
             'journal_id'          => Journal::factory(),
-            'company_id'          => Company::factory(),
             'statement_id'        => null,
             'partner_id'          => null,
             'currency_id'         => Currency::factory(),

@@ -2,6 +2,8 @@
 
 namespace Webkul\Project\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Project\Models\Project;
 use Webkul\Project\Models\TaskStage;
@@ -13,6 +15,8 @@ use Webkul\Support\Models\Company;
  */
 class TaskStageFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -33,7 +37,6 @@ class TaskStageFactory extends Factory
             'is_active'    => true,
             'is_collapsed' => false,
             'project_id'   => Project::factory(),
-            'company_id'   => Company::factory(),
             'user_id'      => User::query()->value('id') ?? User::factory(),
             'creator_id'   => User::query()->value('id') ?? User::factory(),
         ];

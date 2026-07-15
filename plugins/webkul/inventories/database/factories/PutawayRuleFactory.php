@@ -2,6 +2,8 @@
 
 namespace Webkul\Inventory\Database\Factories;
 
+use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
+
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\PutawayRule;
@@ -16,6 +18,8 @@ use Webkul\Support\Models\Company;
  */
 class PutawayRuleFactory extends Factory
 {
+    use HasCompanyDefault;
+
     /**
      * The name of the factory's corresponding model.
      *
@@ -38,7 +42,6 @@ class PutawayRuleFactory extends Factory
             'storage_category_id' => null,
             'in_location_id'      => Location::factory(),
             'out_location_id'     => Location::factory(),
-            'company_id'          => Company::factory(),
             'creator_id'          => User::query()->value('id') ?? User::factory(),
         ];
     }
