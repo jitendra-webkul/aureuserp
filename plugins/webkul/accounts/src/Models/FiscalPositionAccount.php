@@ -2,10 +2,12 @@
 
 namespace Webkul\Account\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
+use Webkul\Account\Database\Factories\FiscalPositionAccountFactory;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Traits\BelongsToCompany;
@@ -57,5 +59,10 @@ class FiscalPositionAccount extends Model
         static::creating(function ($fiscalPositionAccount) {
             $fiscalPositionAccount->creator_id ??= Auth::id();
         });
+    }
+
+    protected static function newFactory(): Factory
+    {
+        return FiscalPositionAccountFactory::new();
     }
 }

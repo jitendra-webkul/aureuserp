@@ -57,6 +57,11 @@ class PaymentRegister extends Model
         'payment_type' => PaymentType::class,
     ];
 
+    public function getPaymentDifferenceAttribute(): float
+    {
+        return (float) $this->source_amount - (float) $this->amount;
+    }
+
     public function journal()
     {
         return $this->belongsTo(Journal::class, 'journal_id');
@@ -303,6 +308,10 @@ class PaymentRegister extends Model
 
     public function computePaymentDifferenceHandling()
     {
+        if (! is_null($this->payment_difference_handling)) {
+            return;
+        }
+
         if ($this->is_single_batch) {
             $this->payment_difference_handling = 'open';
         } else {
