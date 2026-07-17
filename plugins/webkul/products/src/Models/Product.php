@@ -30,6 +30,11 @@ class Product extends Model implements Sortable
 
     protected $table = 'products_products';
 
+    protected static function autoAssignsCompany(): bool
+    {
+        return false;
+    }
+
     protected $fillable = [
         'type',
         'name',

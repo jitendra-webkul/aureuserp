@@ -44,11 +44,12 @@ return [
                 'title' => 'Settings',
 
                 'fields' => [
-                    'type'      => 'Type',
-                    'reference' => 'Reference',
-                    'barcode'   => 'Barcode',
-                    'category'  => 'Category',
-                    'company'   => 'Company',
+                    'type'                => 'Type',
+                    'reference'           => 'Reference',
+                    'barcode'             => 'Barcode',
+                    'category'            => 'Category',
+                    'company'             => 'Company',
+                    'company-placeholder' => 'All Companies',
                 ],
             ],
 

@@ -12,9 +12,14 @@ trait BelongsToCompany
         static::addGlobalScope(new CompanyScope);
 
         static::creating(function ($model) {
-            if (empty($model->company_id)) {
+            if (empty($model->company_id) && static::autoAssignsCompany()) {
                 $model->company_id = app(CompanyContext::class)->currentId();
             }
         });
+    }
+
+    protected static function autoAssignsCompany(): bool
+    {
+        return true;
     }
 }

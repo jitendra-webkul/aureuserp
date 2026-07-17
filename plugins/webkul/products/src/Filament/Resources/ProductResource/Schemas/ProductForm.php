@@ -163,9 +163,9 @@ class ProductForm
                         return $record->name.($record->trashed() ? ' (Deleted)' : '');
                     })
                     ->disableOptionWhen(fn ($label) => str_contains($label, ' (Deleted)'))
+                    ->placeholder(__('products::filament/resources/product.form.sections.settings.fields.company-placeholder'))
                     ->searchable()
-                    ->preload()
-                    ->default(current_company_id()),
+                    ->preload(),
             ]);
     }
 

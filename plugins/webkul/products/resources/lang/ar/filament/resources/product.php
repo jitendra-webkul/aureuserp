@@ -44,11 +44,12 @@ return [
                 'title' => 'الإعدادات',
 
                 'fields' => [
-                    'type'      => 'النوع',
-                    'reference' => 'المرجع',
-                    'barcode'   => 'الباركود',
-                    'category'  => 'الفئة',
-                    'company'   => 'الشركة',
+                    'type'                => 'النوع',
+                    'reference'           => 'المرجع',
+                    'barcode'             => 'الباركود',
+                    'category'            => 'الفئة',
+                    'company'             => 'الشركة',
+                    'company-placeholder' => 'كل الشركات',
                 ],
             ],
 

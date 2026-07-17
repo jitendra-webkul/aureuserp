@@ -12,7 +12,7 @@ class AllowedCompanyScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        if (app()->runningInConsole()) {
+        if (app()->runningInConsole() && ! app()->runningUnitTests()) {
             return;
         }
 

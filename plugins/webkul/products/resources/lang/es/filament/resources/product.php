@@ -44,11 +44,12 @@ return [
                 'title' => 'Configuración',
 
                 'fields' => [
-                    'type'      => 'Tipo',
-                    'reference' => 'Referencia',
-                    'barcode'   => 'Código de barras',
-                    'category'  => 'Categoría',
-                    'company'   => 'Empresa',
+                    'type'                => 'Tipo',
+                    'reference'           => 'Referencia',
+                    'barcode'             => 'Código de barras',
+                    'category'            => 'Categoría',
+                    'company'             => 'Empresa',
+                    'company-placeholder' => 'Todas las empresas',
                 ],
             ],
 

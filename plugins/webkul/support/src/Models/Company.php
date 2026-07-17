@@ -177,6 +177,16 @@ class Company extends Model implements Sortable
             ]);
         });
 
+        static::created(function ($company) {
+            if (! $company->creator_id) {
+                return;
+            }
+
+            User::find($company->creator_id)
+                ?->allowedCompanies()
+                ->syncWithoutDetaching([$company->id]);
+        });
+
         static::saved(function ($company) {
             Partner::withoutGlobalScopes()->updateOrCreate(
                 [
