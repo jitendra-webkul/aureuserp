@@ -420,11 +420,14 @@ class OperationForm
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn (Set $set, Get $get) => static::afterProductUOMQtyUpdated($set, $get))
                     ->suffix(function (?Move $record, Get $get): mixed {
+                        $forecastAvailability = $record?->forecast_availability;
+
                         if (
                             ! $get('product_id')
                             || (float) ($get('product_uom_qty') ?? 0) <= 0
                             || (float) ($get('quantity') ?? 0) > 0
-                            || ($record?->forecast_availability ?? 1) > 0
+                            || ! is_numeric($forecastAvailability)
+                            || $forecastAvailability > 0
                             || ($record?->operationType?->type === Enums\OperationType::OUTGOING && $record?->state !== MoveState::DRAFT)
                         ) {
                             return null;
