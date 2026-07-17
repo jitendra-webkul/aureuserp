@@ -22,7 +22,7 @@ class AllowedCompanyScope implements Scope
             return;
         }
 
-        if (app(CompanyContext::class)->seesAllCompanies($user)) {
+        if (app(CompanyContext::class)->seesAllCompanies()) {
             return;
         }
 

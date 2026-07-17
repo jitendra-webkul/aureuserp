@@ -53,9 +53,7 @@ class SecurityServiceProvider extends PackageServiceProvider
             }
 
             if ($user && method_exists($user, 'hasRole') && $user->hasRole(array_filter([
-                config('filament-shield.panel_user.name'),
                 config('filament-shield.super_admin.name'),
-                'admin',
                 'super_admin',
             ]))) {
                 return true;
