@@ -1196,7 +1196,8 @@ class Move extends Model
 
         $toWarehouse = $this->destinationLocation->warehouse ?? null;
 
-        return $this->operationType?->type === OperationTypeEnum::OUTGOING
+        return $this->operationType?->type === OperationTypeEnum::INTERNAL
+            || $this->operationType?->type === OperationTypeEnum::OUTGOING
             || $this->operationType?->type === OperationTypeEnum::MANUFACTURE
             || (
                 $fromWarehouse
@@ -1323,11 +1324,16 @@ class Move extends Model
 
                 $product = Product::find($this->product_id);
 
-                $product->setContext(['to_date' => Carbon::parse($key[1])]);
+                $product->setContext([
+                    'warehouse_id' => $key[0],
+                    'to_date'      => Carbon::parse($key[1]),
+                ]);
 
-                $virtualAvailable = $product->computeQuantities()['virtual_available_qty'] ?? 0;
+                $freeQty = $product->computeQuantities()['virtual_available_qty'] ?? 0;
 
-                $forecastAvailability = $virtualAvailable - $this->product_qty;
+                $forecastAvailability = float_compare($freeQty, $this->product_qty, precisionRounding: $this->product->uom->rounding) >= 0
+                    ? $freeQty
+                    : $freeQty - $this->product_qty;
             } elseif (in_array($this->state, [MoveState::WAITING, MoveState::CONFIRMED, MoveState::PARTIALLY_ASSIGNED])) {
                 $warehouseId = $this->sourceLocation->warehouse_id;
 
@@ -1346,7 +1352,10 @@ class Move extends Model
 
             $product = Product::find($this->product_id);
 
-            $product->setContext(['to_date' => Carbon::parse($key[1])]);
+            $product->setContext([
+                'warehouse_id' => $key[0],
+                'to_date'      => Carbon::parse($key[1]),
+            ]);
 
             $forecastAvailability = $product->computeQuantities()['virtual_available_qty'] ?? 0;
 

@@ -230,7 +230,7 @@ class QuotationResource extends Resource
                                     ->visible(fn (Get $get) => $get('currency_id') && ! empty($get('products'))),
                             ]),
                         Tab::make(__('Optional Products'))
-                            ->hidden(fn ($record) => in_array($record?->state, [OrderState::CANCEL]))
+                            ->hidden(fn ($record) => $record && ! in_array($record->state, [OrderState::DRAFT, OrderState::SENT]))
                             ->icon('heroicon-o-arrow-path-rounded-square')
                             ->schema(function (Set $set, Get $get) {
                                 return [
@@ -928,7 +928,8 @@ class QuotationResource extends Resource
 
                         Tab::make(__('Optional Products'))
                             ->icon('heroicon-o-arrow-path-rounded-square')
-                            ->hidden(fn ($record) => $record->optionalLines->isEmpty())
+                            ->hidden(fn ($record) => $record->optionalLines->isEmpty()
+                                || ! in_array($record->state, [OrderState::DRAFT, OrderState::SENT]))
                             ->schema([
                                 RepeatableEntry::make('optionalLines')
                                     ->hiddenLabel()
@@ -1516,6 +1517,17 @@ class QuotationResource extends Resource
 
     public static function getOptionalProductRepeater(Get $parentGet, Set $parentSet): Repeater
     {
+        $isPresent = function (array $arguments, Get $get) use ($parentGet): bool {
+            $productId = $get("optionalProducts.{$arguments['item']}.product_id");
+
+            if (! filled($productId)) {
+                return false;
+            }
+
+            return collect($parentGet('products') ?? [])
+                ->contains(fn ($product) => ($product['product_id'] ?? null) == $productId);
+        };
+
         return Repeater::make('optionalProducts')
             ->relationship('optionalLines')
             ->hiddenLabel()
@@ -1612,6 +1624,8 @@ class QuotationResource extends Resource
                         $set('product_uom_id', $product->uom_id);
                     })
                     ->required(),
+                Hidden::make('name')
+                    ->dehydrated(),
                 TextInput::make('quantity')
                     ->label(__('sales::filament/clusters/orders/resources/quotation.form.tabs.order-line.repeater.product-optional.fields.quantity'))
                     ->required()
@@ -1659,9 +1673,17 @@ class QuotationResource extends Resource
             ])
             ->extraItemActions([
                 Action::make('add_order_line')
-                    ->tooltip(__('sales::filament/clusters/orders/resources/quotation.form.tabs.order-line.repeater.product-optional.fields.actions.tooltip.add-order-line'))
+                    ->tooltip(fn (array $arguments, Get $get): string => $isPresent($arguments, $get)
+                        ? __('sales::filament/clusters/orders/resources/quotation.form.tabs.order-line.repeater.product-optional.fields.actions.tooltip.already-added')
+                        : __('sales::filament/clusters/orders/resources/quotation.form.tabs.order-line.repeater.product-optional.fields.actions.tooltip.add-order-line'))
                     ->hiddenLabel()
-                    ->icon('heroicon-o-shopping-cart')
+                    ->icon(fn (array $arguments, Get $get): string => $isPresent($arguments, $get)
+                        ? 'heroicon-o-check-circle'
+                        : 'heroicon-o-shopping-cart')
+                    ->color(fn (array $arguments, Get $get): string => $isPresent($arguments, $get)
+                        ? 'success'
+                        : 'gray')
+                    ->disabled(fn (array $arguments, Get $get): bool => $isPresent($arguments, $get))
                     ->action(function ($state, $livewire, $record, $arguments) use ($parentGet, $parentSet) {
                         $uuid = $arguments['item'];
                         $productData = $state[$uuid] ?? null;
@@ -1750,7 +1772,8 @@ class QuotationResource extends Resource
                             ->send();
                     })
                     ->visible(
-                        fn (array $arguments, Get $get): bool => filled($get("optionalProducts.{$arguments['item']}.product_id"))
+                        fn (array $arguments, Get $get, $record): bool => filled($record)
+                            && filled($get("optionalProducts.{$arguments['item']}.product_id"))
                     ),
             ]);
     }
