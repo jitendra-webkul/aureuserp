@@ -68,9 +68,7 @@ class OrderResource extends QuotationResource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-
-
-        return $query->where('state', OrderState::SALE);
+        return parent::getEloquentQuery()
+            ->where('state', OrderState::SALE);
     }
 }

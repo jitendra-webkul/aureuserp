@@ -43,4 +43,11 @@ class EditPayment extends EditRecord
             DeleteAction::make(),
         ];
     }
+
+    public function refreshFormData(array $statePaths): void
+    {
+        parent::refreshFormData($statePaths);
+
+        $this->rememberData();
+    }
 }

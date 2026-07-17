@@ -96,4 +96,11 @@ class EditAllocation extends EditRecord
                 ),
         ];
     }
+
+    public function refreshFormData(array $statePaths): void
+    {
+        parent::refreshFormData($statePaths);
+
+        $this->rememberData();
+    }
 }

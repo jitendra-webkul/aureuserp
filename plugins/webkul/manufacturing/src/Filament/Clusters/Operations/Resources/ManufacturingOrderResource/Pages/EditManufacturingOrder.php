@@ -78,5 +78,7 @@ class EditManufacturingOrder extends EditRecord
     public function updateForm(): void
     {
         $this->fillForm();
+
+        $this->rememberData();
     }
 }

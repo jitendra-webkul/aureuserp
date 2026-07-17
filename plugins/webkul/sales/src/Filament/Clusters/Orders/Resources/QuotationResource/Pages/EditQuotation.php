@@ -72,4 +72,11 @@ class EditQuotation extends EditRecord
             $this->halt(shouldRollbackDatabaseTransaction: true);
         }
     }
+
+    public function refreshFormData(array $statePaths): void
+    {
+        parent::refreshFormData($statePaths);
+
+        $this->rememberData();
+    }
 }

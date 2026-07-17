@@ -60,4 +60,11 @@ class EditRefund extends EditRecord
     {
         AccountFacade::computeAccountMove($this->getRecord());
     }
+
+    public function refreshFormData(array $statePaths): void
+    {
+        parent::refreshFormData($statePaths);
+
+        $this->rememberData();
+    }
 }
