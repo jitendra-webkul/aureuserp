@@ -167,7 +167,7 @@ class InventoryManager
             $this->unreserveMoves($movesToUnreserve);
         }
 
-        $newOperation = $record->replicate()
+        $newOperation = $record->replicate(['back_order_id', 'closed_at', 'is_printed'])
             ->fill($this->prepareReturnOperationValues($record));
 
         $newOperation->save();
@@ -1441,7 +1441,7 @@ class InventoryManager
             return;
         }
 
-        $backOrderOperation = $record->replicate(['name', 'moves', 'moveLines']);
+        $backOrderOperation = $record->replicate(['name', 'return_id', 'closed_at', 'is_printed', 'moves', 'moveLines']);
 
         $backOrderOperation->fill([
             'name'          => '/',
@@ -2317,7 +2317,9 @@ class InventoryManager
             'uom_id'                  => $move->product->uom_id,
             'operation_id'            => $operation->id,
             'state'                   => MoveState::DRAFT,
-            'date'                    => now(),
+            'scheduled_at'            => now(),
+            'deadline'                => null,
+            'price_unit'              => 0,
             'source_location_id'      => $operation->source_location_id ?? $move->destination_location_id,
             'destination_location_id' => $operation->destination_location_id ?? $move->source_location_id,
             'final_location_id'       => null,
