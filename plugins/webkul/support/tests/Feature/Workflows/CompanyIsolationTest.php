@@ -2,8 +2,8 @@
 
 use Webkul\Support\Models\UtmCampaign;
 
-require_once __DIR__.'/../Helpers/CompanyHelper.php';
-require_once __DIR__.'/../Helpers/TestBootstrapHelper.php';
+require_once __DIR__.'/../../Helpers/CompanyHelper.php';
+require_once __DIR__.'/../../Helpers/TestBootstrapHelper.php';
 
 beforeEach(function () {
     SecurityHelper::disableUserEvents();

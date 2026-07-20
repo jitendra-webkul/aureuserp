@@ -17,6 +17,7 @@ return [
                     'code-placeholder'   => 'p. ej. AC',
                     'code-hint-tooltip'  => 'El nombre corto sirve como identificador del almacén.',
                     'company'            => 'Empresa',
+                    'multi-warehouse-warning' => 'Crear un nuevo almacén activará automáticamente la configuración de Ubicaciones de Almacenamiento.',
                     'address'            => 'Dirección',
                 ],
             ],

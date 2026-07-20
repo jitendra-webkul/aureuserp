@@ -17,6 +17,7 @@ return [
                     'code-placeholder'   => 'مثال: MC',
                     'code-hint-tooltip'  => 'الاسم المختصر يعمل كمعرف للمستودع.',
                     'company'            => 'الشركة',
+                    'multi-warehouse-warning' => 'إنشاء مستودع جديد سيفعّل تلقائياً إعداد مواقع التخزين.',
                     'address'            => 'العنوان',
                 ],
             ],

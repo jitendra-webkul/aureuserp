@@ -28,6 +28,7 @@ use Webkul\Inventory\Settings\WarehouseSettings;
 use Webkul\Partner\Models\Partner;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Traits\BelongsToCompany;
 
 class Warehouse extends Model implements Sortable
@@ -236,11 +237,17 @@ class Warehouse extends Model implements Sortable
 
         static::created(function (Warehouse $warehouse) {
             $warehouse->finalizeWarehouseCreation();
+
+            $warehouse->enableLocationsForMultiWarehouse();
         });
 
         static::updated(function (Warehouse $warehouse) {
             if ($warehouse->wasChanged('code')) {
                 $warehouse->viewLocation->update(['name' => $warehouse->code]);
+            }
+
+            if ($warehouse->wasChanged('company_id')) {
+                $warehouse->enableLocationsForMultiWarehouse();
             }
 
             $warehouse->syncWarehouseConfiguration();
@@ -325,6 +332,41 @@ class Warehouse extends Model implements Sortable
         static::restored(function (Warehouse $warehouse) {
             $warehouse->syncWarehouseConfiguration();
         });
+    }
+
+    public static function maxPerCompany(): int
+    {
+        return (int) static::query()
+            ->withoutGlobalScope(CompanyScope::class)
+            ->selectRaw('company_id, count(*) as aggregate')
+            ->groupBy('company_id')
+            ->pluck('aggregate')
+            ->max();
+    }
+
+    public static function countForCompany(?int $companyId): int
+    {
+        return static::query()
+            ->withoutGlobalScope(CompanyScope::class)
+            ->where('company_id', $companyId)
+            ->count();
+    }
+
+    protected function enableLocationsForMultiWarehouse(): void
+    {
+        $settings = settings(WarehouseSettings::class);
+
+        if ($settings->enable_locations) {
+            return;
+        }
+
+        if (static::countForCompany($this->company_id) <= 1) {
+            return;
+        }
+
+        $settings->enable_locations = true;
+
+        $settings->save();
     }
 
     protected function handleWarehouseCreation(): void
