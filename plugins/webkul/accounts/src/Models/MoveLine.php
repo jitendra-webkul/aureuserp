@@ -463,7 +463,7 @@ class MoveLine extends Model implements Sortable
         if ($this->move->isInvoice()) {
             if ($this->tax_line_id) {
                 $this->display_type = DisplayType::TAX;
-            } elseif (in_array($this->account->account_type, [AccountType::ASSET_RECEIVABLE, AccountType::LIABILITY_PAYABLE])) {
+            } elseif (in_array($this->account?->account_type, [AccountType::ASSET_RECEIVABLE, AccountType::LIABILITY_PAYABLE])) {
                 $this->display_type = DisplayType::PAYMENT_TERM;
             } else {
                 $this->display_type = DisplayType::PRODUCT;

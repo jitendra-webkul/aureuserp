@@ -14,6 +14,7 @@ use Webkul\Account\Database\Factories\MoveFactory;
 use Webkul\Account\Enums\AccountType;
 use Webkul\Account\Enums\DisplayType;
 use Webkul\Account\Enums\JournalType;
+use Webkul\Account\Exceptions\MissingJournalException;
 use Webkul\Account\Enums\MoveState;
 use Webkul\Account\Enums\MoveType;
 use Webkul\Account\Enums\PaymentState;
@@ -587,7 +588,16 @@ class Move extends Model implements Sortable
     public function computeJournalId()
     {
         if (! in_array($this->journal?->type, $this->getValidJournalTypes())) {
-            $this->journal_id = $this->searchDefaultJournal($this)?->id;
+            $journal = $this->searchDefaultJournal($this);
+
+            if (! $journal) {
+                throw new MissingJournalException(__('accounts::system.move.no-journal-found', [
+                    'company' => $this->company?->name ?? $this->company_id,
+                    'types'   => collect($this->getValidJournalTypes())->map(fn ($type) => $type->value)->implode(', '),
+                ]));
+            }
+
+            $this->journal_id = $journal->id;
 
             $this->unsetRelation('journal');
         }
