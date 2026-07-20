@@ -18,6 +18,7 @@ use Webkul\Product\Enums\ProductType;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Concerns\HasContributedAttributes;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Models\UOM;
 use Webkul\Support\Traits\BelongsToCompany;
 
@@ -426,7 +427,17 @@ class Product extends Model implements Sortable
         });
 
         static::saved(function ($product) {
-            $product->variants->each(fn ($variant) => $variant->update(['is_storable' => $product->is_storable]));
+            if ($product->parent_id) {
+                return;
+            }
+
+            $product->variants()
+                ->withoutGlobalScope(CompanyScope::class)
+                ->get()
+                ->each(fn ($variant) => $variant->update([
+                    'is_storable' => $product->is_storable,
+                    'company_id'  => $product->company_id,
+                ]));
         });
 
         static::deleting(function (self $product) {
