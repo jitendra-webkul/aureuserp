@@ -22,6 +22,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
 use Webkul\Partner\Models\Partner;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Security\Enums\PermissionType;
 use Webkul\Security\Support\OwnerSource;
 use Webkul\Security\Traits\HasOwnershipScope;
@@ -110,7 +111,8 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
 
     public function partner(): BelongsTo
     {
-        return $this->belongsTo(Partner::class, 'partner_id');
+        return $this->belongsTo(Partner::class, 'partner_id')
+            ->withoutGlobalScope(CompanyScope::class);
     }
 
     public function allowedCompanies(): BelongsToMany
