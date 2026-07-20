@@ -169,7 +169,6 @@ class PostResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('title')
                     ->label(__('blogs::filament/admin/resources/post.table.columns.title'))

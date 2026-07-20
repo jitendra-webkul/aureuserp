@@ -119,7 +119,6 @@ class PageResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('title')
                     ->label(__('website::filament/admin/resources/page.table.columns.title'))

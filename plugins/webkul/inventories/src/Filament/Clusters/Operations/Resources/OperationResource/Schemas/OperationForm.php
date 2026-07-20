@@ -274,7 +274,6 @@ class OperationForm
 
                 return $data;
             })
-            ->columnManagerColumns(2)
             ->table(fn ($record) => [
                 TableColumn::make('product_id')
                     ->label(__('inventories::filament/clusters/operations/resources/operation.form.tabs.operations.columns.product'))

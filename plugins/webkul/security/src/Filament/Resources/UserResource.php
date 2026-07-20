@@ -285,7 +285,6 @@ class UserResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 ImageColumn::make('partner.avatar')
                     ->defaultImageUrl(fn ($record) => $record->avatar_url)

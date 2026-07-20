@@ -144,7 +144,6 @@ class QuantityResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('location.full_name')

@@ -151,7 +151,6 @@ class CalendarResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('id')
                     ->label(__('support::filament/resources/calendar.table.columns.id'))

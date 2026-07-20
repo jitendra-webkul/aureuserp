@@ -243,7 +243,7 @@ class Warehouse extends Model implements Sortable
 
         static::updated(function (Warehouse $warehouse) {
             if ($warehouse->wasChanged('code')) {
-                $warehouse->viewLocation->update(['name' => $warehouse->code]);
+                $warehouse->viewLocation?->update(['name' => $warehouse->code]);
             }
 
             if ($warehouse->wasChanged('company_id')) {
@@ -270,10 +270,14 @@ class Warehouse extends Model implements Sortable
                 $operationTypes->each(fn ($operationType) => $operationType->delete());
             }
 
-            $childLocationIds = Location::query()
-                ->whereRaw('parent_path LIKE ?', [$warehouse->viewLocation->parent_path.'%'])
-                ->where('id', '!=', $warehouse->viewLocation->id)
-                ->pluck('id');
+            $viewLocation = $warehouse->viewLocation;
+
+            $childLocationIds = $viewLocation
+                ? Location::query()
+                    ->whereRaw('parent_path LIKE ?', [$viewLocation->parent_path.'%'])
+                    ->where('id', '!=', $viewLocation->id)
+                    ->pluck('id')
+                : collect();
 
             $blocking = OperationType::query()
                 ->whereDoesntHave('warehouse', fn ($q) => $q->whereKey($warehouse->id))
@@ -296,7 +300,7 @@ class Warehouse extends Model implements Sortable
                 throw new \Exception("{$blocking->implode(', ')} have default source or destination locations within warehouse {$warehouse->name}, therefore you cannot archive it.");
             }
 
-            $warehouse->viewLocation->delete();
+            $viewLocation?->delete();
 
             $rules = Rule::where('warehouse_id', $warehouse->id)->get();
 

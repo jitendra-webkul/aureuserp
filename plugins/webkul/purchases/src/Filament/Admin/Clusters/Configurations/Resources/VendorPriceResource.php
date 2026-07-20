@@ -158,7 +158,6 @@ class VendorPriceResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('partner.name')
                     ->label(__('purchases::filament/admin/clusters/configurations/resources/vendor-price.table.columns.vendor'))

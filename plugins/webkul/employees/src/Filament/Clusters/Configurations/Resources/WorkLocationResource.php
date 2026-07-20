@@ -89,7 +89,6 @@ class WorkLocationResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('id')
                     ->label(__('employees::filament/clusters/configurations/resources/work-location.table.columns.id'))

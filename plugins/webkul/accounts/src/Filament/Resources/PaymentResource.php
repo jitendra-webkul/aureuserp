@@ -280,7 +280,6 @@ class PaymentResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('date')
                     ->label(__('accounts::filament/resources/payment.table.columns.date'))

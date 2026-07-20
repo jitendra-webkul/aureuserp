@@ -396,7 +396,6 @@ class BillResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('name')
                     ->placeholder('-')

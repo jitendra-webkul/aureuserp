@@ -351,7 +351,6 @@ class CompanyResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ]))
-            ->columnManagerColumns(2)
             ->groups([
                 Tables\Grouping\Group::make('name')
                     ->label(__('support::filament/resources/company.table.groups.company-name'))

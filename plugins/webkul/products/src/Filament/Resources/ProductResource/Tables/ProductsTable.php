@@ -45,7 +45,6 @@ class ProductsTable
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns(array_merge(static::columns(), Registry::renderTable('columns')))
             ->groups(array_merge(static::groups(), Registry::renderTable('groups')))
             ->reorderable('sort')

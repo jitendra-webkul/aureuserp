@@ -248,7 +248,6 @@ class JournalEntryResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('invoice_date')
                     ->date()

@@ -1255,11 +1255,13 @@ class Move extends Model
 
     public function getForecastAvailabilityOutgoing(Collection $moves, Warehouse $warehouse, Location $location): array
     {
-        $viewLocationParentPath = $warehouse->viewLocation->parent_path;
+        $viewLocationParentPath = $warehouse->viewLocation?->parent_path;
 
-        $warehouseLocationIds = Location::query()
-            ->where('parent_path', 'like', $viewLocationParentPath.'%')
-            ->pluck('id');
+        $warehouseLocationIds = $viewLocationParentPath
+            ? Location::query()
+                ->where('parent_path', 'like', $viewLocationParentPath.'%')
+                ->pluck('id')
+            : collect();
 
         $productId = $this->product_id;
 

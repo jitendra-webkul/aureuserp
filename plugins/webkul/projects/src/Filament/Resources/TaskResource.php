@@ -269,7 +269,6 @@ class TaskResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns(static::mergeCustomTableColumns([
                 TextColumn::make('id')
                     ->label(__('projects::filament/resources/task.table.columns.id'))

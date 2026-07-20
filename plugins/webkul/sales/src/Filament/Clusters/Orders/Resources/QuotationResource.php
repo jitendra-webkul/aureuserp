@@ -354,7 +354,6 @@ class QuotationResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns([
                 TextColumn::make('name')
                     ->label(__('sales::filament/clusters/orders/resources/quotation.table.columns.number'))
@@ -1139,7 +1138,6 @@ class QuotationResource extends Resource
                 });
             })
             ->addable(fn ($record): bool => ! in_array($record?->state, [OrderState::CANCEL]))
-            ->columnManagerColumns(2)
             ->compact()
             ->table(fn ($record) => [
                 TableColumn::make('product_id')

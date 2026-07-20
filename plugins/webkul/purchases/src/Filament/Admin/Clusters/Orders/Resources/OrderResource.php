@@ -348,7 +348,6 @@ class OrderResource extends Resource
     {
         return $table
             ->reorderableColumns()
-            ->columnManagerColumns(2)
             ->columns(static::mergeCustomTableColumns([
                 IconColumn::make('priority')
                     ->label(__('purchases::filament/admin/clusters/orders/resources/order.table.columns.favorite'))
@@ -423,7 +422,6 @@ class OrderResource extends Resource
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
             ]))
-            ->columnManagerColumns(3)
             ->groups([
                 Tables\Grouping\Group::make('partner.name')
                     ->label(__('purchases::filament/admin/clusters/orders/resources/order.table.groups.vendor')),
@@ -878,7 +876,6 @@ class OrderResource extends Resource
             })
             ->deletable(fn ($record): bool => ! in_array($record?->state, [OrderState::DONE, OrderState::CANCELED]))
             ->addable(fn ($record): bool => ! in_array($record?->state, [OrderState::DONE, OrderState::CANCELED]))
-            ->columnManagerColumns(2)
             ->table(fn ($record) => [
                 TableColumn::make('product_id')
                     ->label(__('purchases::filament/admin/clusters/orders/resources/order.form.tabs.products.repeater.products.columns.product'))
