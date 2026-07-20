@@ -71,6 +71,7 @@ use Webkul\Account\Filament\Resources\BillResource\Pages\ViewBill;
 use Webkul\Account\Livewire\InvoiceSummary;
 use Webkul\Account\Models\Bill;
 use Webkul\Account\Models\CashRounding;
+use Webkul\Account\Models\Journal;
 use Webkul\Account\Models\MoveLine;
 use Webkul\Account\Models\Partner;
 use Webkul\Account\Models\Product;
@@ -335,6 +336,11 @@ class BillResource extends Resource
                                                 if ($company) {
                                                     $set('currency_id', $company->currency_id);
                                                 }
+
+                                                $set('journal_id', Journal::query()
+                                                    ->where('type', JournalType::PURCHASE)
+                                                    ->where('company_id', $company?->id)
+                                                    ->value('id'));
                                             })
                                             ->default(current_company_id()),
                                         Select::make('invoice_incoterm_id')
@@ -1232,10 +1238,12 @@ class BillResource extends Resource
         if ($get('../../currency_id')) {
             $currency = Currency::find($get('../../currency_id'));
 
-            $priceUnit = current_company()->currency->convert(
+            $company = Company::find($get('../../company_id')) ?? current_company();
+
+            $priceUnit = $company->currency->convert(
                 $priceUnit,
                 $currency,
-                current_company()
+                $company
             );
         }
 

@@ -18,6 +18,7 @@ use Webkul\Inventory\Enums\RuleAction;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Product\Models\Product as BaseProduct;
 use Webkul\Security\Models\User;
+use Webkul\Support\Services\CompanyContext;
 
 class Product extends BaseProduct
 {
@@ -344,6 +345,10 @@ class Product extends BaseProduct
         $warehouseId = $this->context['warehouse_id'] ?? null;
         $companyIds = $this->context['company_ids'] ?? [];
         $strict = $this->context['strict'] ?? false;
+
+        if (empty($companyIds)) {
+            $companyIds = app(CompanyContext::class)->activeIds();
+        }
 
         if (empty($companyIds)) {
             $companyIds = array_filter([current_company_id()]);

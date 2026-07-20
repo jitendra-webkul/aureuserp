@@ -57,7 +57,7 @@ class OrderTemplateProduct extends Model
         parent::boot();
 
         static::creating(function ($orderTemplateProduct) {
-            $orderTemplateProduct->company_id ??= Company::first()?->id;
+            $orderTemplateProduct->company_id ??= current_company_id();
             $orderTemplateProduct->product_id ??= Product::first()?->id;
             $orderTemplateProduct->product_uom_id ??= UOM::first()?->id;
             $orderTemplateProduct->creator_id ??= Auth::id();

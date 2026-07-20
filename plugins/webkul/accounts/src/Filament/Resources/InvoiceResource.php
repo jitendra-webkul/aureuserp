@@ -359,7 +359,6 @@ class InvoiceResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->reactive()
-                                            ->afterStateUpdated(fn (callable $set, $state) => $set('currency_id', Company::find($state)?->currency_id))
                                             ->default(current_company_id())
                                             ->live()
                                             ->afterStateUpdated(function (Get $get, Set $set) {
@@ -368,6 +367,11 @@ class InvoiceResource extends Resource
                                                 if ($company?->currency_id) {
                                                     $set('currency_id', $company->currency_id);
                                                 }
+
+                                                $set('journal_id', Journal::query()
+                                                    ->where('type', JournalType::SALE)
+                                                    ->where('company_id', $company?->id)
+                                                    ->value('id'));
                                             }),
                                         Select::make('invoice_incoterm_id')
                                             ->label(__('accounts::filament/resources/invoice.form.tabs.other-information.fieldset.accounting.fields.incoterm'))
@@ -1291,10 +1295,12 @@ class InvoiceResource extends Resource
         if ($get('../../currency_id')) {
             $currency = Currency::find($get('../../currency_id'));
 
-            $priceUnit = current_company()->currency->convert(
+            $company = Company::find($get('../../company_id')) ?? current_company();
+
+            $priceUnit = $company->currency->convert(
                 $priceUnit,
                 $currency,
-                current_company()
+                $company
             );
         }
 

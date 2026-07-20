@@ -64,7 +64,16 @@ class Currency extends Model
 
         $date = $date ?? now()->toDateString();
 
-        $toRateRecord = $toCurrency->rates()
+        $fromRate = $this->resolveRate($fromCurrency, $company, $date);
+
+        $toRate = $this->resolveRate($toCurrency, $company, $date);
+
+        return $toRate / $fromRate;
+    }
+
+    protected function resolveRate(self $currency, ?Company $company, string $date): float
+    {
+        $rate = $currency->rates()
             ->where(function ($query) use ($company) {
                 $query->whereNull('company_id');
 
@@ -74,9 +83,9 @@ class Currency extends Model
             })
             ->whereDate('name', '<=', $date)
             ->orderByDesc('name')
-            ->first();
+            ->value('rate');
 
-        return $toRateRecord->rate ?? 1.0;
+        return $rate > 0 ? (float) $rate : 1.0;
     }
 
     public function round(float $amount): float

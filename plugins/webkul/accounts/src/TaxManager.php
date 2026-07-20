@@ -27,7 +27,7 @@ class TaxManager
 
         $currency = $getValue('currency', null)
             ?: $getValue('companyCurrency', null)
-            ?: $getValue('company', Company::first())?->currency
+            ?: $getValue('company', current_company())?->currency
             ?: new Currency;
 
         return array_merge($args, [
@@ -66,7 +66,7 @@ class TaxManager
 
         $currency = $getValue('currency', null)
             ?: $getValue('companyCurrency', null)
-            ?: $getValue('company', Company::first())?->currency
+            ?: $getValue('company', current_company())?->currency
             ?: new Currency;
 
         return array_merge($args, [
