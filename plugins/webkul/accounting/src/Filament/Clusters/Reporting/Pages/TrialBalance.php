@@ -20,11 +20,15 @@ use Webkul\Account\Enums\MoveState;
 use Webkul\Account\Models\Account;
 use Webkul\Account\Models\Journal;
 use Webkul\Accounting\Filament\Clusters\Reporting;
+use Webkul\Accounting\Filament\Clusters\Reporting\Pages\Concerns\ShowsCurrencyNotice;
+use Webkul\Accounting\Support\CompanyRateMap;
 use Webkul\Accounting\Filament\Clusters\Reporting\Pages\Concerns\NormalizeDateFilter;
 use Webkul\Accounting\Filament\Clusters\Reporting\Pages\Exports\TrialBalanceExport;
 
 class TrialBalance extends Page implements HasForms
 {
+    use ShowsCurrencyNotice;
+
     use HasPageShield, InteractsWithForms, NormalizeDateFilter;
 
     protected string $view = 'accounting::filament.clusters.reporting.pages.trial-balance';
@@ -59,7 +63,7 @@ class TrialBalance extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->form->fill([]);
+        $this->form->fill();
     }
 
     protected function getHeaderActions(): array
@@ -151,26 +155,29 @@ class TrialBalance extends Page implements HasForms
         $dateFrom = $dateRange ? Carbon::parse($dateRange[0]) : now()->startOfMonth();
         $dateTo = $dateRange ? Carbon::parse($dateRange[1]) : now()->endOfMonth();
 
-        $companyId = current_company_id();
+        $rateMap = CompanyRateMap::make(date: $dateTo instanceof \Carbon\Carbon ? $dateTo->toDateString() : (string) $dateTo);
         $journalIds = $this->data['journals'] ?? [];
+
+        $debit = $rateMap->weight('accounts_account_move_lines.debit');
+        $credit = $rateMap->weight('accounts_account_move_lines.credit');
 
         $accountsQuery = Account::select(
             'accounts_accounts.id',
             'accounts_accounts.code',
             'accounts_accounts.name',
             'accounts_accounts.account_type',
-            DB::raw('COALESCE(SUM(CASE WHEN accounts_account_moves.date < ? THEN accounts_account_move_lines.debit ELSE 0 END), 0) as initial_debit'),
-            DB::raw('COALESCE(SUM(CASE WHEN accounts_account_moves.date < ? THEN accounts_account_move_lines.credit ELSE 0 END), 0) as initial_credit'),
-            DB::raw('COALESCE(SUM(CASE WHEN accounts_account_moves.date BETWEEN ? AND ? THEN accounts_account_move_lines.debit ELSE 0 END), 0) as period_debit'),
-            DB::raw('COALESCE(SUM(CASE WHEN accounts_account_moves.date BETWEEN ? AND ? THEN accounts_account_move_lines.credit ELSE 0 END), 0) as period_credit'),
-            DB::raw('COALESCE(SUM(CASE WHEN accounts_account_moves.date <= ? THEN accounts_account_move_lines.debit ELSE 0 END), 0) as end_debit'),
-            DB::raw('COALESCE(SUM(CASE WHEN accounts_account_moves.date <= ? THEN accounts_account_move_lines.credit ELSE 0 END), 0) as end_credit')
+            DB::raw("COALESCE(SUM(CASE WHEN accounts_account_moves.date < ? THEN {$debit} ELSE 0 END), 0) as initial_debit"),
+            DB::raw("COALESCE(SUM(CASE WHEN accounts_account_moves.date < ? THEN {$credit} ELSE 0 END), 0) as initial_credit"),
+            DB::raw("COALESCE(SUM(CASE WHEN accounts_account_moves.date BETWEEN ? AND ? THEN {$debit} ELSE 0 END), 0) as period_debit"),
+            DB::raw("COALESCE(SUM(CASE WHEN accounts_account_moves.date BETWEEN ? AND ? THEN {$credit} ELSE 0 END), 0) as period_credit"),
+            DB::raw("COALESCE(SUM(CASE WHEN accounts_account_moves.date <= ? THEN {$debit} ELSE 0 END), 0) as end_debit"),
+            DB::raw("COALESCE(SUM(CASE WHEN accounts_account_moves.date <= ? THEN {$credit} ELSE 0 END), 0) as end_credit")
         )
             ->leftJoin('accounts_account_move_lines', 'accounts_accounts.id', '=', 'accounts_account_move_lines.account_id')
-            ->leftJoin('accounts_account_moves', function ($join) use ($companyId) {
+            ->leftJoin('accounts_account_moves', function ($join) use ($rateMap) {
                 $join->on('accounts_account_move_lines.move_id', '=', 'accounts_account_moves.id')
                     ->where('accounts_account_moves.state', MoveState::POSTED)
-                    ->where('accounts_account_moves.company_id', $companyId);
+                    ->whereIn('accounts_account_moves.company_id', $rateMap->companyIds());
             })
             ->addBinding([$dateFrom, $dateFrom, $dateFrom, $dateTo, $dateFrom, $dateTo, $dateTo, $dateTo], 'select')
             ->groupBy('accounts_accounts.id', 'accounts_accounts.code', 'accounts_accounts.name', 'accounts_accounts.account_type')
