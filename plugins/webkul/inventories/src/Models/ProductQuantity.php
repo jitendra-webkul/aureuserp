@@ -129,6 +129,8 @@ class ProductQuantity extends Model
 
         static::saving(function ($productQuantity) {
             $productQuantity->updateScheduledAt();
+
+            $productQuantity->company_id = $productQuantity->location?->company_id ?? $productQuantity->company_id;
         });
 
         static::created(function ($productQuantity) {
@@ -166,6 +168,11 @@ class ProductQuantity extends Model
 
             static::deleteZeroQuantities();
         });
+    }
+
+    protected static function autoAssignsCompany(): bool
+    {
+        return false;
     }
 
     public function computePackageLocationCompany()
