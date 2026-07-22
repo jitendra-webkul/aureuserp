@@ -400,7 +400,14 @@ class MoveLine extends Model implements Sortable
 
                 $account = $this->move->partner?->{$propertyField}
                     ?? (method_exists($this->move->company, 'partner') ? $this->move->company->partner?->{$propertyField} : null)
-                    ?? Account::where('account_type', $accountType)->where('deprecated', false)->first();
+                    ?? Account::query()
+                        ->where('account_type', $accountType)
+                        ->where('deprecated', false)
+                        ->where(function ($query) {
+                            $query->whereHas('companies', fn ($companyQuery) => $companyQuery->where('companies.id', $this->move->company_id))
+                                ->orWhereDoesntHave('companies');
+                        })
+                        ->first();
 
                 if ($this->move->fiscalPosition && $account) {
                     $account = $this->move->fiscalPosition->mapAccount($account);

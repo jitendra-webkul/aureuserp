@@ -13,6 +13,7 @@ use Webkul\Product\Database\Factories\ProductSupplierFactory;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Currency;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Models\UOM;
 use Webkul\Support\Traits\BelongsToCompany;
 
@@ -92,7 +93,7 @@ class ProductSupplier extends Model implements Sortable
 
             $productSupplier->creator_id ??= $authUser->id;
 
-            $productSupplier->company_id ??= current_company_id();
+            $productSupplier->company_id = Product::withoutGlobalScope(CompanyScope::class)->find($productSupplier->product_id)?->company_id ?? current_company_id();
         });
     }
 

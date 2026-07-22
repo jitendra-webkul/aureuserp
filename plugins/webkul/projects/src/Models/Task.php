@@ -21,6 +21,7 @@ use Webkul\Security\Models\User;
 use Webkul\Security\Support\OwnerSource;
 use Webkul\Security\Traits\HasOwnershipScope;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Traits\BelongsToCompany;
 
 class Task extends Model implements Sortable
@@ -186,7 +187,7 @@ class Task extends Model implements Sortable
 
             $task->creator_id ??= $authUser->id;
 
-            $task->company_id ??= current_company_id();
+            $task->company_id = Project::withoutGlobalScope(CompanyScope::class)->find($task->project_id)?->company_id ?? current_company_id();
         });
 
         static::updated(function ($task) {

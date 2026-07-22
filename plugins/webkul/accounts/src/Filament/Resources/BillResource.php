@@ -341,6 +341,8 @@ class BillResource extends Resource
                                                     ->where('type', JournalType::PURCHASE)
                                                     ->where('company_id', $company?->id)
                                                     ->value('id'));
+
+                                                $set('fiscal_position_id', null);
                                             })
                                             ->default(current_company_id()),
                                         Select::make('invoice_incoterm_id')

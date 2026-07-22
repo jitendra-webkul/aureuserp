@@ -372,6 +372,10 @@ class InvoiceResource extends Resource
                                                     ->where('type', JournalType::SALE)
                                                     ->where('company_id', $company?->id)
                                                     ->value('id'));
+
+                                                $set('fiscal_position_id', null);
+
+                                                $set('partner_bank_id', null);
                                             }),
                                         Select::make('invoice_incoterm_id')
                                             ->label(__('accounts::filament/resources/invoice.form.tabs.other-information.fieldset.accounting.fields.incoterm'))

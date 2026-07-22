@@ -176,7 +176,9 @@ class JournalEntryResource extends Resource
                                             ->relationship(
                                                 'journal',
                                                 'name',
-                                                modifyQueryUsing: fn (Builder $query) => $query->where('type', JournalType::GENERAL),
+                                                modifyQueryUsing: fn (Builder $query, Get $get) => $query
+                                                    ->where('type', JournalType::GENERAL)
+                                                    ->where('company_id', $get('company_id') ?? current_company_id()),
                                             )
                                             ->searchable()
                                             ->preload()
@@ -211,7 +213,6 @@ class JournalEntryResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->reactive()
-                                    ->afterStateUpdated(fn (callable $set, $state) => $set('currency_id', Company::find($state)?->currency_id))
                                     ->default(current_company_id())
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set) {
@@ -220,6 +221,10 @@ class JournalEntryResource extends Resource
                                         if ($company?->currency_id) {
                                             $set('currency_id', $company->currency_id);
                                         }
+
+                                        $set('journal_id', null);
+
+                                        $set('fiscal_position_id', null);
                                     }),
                                 Toggle::make('checked')
                                     ->inline(false)

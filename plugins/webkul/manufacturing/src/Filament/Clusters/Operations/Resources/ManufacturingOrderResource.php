@@ -42,6 +42,7 @@ use Webkul\Field\Filament\Infolists\Components\ProgressStepper as InfolistProgre
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\OperationType;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Inventory\Settings\WarehouseSettings;
 use Webkul\Manufacturing\Enums\ManufacturingOrderState;
 use Webkul\Manufacturing\Enums\WorkCenterWorkingState;
@@ -768,6 +769,7 @@ class ManufacturingOrderResource extends Resource
         return BillOfMaterial::query()
             ->withTrashed()
             ->whereIn('product_id', $productIds)
+            ->where(fn ($query) => $query->whereNull('company_id')->orWhere('company_id', current_company_id()))
             ->orderByDesc('product_id')
             ->value('id');
     }
@@ -788,12 +790,15 @@ class ManufacturingOrderResource extends Resource
         }
 
         if ($billOfMaterial->operation_type_id) {
-            $operationType = OperationType::query()->withTrashed()->find($billOfMaterial->operation_type_id);
+            $operationType = OperationType::withoutGlobalScope(CompanyScope::class)->withTrashed()->find($billOfMaterial->operation_type_id);
         } else {
-            $operationType = OperationType::query()->withTrashed()->where('type', 'manufacture')->first();
+            $operationType = OperationType::query()->withTrashed()
+                ->where('type', 'manufacture')
+                ->where('company_id', $billOfMaterial->company_id ?? current_company_id())
+                ->first();
         }
 
-        $set('operation_type_id', $operationType->id);
+        $set('operation_type_id', $operationType?->id);
 
         $set('source_location_id', $operationType?->source_location_id);
 
@@ -803,7 +808,7 @@ class ManufacturingOrderResource extends Resource
             $set('uom_id', $billOfMaterial->uom_id ?: static::getDefaultUomId());
         }
 
-        $set('company_id', $billOfMaterial->company_id);
+        $set('company_id', $billOfMaterial->company_id ?? current_company_id());
 
         $effectiveQuantity = static::convertOrderQuantityToBillOfMaterialUom($billOfMaterial, $quantity, $uomId);
 
@@ -1438,9 +1443,9 @@ class ManufacturingOrderResource extends Resource
         $quantityMultiplier = $billOfMaterial->getQuantityMultiplier($quantity);
 
         if ($billOfMaterial->operation_type_id) {
-            $operationType = $billOfMaterial->operationType;
+            $operationType = OperationType::withoutGlobalScope(CompanyScope::class)->withTrashed()->find($billOfMaterial->operation_type_id);
         } else {
-            $operationType = OperationType::query()->withTrashed()->where('type', 'manufacture')->first();
+            $operationType = OperationType::query()->withTrashed()->where('type', 'manufacture')->where('company_id', $billOfMaterial->company_id ?? current_company_id())->first();
         }
 
         return $billOfMaterial->lines()
@@ -1452,8 +1457,8 @@ class ManufacturingOrderResource extends Resource
                 'product_id'         => $line->product_id,
                 'uom_id'             => $line->uom_id,
                 'product_uom_qty'    => round((float) $line->quantity * $quantityMultiplier, 4),
-                'operation_type_id'  => $operationType->id,
-                'source_location_id' => $operationType->source_location_id,
+                'operation_type_id'  => $operationType?->id,
+                'source_location_id' => $operationType?->source_location_id,
                 'display_from'       => $operationType?->sourceLocation?->full_name ?? '—',
                 'display_forecast'   => '—',
             ])

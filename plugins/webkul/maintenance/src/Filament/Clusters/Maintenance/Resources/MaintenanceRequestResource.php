@@ -132,7 +132,7 @@ class MaintenanceRequestResource extends Resource
 
                                         $set('requested_at', $equipment?->effective_date?->toDateString() ?? now()->toDateString());
 
-                                        $set('maintenance_team_id', $equipment?->maintenance_team_id ?? Team::query()->value('id'));
+                                        $set('maintenance_team_id', $equipment?->maintenance_team_id ?? Team::query()->where('company_id', $equipment?->company_id ?? current_company_id())->value('id'));
 
                                         $set('user_id', $equipment?->technician_user_id ?? $equipment?->category?->technician_user_id ?? Auth::id());
 
@@ -267,7 +267,7 @@ class MaintenanceRequestResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->required()
-                                    ->default(Team::query()->value('id')),
+                                    ->default(Team::query()->where('company_id', current_company_id())->value('id')),
 
                                 Select::make('user_id')
                                     ->label(__('maintenance::filament/clusters/maintenance/resources/maintenance-request.form.sections.settings.fields.responsible'))

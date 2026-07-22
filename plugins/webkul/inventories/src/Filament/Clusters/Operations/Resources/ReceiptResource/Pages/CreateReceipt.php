@@ -54,7 +54,9 @@ class CreateReceipt extends CreateRecord
     {
         parent::mount();
 
-        $operationType = OperationType::where('type', Enums\OperationType::INCOMING)->first();
+        $operationType = OperationType::where('type', Enums\OperationType::INCOMING)
+            ->where('company_id', current_company_id())
+            ->first();
 
         $this->data['operation_type_id'] = $operationType?->id;
 

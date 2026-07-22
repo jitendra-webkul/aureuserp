@@ -123,7 +123,7 @@ class TaskResource extends Resource
                             ->inline()
                             ->required()
                             ->options(fn () => TaskStage::orderBy('sort')->get()->mapWithKeys(fn ($stage) => [$stage->id => $stage->name]))
-                            ->default(TaskStage::first()?->id),
+                            ->default(TaskStage::where('company_id', current_company_id())->orderBy('sort')->first()?->id),
                         Section::make(__('projects::filament/resources/task.form.sections.general.title'))
                             ->schema([
                                 TextInput::make('title')
@@ -669,7 +669,7 @@ class TaskResource extends Resource
                             ->hiddenLabel()
                             ->inline()
                             ->options(fn () => TaskStage::orderBy('sort')->get()->mapWithKeys(fn ($stage) => [$stage->id => $stage->name])->toArray())
-                            ->default(TaskStage::first()?->id),
+                            ->default(fn ($record) => TaskStage::where('company_id', $record?->company_id ?? current_company_id())->orderBy('sort')->first()?->id),
 
                         Section::make(__('projects::filament/resources/task.infolist.sections.general.title'))
                             ->schema([

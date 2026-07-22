@@ -230,6 +230,7 @@ class ScrapResource extends Resource
                                             ->default(function () {
                                                 $scrapLocation = Location::where('type', LocationType::INTERNAL)
                                                     ->where('is_scrap', false)
+                                                    ->where('company_id', current_company_id())
                                                     ->first();
 
                                                 return $scrapLocation?->id;
@@ -249,6 +250,7 @@ class ScrapResource extends Resource
                                             ->preload()
                                             ->default(function () {
                                                 $scrapLocation = Location::where('is_scrap', true)
+                                                    ->where('company_id', current_company_id())
                                                     ->first();
 
                                                 return $scrapLocation?->id;

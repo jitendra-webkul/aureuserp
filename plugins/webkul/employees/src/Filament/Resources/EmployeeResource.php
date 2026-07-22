@@ -184,7 +184,7 @@ class EmployeeResource extends Resource
                                     ->relationship(
                                         name: 'department',
                                         titleAttribute: 'complete_name',
-                                        modifyQueryUsing: fn (Builder $query) => $query->withTrashed(),
+                                        modifyQueryUsing: fn (Builder $query, Get $get) => $query->withTrashed()->where('company_id', $get('company_id') ?? current_company_id()),
                                     )
                                     ->getOptionLabelFromRecordUsing(function ($record): string {
                                         return $record->name.($record->trashed() ? ' (Deleted)' : '');
@@ -206,7 +206,11 @@ class EmployeeResource extends Resource
                                     )
                                     ->tel(),
                                 Select::make('job_id')
-                                    ->relationship('job', 'name')
+                                    ->relationship(
+                                        name: 'job',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('company_id', $get('company_id') ?? current_company_id()),
+                                    )
                                     ->searchable()
                                     ->preload()
                                     ->label(__('employees::filament/resources/employee.form.sections.fields.job-position'))
@@ -265,7 +269,11 @@ class EmployeeResource extends Resource
                                                             ->suffixIcon('heroicon-o-map-pin')
                                                             ->label(__('employees::filament/resources/employee.form.tabs.work-information.fields.work-address')),
                                                         Select::make('work_location_id')
-                                                            ->relationship('workLocation', 'name')
+                                                            ->relationship(
+                                                                name: 'workLocation',
+                                                                titleAttribute: 'name',
+                                                                modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('company_id', $get('company_id') ?? current_company_id()),
+                                                            )
                                                             ->searchable()
                                                             ->preload()
                                                             ->label(__('employees::filament/resources/employee.form.tabs.work-information.fields.work-location'))
@@ -324,6 +332,12 @@ class EmployeeResource extends Resource
                                                                     ->relationship('company', 'name')
                                                                     ->searchable()
                                                                     ->preload()
+                                                                    ->live()
+                                                                    ->afterStateUpdated(function (Set $set) {
+                                                                        $set('job_id', null);
+                                                                        $set('work_location_id', null);
+                                                                        $set('department_id', null);
+                                                                    })
                                                                     ->prefixIcon('heroicon-o-building-office')
                                                                     ->label(__('employees::filament/resources/employee.form.tabs.work-information.fields.company'))
                                                                     ->createOptionForm(fn (Schema $schema) => CompanyResource::form($schema)),

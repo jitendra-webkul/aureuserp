@@ -1793,7 +1793,7 @@ class QuotationResource extends Resource
             'currency_id'          => $record->currency_id,
             'partner_id'           => $record->partner_id,
             'creator_id'           => Auth::id(),
-            'company_id'           => current_company_id(),
+            'company_id'           => $record->company_id,
             ...$data,
         ];
     }

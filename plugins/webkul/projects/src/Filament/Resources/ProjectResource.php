@@ -25,6 +25,7 @@ use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\FontWeight;
@@ -116,7 +117,7 @@ class ProjectResource extends Resource
                             ->required()
                             ->visible(static::getTaskSettings()->enable_project_stages)
                             ->options(fn () => ProjectStage::orderBy('sort')->get()->mapWithKeys(fn ($stage) => [$stage->id => $stage->name]))
-                            ->default(ProjectStage::first()?->id),
+                            ->default(ProjectStage::where('company_id', current_company_id())->orderBy('sort')->first()?->id),
                         Section::make(__('projects::filament/resources/project.form.sections.general.title'))
                             ->schema([
                                 TextInput::make('name')
@@ -178,6 +179,8 @@ class ProjectResource extends Resource
                                     ->preload()
                                     ->label(__('projects::filament/resources/project.form.sections.additional.fields.company'))
                                     ->default(fn () => current_company_id())
+                                    ->live()
+                                    ->afterStateUpdated(fn (Set $set) => $set('stage_id', null))
                                     ->createOptionForm(fn (Schema $schema) => CompanyResource::form($schema)),
                             ]))
                             ->columns(2),

@@ -37,6 +37,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Webkul\Employee\Filament\Clusters\Configurations;
 use Webkul\Employee\Filament\Clusters\Configurations\Resources\JobPositionResource\Pages\CreateJobPosition;
 use Webkul\Employee\Filament\Clusters\Configurations\Resources\JobPositionResource\Pages\EditJobPosition;
@@ -88,7 +89,11 @@ class JobPositionResource extends Resource
                                             ->hintIcon('heroicon-o-question-mark-circle', tooltip: __('employees::filament/clusters/configurations/resources/job-position.form.sections.employment-information.fields.job-position-title-tooltip')),
                                         Select::make('department_id')
                                             ->label(__('employees::filament/clusters/configurations/resources/job-position.form.sections.employment-information.fields.department'))
-                                            ->relationship(name: 'department', titleAttribute: 'name')
+                                            ->relationship(
+                                                name: 'department',
+                                                titleAttribute: 'name',
+                                                modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('company_id', $get('company_id') ?? current_company_id()),
+                                            )
                                             ->searchable()
                                             ->preload()
                                             ->live()
@@ -113,6 +118,7 @@ class JobPositionResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->live()
+                                            ->afterStateUpdated(fn (Set $set) => $set('department_id', null))
                                             ->createOptionForm(fn (Schema $schema) => CompanyResource::form($schema))
                                             ->createOptionAction(function (Action $action) {
                                                 return $action

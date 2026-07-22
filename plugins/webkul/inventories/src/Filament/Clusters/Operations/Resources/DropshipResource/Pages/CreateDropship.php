@@ -49,7 +49,9 @@ class CreateDropship extends CreateRecord
     {
         parent::mount();
 
-        $operationType = OperationType::where('type', Enums\OperationType::DROPSHIP)->first();
+        $operationType = OperationType::where('type', Enums\OperationType::DROPSHIP)
+            ->where('company_id', current_company_id())
+            ->first();
 
         $this->data['operation_type_id'] = $operationType?->id;
 

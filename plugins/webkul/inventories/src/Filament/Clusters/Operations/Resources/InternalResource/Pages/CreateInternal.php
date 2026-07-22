@@ -51,7 +51,9 @@ class CreateInternal extends CreateRecord
     {
         parent::mount();
 
-        $operationType = OperationType::where('type', Enums\OperationType::INTERNAL)->first();
+        $operationType = OperationType::where('type', Enums\OperationType::INTERNAL)
+            ->where('company_id', current_company_id())
+            ->first();
 
         $this->data['operation_type_id'] = $operationType?->id;
 

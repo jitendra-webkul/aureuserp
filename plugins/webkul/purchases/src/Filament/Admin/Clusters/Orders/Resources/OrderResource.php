@@ -164,6 +164,7 @@ class OrderResource extends Resource
                                         modifyQueryUsing: function (Builder $query, Get $get, $operation, $state) {
                                             $query
                                                 ->where('partner_id', $get('partner_id'))
+                                                ->where('company_id', $get('company_id') ?? current_company_id())
                                                 ->where(function ($query) use ($operation, $state) {
                                                     $query->where('state', RequisitionState::CONFIRMED);
                                                     if ($operation !== 'create' && $state) {
@@ -304,6 +305,7 @@ class OrderResource extends Resource
                                             ->required()
                                             ->live()
                                             ->default(current_company_id())
+                                            ->afterStateUpdated(fn (Set $set, $state) => $set('operation_type_id', static::getInventoryOperationTypeId($state ?? current_company_id())))
                                             ->disabled(fn ($record): bool => $record && ! in_array($record?->state, [OrderState::DRAFT, OrderState::SENT])),
                                         TextInput::make('origin')
                                             ->label(__('purchases::filament/admin/clusters/orders/resources/order.form.tabs.additional.fields.source-document'))
@@ -1192,7 +1194,7 @@ class OrderResource extends Resource
                     'currency_id'         => $record->currency_id,
                     'partner_id'          => $record->partner_id,
                     'creator_id'          => Auth::id(),
-                    'company_id'          => current_company_id(),
+                    'company_id'          => $record->company_id,
                 ]);
 
                 return $data;
@@ -1515,7 +1517,7 @@ class OrderResource extends Resource
         $set('requisition_id', null);
 
         if (static::getOrderSettings()->enable_purchase_agreements) {
-            $activeAgreement = static::getActiveAgreementForVendor($state);
+            $activeAgreement = static::getActiveAgreementForVendor($state, $get('company_id') ?? current_company_id());
 
             if ($activeAgreement) {
                 $set('requisition_id', $activeAgreement->id);
@@ -1560,9 +1562,10 @@ class OrderResource extends Resource
         }
     }
 
-    private static function getActiveAgreementForVendor(int $partnerId): ?Requisition
+    private static function getActiveAgreementForVendor(int $partnerId, ?int $companyId = null): ?Requisition
     {
         return Requisition::where('partner_id', $partnerId)
+            ->where('company_id', $companyId ?? current_company_id())
             ->where('state', RequisitionState::CONFIRMED)
             ->where(function ($query) {
                 $query->whereNull('ends_at')

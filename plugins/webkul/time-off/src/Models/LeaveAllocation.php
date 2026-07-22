@@ -12,6 +12,7 @@ use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Traits\BelongsToCompany;
 use Webkul\TimeOff\Enums\AllocationType;
 
@@ -33,6 +34,7 @@ class LeaveAllocation extends Model
         'holiday_status_id',
         'employee_id',
         'employee_company_id',
+        'company_id',
         'manager_id',
         'approver_id',
         'second_approver_id',
@@ -153,7 +155,14 @@ class LeaveAllocation extends Model
 
             $leaveAllocation->creator_id = $authUser->id;
 
-            $leaveAllocation->employee_company_id ??= current_company_id();
+            $leaveAllocation->employee_company_id ??= Employee::withoutGlobalScope(CompanyScope::class)->find($leaveAllocation->employee_id)?->company_id ?? current_company_id();
+
+            $leaveAllocation->company_id ??= $leaveAllocation->employee_company_id;
         });
+    }
+
+    protected static function autoAssignsCompany(): bool
+    {
+        return false;
     }
 }

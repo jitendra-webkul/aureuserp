@@ -52,7 +52,9 @@ class CreateDelivery extends CreateRecord
     {
         parent::mount();
 
-        $operationType = OperationType::where('type', Enums\OperationType::OUTGOING)->first();
+        $operationType = OperationType::where('type', Enums\OperationType::OUTGOING)
+            ->where('company_id', current_company_id())
+            ->first();
 
         $this->data['operation_type_id'] = $operationType?->id;
 
