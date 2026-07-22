@@ -106,6 +106,7 @@ class AccountServiceProvider extends PackageServiceProvider
                 '2026_03_03_120000_alter_accounts_journals_bank_account_foreign_key',
                 '2026_04_17_000001_add_parent_id_to_accounts_accounts_table',
                 '2026_07_21_110000_fix_bank_cash_journal_default_accounts',
+                '2026_07_21_120000_null_company_on_payment_terms',
             ])
             ->runsMigrations()
             ->hasSettings([
