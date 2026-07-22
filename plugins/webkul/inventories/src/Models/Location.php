@@ -13,7 +13,6 @@ use Illuminate\Support\Str;
 use Webkul\Inventory\Database\Factories\LocationFactory;
 use Webkul\Inventory\Enums\AllowNewProduct;
 use Webkul\Inventory\Enums\LocationType;
-use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
 use Webkul\Inventory\Enums\SubLocation;
@@ -119,29 +118,6 @@ class Location extends Model
         return static::where('type', LocationType::INTERNAL)
             ->whereRaw('parent_path LIKE ?', [$this->parent_path.'%'])
             ->get();
-    }
-
-    public static function resolveCompanyVirtual(LocationType $type, ?int $companyId, array $extra = []): self
-    {
-        $build = fn () => static::withoutGlobalScope(CompanyScope::class)
-            ->where('type', $type)
-            ->where($extra);
-
-        $existing = $build()->where('company_id', $companyId)->first();
-
-        if ($existing) {
-            return $existing;
-        }
-
-        $template = $build()->orderBy('id')->first();
-
-        return static::create(array_merge([
-            'name'       => $template?->name ?? ucfirst($type->value),
-            'type'       => $type,
-            'parent_id'  => $template?->parent_id,
-            'company_id' => $companyId,
-            'creator_id' => Auth::id() ?? $template?->creator_id,
-        ], $extra));
     }
 
     protected static function boot()

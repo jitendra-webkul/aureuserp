@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Webkul\Support\Models\Scopes\CompanyScope;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -159,17 +158,17 @@ class Move extends Model
 
     public function sourceLocation(): BelongsTo
     {
-        return $this->belongsTo(Location::class)->withoutGlobalScope(CompanyScope::class)->withTrashed();
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function destinationLocation(): BelongsTo
     {
-        return $this->belongsTo(Location::class)->withoutGlobalScope(CompanyScope::class)->withTrashed();
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function finalLocation(): BelongsTo
     {
-        return $this->belongsTo(Location::class)->withoutGlobalScope(CompanyScope::class)->withTrashed();
+        return $this->belongsTo(Location::class)->withTrashed();
     }
 
     public function partner(): BelongsTo

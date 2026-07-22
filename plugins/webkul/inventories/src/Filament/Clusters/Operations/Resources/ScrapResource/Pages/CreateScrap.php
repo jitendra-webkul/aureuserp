@@ -7,7 +7,6 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Enums\ScrapState;
 use Webkul\Inventory\Filament\Clusters\Operations\Resources\ScrapResource;
-use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Product;
 use Webkul\Inventory\Models\Warehouse;
@@ -47,11 +46,7 @@ class CreateScrap extends CreateRecord
 
         $data['source_location_id'] ??= Warehouse::first()->lot_stock_location_id;
 
-        $data['destination_location_id'] ??= Location::resolveCompanyVirtual(
-            LocationType::INVENTORY,
-            current_company_id(),
-            ['is_scrap' => true]
-        )->id;
+        $data['destination_location_id'] ??= Location::where('is_scrap', true)->first()->id;
 
         $data['company_id'] ??= current_company_id();
 

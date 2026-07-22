@@ -7,6 +7,8 @@ use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
+use Webkul\Inventory\Observers\CompanyObserver;
+use Webkul\Support\Models\Company;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource\Actions\UpdateQuantityAction;
@@ -93,6 +95,7 @@ class InventoryServiceProvider extends PackageServiceProvider
                 '2026_05_14_092628_inventories_create_putaway_rules_table',
                 '2026_05_15_103923_create_inventories_putaway_rule_package_types_table',
                 '2026_06_22_104603_add_additional_column_in_inventories_moves_table',
+                '2026_07_21_130000_provision_company_virtual_locations',
             ])
             ->runsMigrations()
             ->hasSettings([
@@ -141,6 +144,8 @@ class InventoryServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        Company::observe(CompanyObserver::class);
+
         $this->contributeProductSchema();
 
         $this->registerLivewireComponents();

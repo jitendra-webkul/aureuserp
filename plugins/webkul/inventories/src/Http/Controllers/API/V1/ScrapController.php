@@ -19,7 +19,6 @@ use Spatie\QueryBuilder\QueryBuilder;
 use Webkul\Inventory\Enums\ScrapState;
 use Webkul\Inventory\Http\Requests\ScrapRequest;
 use Webkul\Inventory\Http\Resources\V1\ScrapResource;
-use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\Product;
 use Webkul\Inventory\Models\Scrap;
@@ -218,11 +217,7 @@ class ScrapController extends Controller
 
         if (! isset($data['destination_location_id'])) {
             $data['destination_location_id'] = $existing?->destination_location_id
-                ?? Location::resolveCompanyVirtual(
-                    LocationType::INVENTORY,
-                    $data['company_id'] ?? current_company_id(),
-                    ['is_scrap' => true]
-                )->id;
+                ?? Location::query()->where('is_scrap', true)->value('id');
         }
 
         if (! isset($data['company_id'])) {
