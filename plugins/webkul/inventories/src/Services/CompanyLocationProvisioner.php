@@ -3,6 +3,7 @@
 namespace Webkul\Inventory\Services;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Models\Location;
 use Webkul\Support\Models\Company;
@@ -12,6 +13,10 @@ class CompanyLocationProvisioner
 {
     public function provision(Company $company): void
     {
+        if (! Schema::hasTable('inventories_locations')) {
+            return;
+        }
+
         $parentId = $this->virtualLocationsParentId();
 
         if ($parentId === null) {
