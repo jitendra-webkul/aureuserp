@@ -10,10 +10,6 @@ use Webkul\Support\Services\CompanyContext;
 
 class CompanyRateMap
 {
-    /**
-     * @param  array<int, int>  $companyIds
-     * @param  array<int, float>  $rates
-     */
     protected function __construct(
         protected array $companyIds,
         protected array $rates,
@@ -90,9 +86,6 @@ class CompanyRateMap
         );
     }
 
-    /**
-     * @return array<int, int>
-     */
     public function companyIds(): array
     {
         return $this->companyIds;
@@ -108,9 +101,6 @@ class CompanyRateMap
         return count($this->currencyIds) <= 1;
     }
 
-    /**
-     * @return array<int, int>
-     */
     public function missingRateCompanyIds(): array
     {
         return $this->missingRateCompanyIds;

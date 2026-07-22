@@ -12,12 +12,6 @@ require_once __DIR__.'/../../../accounts/tests/Helpers/AccountHelper.php';
 
 class ReportHelper
 {
-    /**
-     * Renders a reporting page, applies filter state, and returns its computed data.
-     *
-     * @param  array<string, mixed>  $state
-     * @return array<string, mixed>
-     */
     public static function data(string $page, string $method, array $state = []): array
     {
         $component = Livewire::test($page);
@@ -39,9 +33,6 @@ class ReportHelper
         return static::postedMove(MoveType::IN_INVOICE, $date, $qty, $priceUnit, $account, $partner, $journal);
     }
 
-    /**
-     * A posted sale with an explicit due date, for aging reports.
-     */
     public static function postedSaleDueOn(string $date, string $dueDate, float $qty, float $priceUnit, Account $account, ?Partner $partner = null): Move
     {
         return static::postedDueOn(MoveType::OUT_INVOICE, $date, $dueDate, $qty, $priceUnit, $account, $partner);
@@ -103,10 +94,6 @@ class ReportHelper
         return AccountHelper::post($move);
     }
 
-    /**
-     * Posting recomputes each product line onto the product's own account, so the
-     * account a report groups by is only known once the move has been posted.
-     */
     public static function productAccountId(Move $move): int
     {
         return (int) $move->refresh()->lines
@@ -121,9 +108,6 @@ class ReportHelper
             ->account_id;
     }
 
-    /**
-     * @param  iterable<mixed>  $rows
-     */
     public static function rowBy(iterable $rows, string $key, mixed $value): ?object
     {
         return collect($rows)->firstWhere($key, $value);
