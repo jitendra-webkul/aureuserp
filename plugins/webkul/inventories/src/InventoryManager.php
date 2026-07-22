@@ -4,7 +4,6 @@ namespace Webkul\Inventory;
 
 use Carbon\Carbon;
 use Webkul\Account\Facades\Tax as TaxFacade;
-use Webkul\Inventory\Exceptions\CrossCompanyTransferException;
 use Webkul\Inventory\Enums\GroupPropagation;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\MoveState;
@@ -1384,23 +1383,6 @@ class InventoryManager
 
                     $productsWithoutLots->push($line->product);
                 }
-            }
-        }
-
-        foreach ($operation->moves as $move) {
-            if (in_array($move->state, [MoveState::DONE, MoveState::CANCELED])) {
-                continue;
-            }
-
-            $sourceCompanyId = $move->sourceLocation?->company_id;
-
-            $destinationCompanyId = $move->destinationLocation?->company_id;
-
-            if ($sourceCompanyId && $destinationCompanyId && $sourceCompanyId !== $destinationCompanyId) {
-                throw new CrossCompanyTransferException(
-                    $move->sourceLocation->full_name ?? $move->sourceLocation->name,
-                    $move->destinationLocation->full_name ?? $move->destinationLocation->name,
-                );
             }
         }
 

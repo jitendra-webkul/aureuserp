@@ -14,11 +14,9 @@ use Webkul\Chatter\Traits\HasLogActivity;
 use Webkul\Inventory\Database\Factories\ScrapFactory;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\ScrapState;
-use Webkul\Inventory\Exceptions\CrossCompanyTransferException;
 use Webkul\Partner\Models\Partner;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
-use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Models\UOM;
 use Webkul\Support\Traits\BelongsToCompany;
 
@@ -169,36 +167,7 @@ class Scrap extends Model
 
         static::saving(function ($scrap) {
             $scrap->updateName();
-
-            $scrap->assertLocationsSameCompany();
         });
-    }
-
-    public function assertLocationsSameCompany(): void
-    {
-        if (! $this->source_location_id || ! $this->destination_location_id) {
-            return;
-        }
-
-        $locations = Location::withoutGlobalScope(CompanyScope::class)
-            ->whereIn('id', [$this->source_location_id, $this->destination_location_id])
-            ->get(['id', 'name', 'full_name', 'company_id'])
-            ->keyBy('id');
-
-        $source = $locations->get($this->source_location_id);
-
-        $destination = $locations->get($this->destination_location_id);
-
-        if (! $source || ! $destination) {
-            return;
-        }
-
-        if ($source->company_id && $destination->company_id && $source->company_id !== $destination->company_id) {
-            throw new CrossCompanyTransferException(
-                $source->full_name ?? $source->name,
-                $destination->full_name ?? $destination->name,
-            );
-        }
     }
 
     public function validate()
