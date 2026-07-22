@@ -18,7 +18,6 @@ use Webkul\Account\Models\FiscalPosition;
 use Webkul\Account\Models\PaymentMethodLine;
 use Webkul\Account\Models\PaymentTerm;
 use Webkul\Account\Models\Tax;
-use Webkul\Account\Observers\CompanyObserver;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\Support\Models\Company;
@@ -106,6 +105,7 @@ class AccountServiceProvider extends PackageServiceProvider
                 '2026_02_25_044931_alter_accounts_full_reconciles_table',
                 '2026_03_03_120000_alter_accounts_journals_bank_account_foreign_key',
                 '2026_04_17_000001_add_parent_id_to_accounts_accounts_table',
+                '2026_07_21_110000_fix_bank_cash_journal_default_accounts',
             ])
             ->runsMigrations()
             ->hasSettings([
@@ -129,7 +129,6 @@ class AccountServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        Company::observe(CompanyObserver::class);
 
         Livewire::component('invoice-summary', InvoiceSummary::class);
 
