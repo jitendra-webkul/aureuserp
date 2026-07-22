@@ -14,6 +14,7 @@ use Webkul\Chatter\Traits\HasLogActivity;
 use Webkul\Inventory\Database\Factories\ScrapFactory;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\ScrapState;
+use Webkul\Inventory\Models\Concerns\AssertsLocationCompany;
 use Webkul\Partner\Models\Partner;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
@@ -22,6 +23,7 @@ use Webkul\Support\Traits\BelongsToCompany;
 
 class Scrap extends Model
 {
+    use AssertsLocationCompany;
     use BelongsToCompany;
     use HasChatter, HasFactory, HasLogActivity;
 
@@ -167,6 +169,8 @@ class Scrap extends Model
 
         static::saving(function ($scrap) {
             $scrap->updateName();
+
+            $scrap->assertLocationsSameCompany();
         });
     }
 

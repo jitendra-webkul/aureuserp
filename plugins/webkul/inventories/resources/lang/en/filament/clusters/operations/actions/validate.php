@@ -41,6 +41,11 @@ return [
                 'title' => 'Can not move same package content',
                 'body'  => 'You cannot move the same package contents more than once within a single transfer or split the package between two locations.',
             ],
+
+            'cross-company' => [
+                'title' => 'Cross-company transfer not allowed',
+                'body'  => 'A transfer cannot move stock directly between locations that belong to different companies (:source and :destination). Inter-company transfers are not supported yet.',
+            ],
         ],
     ],
 ];

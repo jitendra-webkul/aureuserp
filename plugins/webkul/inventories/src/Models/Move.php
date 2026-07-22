@@ -20,6 +20,7 @@ use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\RuleAction;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
+use Webkul\Inventory\Models\Concerns\AssertsLocationCompany;
 use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Sale\Models\OrderLine as SaleOrderLine;
@@ -30,6 +31,7 @@ use Webkul\Support\Traits\BelongsToCompany;
 
 class Move extends Model
 {
+    use AssertsLocationCompany;
     use BelongsToCompany;
     use HasFactory;
 
@@ -384,6 +386,8 @@ class Move extends Model
             $move->computeDestinationLocationId();
 
             $move->computeScheduledAt();
+
+            $move->assertLocationsSameCompany();
         });
 
         static::updated(function ($move) {

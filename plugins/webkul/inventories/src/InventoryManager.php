@@ -1386,6 +1386,23 @@ class InventoryManager
             }
         }
 
+        foreach ($operation->moves as $move) {
+            if (in_array($move->state, [MoveState::DONE, MoveState::CANCELED])) {
+                continue;
+            }
+
+            $sourceCompanyId = $move->sourceLocation?->company_id;
+
+            $destinationCompanyId = $move->destinationLocation?->company_id;
+
+            if ($sourceCompanyId && $destinationCompanyId && $sourceCompanyId !== $destinationCompanyId) {
+                throw new \Exception(__('inventories::filament/clusters/operations/actions/validate.notification.warning.cross-company.body', [
+                    'source'      => $move->sourceLocation->full_name ?? $move->sourceLocation->name,
+                    'destination' => $move->destinationLocation->full_name ?? $move->destinationLocation->name,
+                ]));
+            }
+        }
+
         if ($hasNoMoves) {
             throw new \Exception(__('inventories::filament/clusters/operations/actions/validate.notification.warning.lines-missing.body'));
         }

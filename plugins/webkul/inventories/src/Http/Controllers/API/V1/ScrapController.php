@@ -216,8 +216,12 @@ class ScrapController extends Controller
         }
 
         if (! isset($data['destination_location_id'])) {
+            $sourceCompanyId = Location::query()->find($data['source_location_id'] ?? null)?->company_id;
+
             $data['destination_location_id'] = $existing?->destination_location_id
-                ?? Location::query()->where('is_scrap', true)->value('id');
+                ?? Location::query()->where('is_scrap', true)
+                    ->where('company_id', $sourceCompanyId)
+                    ->value('id');
         }
 
         if (! isset($data['company_id'])) {
