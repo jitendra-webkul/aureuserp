@@ -175,16 +175,11 @@ class QuantityController extends Controller
         }
 
         return DB::transaction(function () use ($record) {
-            $adjustmentLocation = Location::query()
-                ->where('type', LocationType::INVENTORY)
-                ->where('is_scrap', false)
-                ->first();
-
-            if (! $adjustmentLocation) {
-                return response()->json([
-                    'message' => 'Inventory adjustment location is not configured.',
-                ], 422);
-            }
+            $adjustmentLocation = Location::resolveCompanyVirtual(
+                LocationType::INVENTORY,
+                $record->company_id ?? current_company_id(),
+                ['is_scrap' => false]
+            );
 
             $countedQuantity = $record->counted_quantity;
 

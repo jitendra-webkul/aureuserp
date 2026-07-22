@@ -197,9 +197,11 @@ class ProductQuantity extends Model
             return;
         }
 
-        $adjustmentLocation = Location::where('type', LocationType::INVENTORY)
-            ->where('is_scrap', false)
-            ->first();
+        $adjustmentLocation = Location::resolveCompanyVirtual(
+            LocationType::INVENTORY,
+            $this->company_id,
+            ['is_scrap' => false]
+        );
 
         if (float_compare($this->inventory_diff_quantity, 0.0, precisionRounding: $this->uom->rounding) > 0) {
             $moveValues = $this->getInventoryMoveValues(
