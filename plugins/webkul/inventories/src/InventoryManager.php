@@ -4,6 +4,7 @@ namespace Webkul\Inventory;
 
 use Carbon\Carbon;
 use Webkul\Account\Facades\Tax as TaxFacade;
+use Webkul\Inventory\Exceptions\CrossCompanyTransferException;
 use Webkul\Inventory\Enums\GroupPropagation;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\MoveState;
@@ -1396,10 +1397,10 @@ class InventoryManager
             $destinationCompanyId = $move->destinationLocation?->company_id;
 
             if ($sourceCompanyId && $destinationCompanyId && $sourceCompanyId !== $destinationCompanyId) {
-                throw new \Exception(__('inventories::filament/clusters/operations/actions/validate.notification.warning.cross-company.body', [
-                    'source'      => $move->sourceLocation->full_name ?? $move->sourceLocation->name,
-                    'destination' => $move->destinationLocation->full_name ?? $move->destinationLocation->name,
-                ]));
+                throw new CrossCompanyTransferException(
+                    $move->sourceLocation->full_name ?? $move->sourceLocation->name,
+                    $move->destinationLocation->full_name ?? $move->destinationLocation->name,
+                );
             }
         }
 

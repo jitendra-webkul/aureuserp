@@ -2,6 +2,7 @@
 
 namespace Webkul\Inventory\Filament\Clusters\Operations\Resources\DeliveryResource\Pages;
 
+use Webkul\Inventory\Filament\Concerns\HandlesCrossCompanyTransferException;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Contracts\Support\Htmlable;
@@ -12,6 +13,8 @@ use Webkul\Support\Filament\Concerns\HasRepeaterColumnManager;
 
 class CreateDelivery extends CreateRecord
 {
+    use HandlesCrossCompanyTransferException;
+
     use HasRepeaterColumnManager;
 
     protected static string $resource = DeliveryResource::class;

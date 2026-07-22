@@ -2,6 +2,7 @@
 
 namespace Webkul\Inventory\Filament\Clusters\Operations\Resources\ScrapResource\Pages;
 
+use Webkul\Inventory\Filament\Concerns\HandlesCrossCompanyTransferException;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,8 @@ use Webkul\Inventory\Models\Warehouse;
 
 class CreateScrap extends CreateRecord
 {
+    use HandlesCrossCompanyTransferException;
+
     protected ?bool $hasDatabaseTransactions = true;
 
     public function getSubNavigation(): array

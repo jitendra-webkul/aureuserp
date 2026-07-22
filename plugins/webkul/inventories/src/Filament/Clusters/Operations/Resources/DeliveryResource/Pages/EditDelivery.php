@@ -2,6 +2,7 @@
 
 namespace Webkul\Inventory\Filament\Clusters\Operations\Resources\DeliveryResource\Pages;
 
+use Webkul\Inventory\Filament\Concerns\HandlesCrossCompanyTransferException;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
@@ -17,6 +18,8 @@ use Webkul\Support\Traits\HasRecordNavigationTabs;
 
 class EditDelivery extends EditRecord
 {
+    use HandlesCrossCompanyTransferException;
+
     use HasRecordNavigationTabs;
     use HasRepeaterColumnManager;
 

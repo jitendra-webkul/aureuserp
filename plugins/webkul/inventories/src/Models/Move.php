@@ -19,19 +19,19 @@ use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
 use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\RuleAction;
+use Webkul\Inventory\Exceptions\CrossCompanyTransferException;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
-use Webkul\Inventory\Models\Concerns\AssertsLocationCompany;
 use Webkul\Partner\Models\Partner;
 use Webkul\Purchase\Models\OrderLine as PurchaseOrderLine;
 use Webkul\Sale\Models\OrderLine as SaleOrderLine;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Models\UOM;
 use Webkul\Support\Traits\BelongsToCompany;
 
 class Move extends Model
 {
-    use AssertsLocationCompany;
     use BelongsToCompany;
     use HasFactory;
 
@@ -490,6 +490,33 @@ class Move extends Model
         static::deleting(function ($move) {
             $move->lines->each->delete();
         });
+    }
+
+    public function assertLocationsSameCompany(): void
+    {
+        if (! $this->source_location_id || ! $this->destination_location_id) {
+            return;
+        }
+
+        $locations = Location::withoutGlobalScope(CompanyScope::class)
+            ->whereIn('id', [$this->source_location_id, $this->destination_location_id])
+            ->get(['id', 'name', 'full_name', 'company_id'])
+            ->keyBy('id');
+
+        $source = $locations->get($this->source_location_id);
+
+        $destination = $locations->get($this->destination_location_id);
+
+        if (! $source || ! $destination) {
+            return;
+        }
+
+        if ($source->company_id && $destination->company_id && $source->company_id !== $destination->company_id) {
+            throw new CrossCompanyTransferException(
+                $source->full_name ?? $source->name,
+                $destination->full_name ?? $destination->name,
+            );
+        }
     }
 
     public function computeWarehouseId()

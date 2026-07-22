@@ -2,6 +2,7 @@
 
 namespace Webkul\Inventory\Filament\Clusters\Operations\Resources\InternalResource\Pages;
 
+use Webkul\Inventory\Filament\Concerns\HandlesCrossCompanyTransferException;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
@@ -16,6 +17,8 @@ use Webkul\Support\Traits\HasRecordNavigationTabs;
 
 class EditInternal extends EditRecord
 {
+    use HandlesCrossCompanyTransferException;
+
     use HasRecordNavigationTabs;
 
     protected static string $resource = InternalResource::class;

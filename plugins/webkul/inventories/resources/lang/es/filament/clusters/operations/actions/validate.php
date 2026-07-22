@@ -41,11 +41,6 @@ return [
                 'title' => 'No se puede mover el mismo contenido de paquete',
                 'body'  => 'No es posible mover el mismo contenido de paquete más de una vez dentro de una sola transferencia ni dividir el paquete entre dos ubicaciones.',
             ],
-
-            'cross-company' => [
-                'title' => 'Transferencia entre empresas no permitida',
-                'body'  => 'Una transferencia no puede mover existencias directamente entre ubicaciones que pertenecen a empresas diferentes (:source y :destination). Las transferencias entre empresas aún no son compatibles.',
-            ],
         ],
     ],
 ];

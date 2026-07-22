@@ -2,6 +2,7 @@
 
 namespace Webkul\Inventory\Filament\Clusters\Operations\Resources\InternalResource\Pages;
 
+use Webkul\Inventory\Filament\Concerns\HandlesCrossCompanyTransferException;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Contracts\Support\Htmlable;
@@ -13,6 +14,8 @@ use Webkul\Inventory\Models\OperationType;
 
 class CreateInternal extends CreateRecord
 {
+    use HandlesCrossCompanyTransferException;
+
     protected static string $resource = InternalResource::class;
 
     protected ?bool $hasDatabaseTransactions = true;

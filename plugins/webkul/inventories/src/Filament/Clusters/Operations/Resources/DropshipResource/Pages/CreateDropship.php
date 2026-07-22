@@ -2,6 +2,7 @@
 
 namespace Webkul\Inventory\Filament\Clusters\Operations\Resources\DropshipResource\Pages;
 
+use Webkul\Inventory\Filament\Concerns\HandlesCrossCompanyTransferException;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Contracts\Support\Htmlable;
@@ -11,6 +12,8 @@ use Webkul\Inventory\Models\OperationType;
 
 class CreateDropship extends CreateRecord
 {
+    use HandlesCrossCompanyTransferException;
+
     protected static string $resource = DropshipResource::class;
 
     protected ?bool $hasDatabaseTransactions = true;
