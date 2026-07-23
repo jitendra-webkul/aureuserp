@@ -2104,7 +2104,7 @@ class InventoryManager
             $forecastedQuantitiesByLocation[$locationId] = Product::whereIn('id', array_unique($productIds))
                 ->get()
                 ->mapWithKeys(function ($product) use ($locationId) {
-                    $product->context = ['location_id' => $locationId];
+                    $product->setContext(['location_id' => $locationId]);
 
                     return [$product->id => $product->free_qty];
                 })
