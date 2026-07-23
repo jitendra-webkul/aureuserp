@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Webkul\Inventory\Observers\CompanyObserver;
 use Webkul\Support\Models\Company;
+use Webkul\Chatter\Services\ChatterCleanupService;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
 use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource\Actions\UpdateQuantityAction;
@@ -17,8 +18,10 @@ use Webkul\Inventory\Filament\Clusters\Products\Resources\ProductResource\Suppor
 use Webkul\Inventory\Filament\Widgets\OperationTypeCardWidget;
 use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\MoveLine;
+use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Route;
+use Webkul\Inventory\Models\Scrap;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
@@ -137,6 +140,10 @@ class InventoryServiceProvider extends PackageServiceProvider
 
                         DB::table($table)->delete();
                     }
+                });
+
+                $command->endWith(function () {
+                    ChatterCleanupService::purgeForModels([Operation::class, Scrap::class]);
                 });
             })
             ->icon('inventories');

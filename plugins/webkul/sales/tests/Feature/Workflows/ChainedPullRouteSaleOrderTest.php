@@ -5,11 +5,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Webkul\Inventory\Enums\GroupPropagation;
 use Webkul\Inventory\Enums\LocationType;
+use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
 use Webkul\Inventory\Enums\ProcureMethod;
 use Webkul\Inventory\Enums\RuleAction;
 use Webkul\Inventory\Enums\RuleAuto;
+use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Location;
+use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\Product as InventoryProduct;
 use Webkul\Inventory\Models\ProductQuantity;
@@ -192,4 +195,26 @@ it('creates the full three leg chain for the routed product', function () {
 
 it('produces four inventory documents in total, matching odoo', function () {
     expect($this->order->operations)->toHaveCount(4);
+});
+
+it('auto-readies each downstream leg as the upstream leg is validated', function () {
+    $moveFor = fn (int $opTypeId) => Move::query()
+        ->where('procurement_group_id', $this->order->procurement_group_id)
+        ->where('operation_type_id', $opTypeId)
+        ->first();
+
+    $sharpMove = $moveFor($this->sharpType->id);
+
+    expect($sharpMove->state)->toBe(MoveState::ASSIGNED);
+    expect($moveFor($this->shineType->id)->state)->toBe(MoveState::WAITING);
+    expect($moveFor($this->deliverType->id)->state)->toBe(MoveState::CONFIRMED);
+
+    Inventory::doneTransfer($sharpMove->operation->refresh());
+
+    expect($moveFor($this->shineType->id)->state)->toBe(MoveState::ASSIGNED);
+    expect($moveFor($this->deliverType->id)->state)->toBe(MoveState::CONFIRMED);
+
+    Inventory::doneTransfer($moveFor($this->shineType->id)->operation->refresh());
+
+    expect($moveFor($this->deliverType->id)->state)->toBe(MoveState::ASSIGNED);
 });
