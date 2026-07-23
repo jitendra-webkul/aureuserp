@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Webkul\Inventory\Enums\DeliveryStep;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\MoveState;
@@ -8,6 +10,8 @@ use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Enums\ReceptionStep;
 use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Move;
+use Webkul\PluginManager\Models\Plugin;
+use Webkul\PluginManager\Package;
 use Webkul\Sale\Enums\AdvancedPayment;
 use Webkul\Sale\Enums\InvoiceStatus;
 use Webkul\Sale\Enums\OrderDeliveryStatus;
@@ -23,15 +27,15 @@ beforeEach(function () {
     TestBootstrapHelper::ensurePluginInstalled('sales');
 
     foreach (['inventories', 'sales'] as $plugin) {
-        Illuminate\Support\Facades\DB::table('plugins')->updateOrInsert(
+        DB::table('plugins')->updateOrInsert(
             ['name' => $plugin],
             ['is_installed' => true, 'is_active' => true, 'updated_at' => now()],
         );
     }
 
-    Webkul\PluginManager\Package::$plugins = Webkul\PluginManager\Models\Plugin::all()->keyBy('name');
+    Package::$plugins = Plugin::all()->keyBy('name');
 
-    Illuminate\Support\Facades\URL::resolveMissingNamedRoutesUsing(fn () => '#');
+    URL::resolveMissingNamedRoutesUsing(fn () => '#');
 
     SaleHelper::actingAsAdmin();
 

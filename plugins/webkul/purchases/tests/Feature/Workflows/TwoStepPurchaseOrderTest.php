@@ -1,11 +1,15 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Webkul\Inventory\Enums\DeliveryStep;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\MoveState;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Enums\ReceptionStep;
 use Webkul\Inventory\Facades\Inventory;
+use Webkul\PluginManager\Models\Plugin;
+use Webkul\PluginManager\Package;
 use Webkul\Purchase\Enums\OrderReceiptStatus;
 use Webkul\Purchase\Enums\OrderState;
 
@@ -18,15 +22,15 @@ beforeEach(function () {
     TestBootstrapHelper::ensurePluginInstalled('purchases');
 
     foreach (['inventories', 'purchases'] as $plugin) {
-        Illuminate\Support\Facades\DB::table('plugins')->updateOrInsert(
+        DB::table('plugins')->updateOrInsert(
             ['name' => $plugin],
             ['is_installed' => true, 'is_active' => true, 'updated_at' => now()],
         );
     }
 
-    Webkul\PluginManager\Package::$plugins = Webkul\PluginManager\Models\Plugin::all()->keyBy('name');
+    Package::$plugins = Plugin::all()->keyBy('name');
 
-    Illuminate\Support\Facades\URL::resolveMissingNamedRoutesUsing(fn () => '#');
+    URL::resolveMissingNamedRoutesUsing(fn () => '#');
 
     PurchaseHelper::actingAsAdmin();
 

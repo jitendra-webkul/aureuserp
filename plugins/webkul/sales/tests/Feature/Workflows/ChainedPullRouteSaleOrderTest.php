@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Webkul\Inventory\Enums\GroupPropagation;
 use Webkul\Inventory\Enums\LocationType;
 use Webkul\Inventory\Enums\OperationType as OperationTypeEnum;
@@ -12,8 +15,11 @@ use Webkul\Inventory\Models\Product as InventoryProduct;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Route;
 use Webkul\Inventory\Models\Rule;
+use Webkul\PluginManager\Models\Plugin;
+use Webkul\PluginManager\Package;
 use Webkul\Sale\Enums\OrderState;
 use Webkul\Sale\Facades\SaleOrder as SaleOrderFacade;
+use Webkul\Support\Services\CompanyContext;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -24,17 +30,27 @@ beforeEach(function () {
     TestBootstrapHelper::ensurePluginInstalled('sales');
 
     foreach (['inventories', 'sales'] as $plugin) {
-        Illuminate\Support\Facades\DB::table('plugins')->updateOrInsert(
+        DB::table('plugins')->updateOrInsert(
             ['name' => $plugin],
             ['is_installed' => true, 'is_active' => true, 'updated_at' => now()],
         );
     }
 
-    Webkul\PluginManager\Package::$plugins = Webkul\PluginManager\Models\Plugin::all()->keyBy('name');
+    Package::$plugins = Plugin::all()->keyBy('name');
 
-    Illuminate\Support\Facades\URL::resolveMissingNamedRoutesUsing(fn () => '#');
+    URL::resolveMissingNamedRoutesUsing(fn () => '#');
 
-    SaleHelper::actingAsAdmin();
+    $company = SaleHelper::company();
+
+    $user = SaleHelper::actingAsAdmin();
+
+    $user->allowedCompanies()->syncWithoutDetaching([$company->id]);
+
+    $user->forceFill(['default_company_id' => $company->id])->saveQuietly();
+
+    session([CompanyContext::SESSION_KEY => [$company->id]]);
+
+    app()->forgetInstance(CompanyContext::class);
 
     $this->warehouse = InventoryHelper::warehouse();
     $this->stock = $this->warehouse->lotStockLocation;
@@ -131,7 +147,7 @@ beforeEach(function () {
         ->load('operations.moves', 'lines');
 });
 
-function chainMoves($order, int $productId): \Illuminate\Support\Collection
+function chainMoves($order, int $productId): Collection
 {
     return $order->operations
         ->flatMap->moves
@@ -176,30 +192,4 @@ it('creates the full three leg chain for the routed product', function () {
 
 it('produces four inventory documents in total, matching odoo', function () {
     expect($this->order->operations)->toHaveCount(4);
-});
-
-it('DIAGNOSTIC internals of prepareProcurementQty', function () {
-    $move = $this->order->operations
-        ->flatMap->moves
-        ->where('product_id', $this->routedProduct->id)
-        ->first();
-
-    $product = Webkul\Inventory\Models\Product::whereIn('id', [$move->product_id])->get()->first();
-    $product->setContext(['location_id' => $move->source_location_id]);
-
-    dump([
-        'move_product_qty'      => $move->product_qty,
-        'move_product_uom_qty'  => $move->product_uom_qty,
-        'move_uom_id'           => $move->uom_id,
-        'product_uom_id'        => $move->product->uom_id,
-        'move_uom_rounding'     => $move->uom?->rounding,
-        'move_uom_factor'       => $move->uom?->factor,
-        'move_bypass_reservation' => $move->shouldBypassReservation(),
-        'source_bypass'         => $move->sourceLocation?->shouldBypassReservation(),
-        'rule_procure'          => $move->rule?->procure_method?->value,
-        'forecast_free_same_as_prepare' => $product->free_qty,
-        'computeQty_of_10'      => $move->product->uom->computeQuantity(10, $move->uom, roundingMethod: 'HALF-UP'),
-    ]);
-
-    expect(true)->toBeTrue();
 });

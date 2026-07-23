@@ -7,6 +7,7 @@ use Webkul\Security\Enums\PermissionType;
 use Webkul\Security\Models\Permission;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
+use Webkul\Support\Services\CompanyContext;
 
 class SecurityHelper
 {
@@ -30,7 +31,7 @@ class SecurityHelper
         if ($user->default_company_id) {
             $user->allowedCompanies()->sync([$user->default_company_id]);
 
-            session([\Webkul\Support\Services\CompanyContext::SESSION_KEY => [$user->default_company_id]]);
+            session([CompanyContext::SESSION_KEY => [$user->default_company_id]]);
         }
 
         if ($bypassCompanyScope) {
@@ -48,7 +49,7 @@ class SecurityHelper
         Auth::shouldUse('sanctum');
         Sanctum::actingAs($user, ['*']);
 
-        app()->forgetInstance(\Webkul\Support\Services\CompanyContext::class);
+        app()->forgetInstance(CompanyContext::class);
 
         return $user;
     }

@@ -8,6 +8,8 @@ use Webkul\Inventory\Facades\Inventory;
 use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\ProductQuantity;
+use Webkul\Support\Models\UOM;
+use Webkul\Support\Models\UOMCategory;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../Helpers/InventoryHelper.php';
@@ -661,9 +663,9 @@ it('throws when validating a move line with a negative done quantity', function 
 });
 
 it('throws when a move line quantity violates the unit rounding precision', function () {
-    $category = Webkul\Support\Models\UOMCategory::factory()->create();
+    $category = UOMCategory::factory()->create();
 
-    $uom = Webkul\Support\Models\UOM::factory()->reference()->create([
+    $uom = UOM::factory()->reference()->create([
         'rounding'    => 1.0,
         'category_id' => $category->id,
     ]);
