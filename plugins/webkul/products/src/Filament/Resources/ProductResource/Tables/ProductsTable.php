@@ -47,7 +47,7 @@ class ProductsTable
             ->reorderableColumns()
             ->columns(array_merge(static::columns(), Registry::renderTable('columns')))
             ->groups(array_merge(static::groups(), Registry::renderTable('groups')))
-            ->reorderable('sort')
+            ->reorderable('sort', direction: 'desc')
             ->defaultSort('sort', 'desc')
             ->filters([
                 QueryBuilder::make()

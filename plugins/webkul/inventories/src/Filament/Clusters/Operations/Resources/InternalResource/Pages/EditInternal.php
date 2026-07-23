@@ -14,21 +14,18 @@ use Webkul\Inventory\Filament\Clusters\Operations\Actions as OperationActions;
 use Webkul\Inventory\Filament\Clusters\Operations\Resources\InternalResource;
 use Webkul\Inventory\Models\InternalTransfer;
 use Webkul\Support\Traits\HasRecordNavigationTabs;
+use Webkul\Support\Traits\RefreshesRecordState;
 
 class EditInternal extends EditRecord
 {
     use HandlesCrossCompanyTransferException;
 
     use HasRecordNavigationTabs;
+    use RefreshesRecordState;
 
     protected static string $resource = InternalResource::class;
 
     protected ?bool $hasDatabaseTransactions = true;
-
-    protected function getRedirectUrl(): string
-    {
-        return $this->getResource()::getUrl('edit', ['record' => $this->getRecord()]);
-    }
 
     protected function getSavedNotification(): Notification
     {
