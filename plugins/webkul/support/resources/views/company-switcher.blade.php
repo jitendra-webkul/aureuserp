@@ -2,18 +2,20 @@
     @if ($companies->count() > 1)
         <x-filament::dropdown placement="bottom-end" width="xs" teleport>
             <x-slot name="trigger">
-                <x-filament::link size="sm" color="gray" style="text-decoration:none;">
-                    <x-filament::icon icon="heroicon-o-building-office-2" />
+                <x-filament::link tag="button" size="sm" color="gray" style="text-decoration:none;">
+                    <span style="display:inline-flex;align-items:center;gap:0.375rem;">
+                        <x-filament::icon icon="heroicon-o-building-office-2" style="width:1.25rem;height:1.25rem;flex-shrink:0;" />
 
-                    <span>
-                        @if (count($active) === 1)
-                            {{ $companies->firstWhere('id', $active[0])?->name }}
-                        @else
-                            {{ count($active) }} {{ __('support::company-switcher.companies') }}
-                        @endif
+                        <span>
+                            @if (count($active) === 1)
+                                {{ $companies->firstWhere('id', $active[0])?->name }}
+                            @else
+                                {{ count($active) }} {{ __('support::company-switcher.companies') }}
+                            @endif
+                        </span>
+
+                        <x-filament::icon icon="heroicon-m-chevron-down" style="width:1rem;height:1rem;flex-shrink:0;" />
                     </span>
-
-                    <x-filament::icon icon="heroicon-m-chevron-down" color="gray" />
                 </x-filament::link>
             </x-slot>
 
