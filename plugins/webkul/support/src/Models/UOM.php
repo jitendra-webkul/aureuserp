@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Webkul\Security\Models\User;
 use Webkul\Support\Database\Factories\UOMFactory;
 use Webkul\Support\Enums\UOMType;
-use Webkul\Support\Exceptions\UOMInUseException;
 
 class UOM extends Model
 {
@@ -38,30 +37,6 @@ class UOM extends Model
     ];
 
     protected ?float $pendingRatio = null;
-
-    /**
-     * Callbacks contributed by plugins that report whether a unit is already used by
-     * recorded transactions, which freezes its ratio and category.
-     *
-     * @var array<int, callable(self): bool>
-     */
-    protected static array $usageCheckers = [];
-
-    public static function registerUsageChecker(callable $checker): void
-    {
-        static::$usageCheckers[] = $checker;
-    }
-
-    public function isUsedByTransactions(): bool
-    {
-        foreach (static::$usageCheckers as $checker) {
-            if ($checker($this)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     /**
      * The ratio expressed against the reference unit of the category, as shown to the user.
@@ -224,13 +199,23 @@ class UOM extends Model
 
         static::saving(function (self $uom) {
             $uom->applyPendingRatio();
+        });
 
-            if (
-                $uom->exists
-                && $uom->isDirty(['factor', 'category_id'])
-                && $uom->isUsedByTransactions()
-            ) {
-                throw UOMInUseException::forRatioChange($uom);
+        static::deleting(function (self $uom) {
+            if ($uom->type !== UOMType::REFERENCE) {
+                return;
+            }
+
+            $hasSiblings = static::query()
+                ->where('category_id', $uom->category_id)
+                ->whereKeyNot($uom->getKey())
+                ->exists();
+
+            if ($hasSiblings) {
+                throw new Exception(__('support::models/uom.reference-in-use', [
+                    'uom'      => $uom->name,
+                    'category' => $uom->category?->name,
+                ]));
             }
         });
     }
