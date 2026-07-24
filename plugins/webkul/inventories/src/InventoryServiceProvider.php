@@ -7,6 +7,7 @@ use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
+use Webkul\Support\Models\UOM;
 use Webkul\Chatter\Services\ChatterCleanupService;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Facades\Inventory as InventoryFacade;
@@ -151,6 +152,20 @@ class InventoryServiceProvider extends PackageServiceProvider
         $this->contributeProductSchema();
 
         $this->registerLivewireComponents();
+
+        $this->registerUomUsageChecker();
+    }
+
+    protected function registerUomUsageChecker(): void
+    {
+        UOM::registerUsageChecker(function (UOM $uom): bool {
+            if (! Schema::hasTable('inventories_moves')) {
+                return false;
+            }
+
+            return Move::where('uom_id', $uom->id)->exists()
+                || MoveLine::where('uom_id', $uom->id)->exists();
+        });
     }
 
     public function registerLivewireComponents(): void

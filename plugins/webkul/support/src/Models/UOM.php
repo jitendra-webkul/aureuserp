@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Security\Models\User;
 use Webkul\Support\Database\Factories\UOMFactory;
+use Webkul\Support\Enums\UOMType;
+use Webkul\Support\Exceptions\UOMInUseException;
 
 class UOM extends Model
 {
@@ -21,10 +23,82 @@ class UOM extends Model
         'type',
         'name',
         'factor',
+        'ratio',
         'rounding',
         'category_id',
         'creator_id',
     ];
+
+    protected $casts = [
+        'type' => UOMType::class,
+    ];
+
+    protected $appends = [
+        'ratio',
+    ];
+
+    protected ?float $pendingRatio = null;
+
+    /**
+     * Callbacks contributed by plugins that report whether a unit is already used by
+     * recorded transactions, which freezes its ratio and category.
+     *
+     * @var array<int, callable(self): bool>
+     */
+    protected static array $usageCheckers = [];
+
+    public static function registerUsageChecker(callable $checker): void
+    {
+        static::$usageCheckers[] = $checker;
+    }
+
+    public function isUsedByTransactions(): bool
+    {
+        foreach (static::$usageCheckers as $checker) {
+            if ($checker($this)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The ratio expressed against the reference unit of the category, as shown to the user.
+     *
+     * Bigger units are stored as a fraction of the reference, so their ratio is the inverse
+     * of the stored factor.
+     */
+    public function getRatioAttribute(): float
+    {
+        return match ($this->type) {
+            UOMType::REFERENCE => 1.0,
+            UOMType::BIGGER    => (float) $this->factor ? 1 / (float) $this->factor : 0.0,
+            default            => (float) $this->factor,
+        };
+    }
+
+    public function setRatioAttribute($ratio): void
+    {
+        $this->pendingRatio = $ratio === null || $ratio === '' ? null : (float) $ratio;
+    }
+
+    protected function applyPendingRatio(): void
+    {
+        if ($this->pendingRatio === null) {
+            return;
+        }
+
+        $ratio = $this->pendingRatio;
+
+        $this->factor = match ($this->type) {
+            UOMType::REFERENCE => 1.0,
+            UOMType::BIGGER    => $ratio ? 1 / $ratio : 0.0,
+            default            => $ratio,
+        };
+
+        $this->pendingRatio = null;
+    }
 
     public function category(): BelongsTo
     {
@@ -146,6 +220,18 @@ class UOM extends Model
 
         static::creating(function ($uom) {
             $uom->creator_id ??= Auth::id();
+        });
+
+        static::saving(function (self $uom) {
+            $uom->applyPendingRatio();
+
+            if (
+                $uom->exists
+                && $uom->isDirty(['factor', 'category_id'])
+                && $uom->isUsedByTransactions()
+            ) {
+                throw UOMInUseException::forRatioChange($uom);
+            }
         });
     }
 }
