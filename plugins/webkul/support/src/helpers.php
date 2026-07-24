@@ -2,12 +2,20 @@
 
 use Illuminate\Support\Number;
 use Illuminate\Support\Collection;
+use Webkul\Support\Database\Dialects\DatabaseDialect;
 use Webkul\Support\SettingsRegistry;
 
 if (! function_exists('settings')) {
     function settings(string $settings): object
     {
         return app(SettingsRegistry::class)->get($settings);
+    }
+}
+
+if (! function_exists('db_dialect')) {
+    function db_dialect(): DatabaseDialect
+    {
+        return app(DatabaseDialect::class);
     }
 }
 
@@ -221,20 +229,6 @@ if (! function_exists('float_round')) {
 }
 
 if (! function_exists('make_aware')) {
-    /**
-     * Return $dt with an explicit timezone, together with a callable to
-     * convert a Carbon back to the same timezone as $dt.
-     *
-     * Mirrors Python's make_aware(dt):
-     *   if dt.tzinfo → return dt, lambda val: val.astimezone(dt.tzinfo)
-     *   else          → return dt.replace(tzinfo=utc), lambda val: val.astimezone(utc)
-     *
-     * Carbon always carries a timezone, so the first branch always applies.
-     * The second branch (naive datetime → UTC) is handled by ensuring the
-     * caller passes a UTC Carbon when no explicit timezone is intended.
-     *
-     * @return array{0: Carbon\Carbon, 1: callable(Carbon\Carbon): Carbon\Carbon}
-     */
     function make_aware(Carbon\Carbon $dt): array
     {
         $tz = $dt->getTimezone();

@@ -355,6 +355,7 @@ class ProductQuantity extends Model
         if ($quants->isNotEmpty()) {
             $quant = self::whereIn('id', $quants->pluck('id'))
                 ->orderBy('lot_id')
+                ->orderBy('id')
                 ->lockForUpdate()
                 ->first();
         }
@@ -737,6 +738,7 @@ class ProductQuantity extends Model
                 }
             })
             ->orderBy('lot_id')
+            ->orderBy('id')
             ->get()
             ->groupBy(fn ($quant) => implode('_', [
                 $quant->product_id,

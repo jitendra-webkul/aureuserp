@@ -133,11 +133,11 @@ class OperationTypeResource extends Resource
                                                             Enums\OperationType::INCOMING => Location::where('type', LocationType::SUPPLIER->value)
                                                                 ->where('company_id', $companyId)
                                                                 ->first()?->id,
-                                                            Enums\OperationType::OUTGOING => Location::where('is_replenish', 1)
+                                                            Enums\OperationType::OUTGOING => Location::where('is_replenish', true)
                                                                 ->where('company_id', $companyId)
                                                                 ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                                 ->first()?->id,
-                                                            Enums\OperationType::INTERNAL => Location::where('is_replenish', 1)
+                                                            Enums\OperationType::INTERNAL => Location::where('is_replenish', true)
                                                                 ->where('company_id', $companyId)
                                                                 ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                                 ->first()?->id,
@@ -146,14 +146,14 @@ class OperationTypeResource extends Resource
 
                                                         // Set new destination location
                                                         $destinationLocationId = match ($type) {
-                                                            Enums\OperationType::INCOMING => Location::where('is_replenish', 1)
+                                                            Enums\OperationType::INCOMING => Location::where('is_replenish', true)
                                                                 ->where('company_id', $companyId)
                                                                 ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                                 ->first()?->id,
                                                             Enums\OperationType::OUTGOING => Location::where('type', LocationType::CUSTOMER->value)
                                                                 ->where('company_id', $companyId)
                                                                 ->first()?->id,
-                                                            Enums\OperationType::INTERNAL => Location::where('is_replenish', 1)
+                                                            Enums\OperationType::INTERNAL => Location::where('is_replenish', true)
                                                                 ->where('company_id', $companyId)
                                                                 ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                                 ->first()?->id,
@@ -293,11 +293,11 @@ class OperationTypeResource extends Resource
                                                     Enums\OperationType::INCOMING => Location::where('type', LocationType::SUPPLIER->value)
                                                         ->where('company_id', $companyId)
                                                         ->first()?->id,
-                                                    Enums\OperationType::OUTGOING => Location::where('is_replenish', 1)
+                                                    Enums\OperationType::OUTGOING => Location::where('is_replenish', true)
                                                         ->where('company_id', $companyId)
                                                         ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                         ->first()?->id,
-                                                    Enums\OperationType::INTERNAL => Location::where('is_replenish', 1)
+                                                    Enums\OperationType::INTERNAL => Location::where('is_replenish', true)
                                                         ->where('company_id', $companyId)
                                                         ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                         ->first()?->id,
@@ -329,7 +329,7 @@ class OperationTypeResource extends Resource
                                                 $companyId = $get('company_id') ?? current_company_id();
 
                                                 return match ($type) {
-                                                    Enums\OperationType::INCOMING => Location::where('is_replenish', 1)
+                                                    Enums\OperationType::INCOMING => Location::where('is_replenish', true)
                                                         ->where('company_id', $companyId)
                                                         ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
                                                         ->first()?->id,

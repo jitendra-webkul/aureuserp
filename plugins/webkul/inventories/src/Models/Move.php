@@ -228,7 +228,7 @@ class Move extends Model
 
     public function lines(): HasMany
     {
-        return $this->hasMany(MoveLine::class);
+        return $this->hasMany(MoveLine::class)->orderBy('id');
     }
 
     public function moveOrigins(): BelongsToMany
@@ -345,7 +345,7 @@ class Move extends Model
                 } elseif (! in_array($move->operation->state, [
                     OperationState::DRAFT,
                     OperationState::DONE,
-                    OperationState::CANCELED
+                    OperationState::CANCELED,
                 ])) {
                     $move->additional = true;
                 }
