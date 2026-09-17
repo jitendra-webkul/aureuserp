@@ -35,6 +35,8 @@ enum NavigationGroup: string implements HasIcon, HasLabel
 
     case Website = 'website';
 
+    case PointOfSale = 'point-of-sale';
+
     case Barcode = 'barcode';
 
     case Plugin = 'plugin';
@@ -65,6 +67,7 @@ enum NavigationGroup: string implements HasIcon, HasLabel
             self::TimeOff       => 'icon-time-offs',
             self::Recruitment   => 'icon-recruitments',
             self::Website       => 'icon-website',
+            self::PointOfSale   => 'icon-point-of-sale',
             self::Barcode       => 'icon-barcode',
             self::Plugin        => 'icon-plugin',
             self::Setting       => 'icon-settings',
