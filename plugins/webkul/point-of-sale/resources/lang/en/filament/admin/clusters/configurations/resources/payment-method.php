@@ -26,6 +26,8 @@ return [
 
                 'fields' => [
                     'journal'             => 'Journal',
+                    'journal-placeholder' => 'Leave empty to use the receivable account of the customer',
+                    'account-placeholder' => 'Leave empty to use the default account from the company settings',
                     'payment-method-line' => 'Payment Method Line',
                     'receivable-account'  => 'Intermediary Account',
                     'outstanding-account' => 'Outstanding Account',

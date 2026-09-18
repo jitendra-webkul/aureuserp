@@ -9,7 +9,9 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Webkul\Account\Enums\JournalType;
+use Webkul\Account\Models\Journal;
 use Webkul\PointOfSale\Enums\PaymentTerminalType;
 
 class PaymentMethodForm
@@ -29,11 +31,10 @@ class PaymentMethodForm
                         Select::make('company_id')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.company'))
                             ->relationship('company', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->native(false)
-                            ->required()
-                            ->live(),
+                            ->default(fn (): ?int => Auth::user()?->default_company_id)
+                            ->disabled()
+                            ->dehydrated()
+                            ->native(false),
 
                         Select::make('terminal_type')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.terminal-type'))
@@ -42,6 +43,7 @@ class PaymentMethodForm
                             ->required(),
 
                         Toggle::make('is_split_transaction')
+                            ->live()
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.is-split-transaction'))
                             ->helperText(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.is-split-transaction-helper-text')),
 
@@ -64,6 +66,8 @@ class PaymentMethodForm
                             ->searchable()
                             ->preload()
                             ->native(false)
+                            ->required(fn (Get $get): bool => ! $get('is_split_transaction'))
+                            ->placeholder(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.journal-placeholder'))
                             ->live(),
 
                         Select::make('payment_method_line_id')
@@ -83,16 +87,30 @@ class PaymentMethodForm
                             ->relationship('receivableAccount', 'name')
                             ->searchable()
                             ->preload()
-                            ->native(false),
+                            ->native(false)
+                            ->placeholder(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.account-placeholder'))
+                            ->hidden(fn (Get $get): bool => (bool) $get('is_split_transaction')),
 
                         Select::make('outstanding_account_id')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.outstanding-account'))
                             ->relationship('outstandingAccount', 'name')
                             ->searchable()
                             ->preload()
-                            ->native(false),
+                            ->native(false)
+                            ->placeholder(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.account-placeholder'))
+                            ->visible(fn (Get $get): bool => static::isBankJournal($get('journal_id')))
+                            ->required(fn (Get $get): bool => static::isBankJournal($get('journal_id'))),
                     ])
                     ->columns(2),
             ]);
+    }
+
+    protected static function isBankJournal(mixed $journalId): bool
+    {
+        if (blank($journalId)) {
+            return false;
+        }
+
+        return Journal::query()->whereKey($journalId)->value('type') === JournalType::BANK;
     }
 }

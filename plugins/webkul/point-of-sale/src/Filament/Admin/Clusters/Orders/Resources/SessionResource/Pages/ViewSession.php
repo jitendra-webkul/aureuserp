@@ -3,6 +3,7 @@
 namespace Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\SessionResource\Pages;
 
 use Filament\Resources\Pages\ViewRecord;
+use Webkul\Chatter\Filament\Actions\ChatterAction;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Actions\CashMovementAction;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Actions\CloseSessionAction;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Actions\ConfirmOpeningControlAction;
@@ -19,6 +20,9 @@ class ViewSession extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ChatterAction::make()
+                ->activityPlans($this->getRecord()->activityPlans())
+                ->resource($this->getResource()),
             ConfirmOpeningControlAction::make(),
             CashMovementAction::make(),
             CloseSessionAction::make(),
