@@ -42,6 +42,7 @@
         />
     @else
         @php($cartQuantities = $this->cartQuantityByProduct())
+        @php($stockLevels = $this->stockLevels())
 
         <div class="pos-products">
             @foreach ($products as $product)
@@ -60,6 +61,24 @@
                         wire:click="selectProduct({{ $product->id }})"
                         class="pos-tile__add"
                     >
+                    @php($free = $stockLevels[$product->id] ?? null)
+
+                    @if ($product->is_storable && $free !== null)
+                        <span @class([
+                            'pos-tile__stock',
+                            'pos-tile__stock--out' => $free <= 0,
+                            'pos-tile__stock--low' => $free > 0 && $free <= 5,
+                        ])>
+                            @if ($free <= 0)
+                                {{ __('point-of-sale::filament/pos/pages/terminal.catalogue.stock.out') }}
+                            @elseif ($free <= 5)
+                                {{ __('point-of-sale::filament/pos/pages/terminal.catalogue.stock.low', ['quantity' => $free + 0]) }}
+                            @else
+                                {{ __('point-of-sale::filament/pos/pages/terminal.catalogue.stock.available') }}
+                            @endif
+                        </span>
+                    @endif
+
                     <div class="pos-tile__media">
                         @if ($config->show_product_images && filled($product->images))
                             <img
@@ -80,8 +99,8 @@
                         </span>
 
                         <div class="pos-tile__foot">
-                            <span class="pos-figure text-xs text-gray-500 dark:text-gray-400">
-                                {{ $this->money($product->price) }}
+                            <span class="pos-tile__price">
+                                {{ $this->money($this->displayUnitPrice($product->id, (float) $product->price)) }}
                             </span>
 
                             @if (($cartQuantities[$product->id] ?? 0) > 0)

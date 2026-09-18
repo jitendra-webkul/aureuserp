@@ -146,6 +146,9 @@ return [
     ],
 
     'cart' => [
+        'item-count'     => '{1} :count item|[2,*] :count items',
+        'clear-all'      => 'Clear all',
+        'discount-total' => 'Discount (:percentage%)',
         'heading'  => 'Order',
         'discount' => ':percentage% Discount',
         'subtotal' => 'Subtotal',
@@ -162,6 +165,12 @@ return [
     ],
 
     'catalogue' => [
+        'stock' => [
+            'available' => 'Available',
+            'low'       => 'Last :quantity left',
+            'out'       => 'Sold out',
+        ],
+
         'heading'        => 'Products',
         'search'         => 'Search products…',
         'all-categories' => 'All',

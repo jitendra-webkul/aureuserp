@@ -16,6 +16,7 @@ use Webkul\Account\Facades\Tax;
 use Webkul\Account\Models\Product as AccountProduct;
 use Webkul\Account\Models\Tax as TaxModel;
 use Webkul\Inventory\Models\Product as InventoryProduct;
+use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Support\StockScope;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Enums\OrderState;
@@ -83,6 +84,10 @@ class Terminal extends Page
     public ?array $lastOrder = null;
 
     public float $globalDiscount = 0;
+
+    protected ?array $stockLevels = null;
+
+    protected ?array $lineImages = null;
 
     public int $pendingSyncCount = 0;
 
@@ -1297,6 +1302,60 @@ class Terminal extends Page
         $this->payments[$this->selectedPaymentIndex]['amount'] = in_array($this->paymentBuffer, ['', '-', '.', '-.'], true)
             ? 0.0
             : float_round((float) $this->paymentBuffer, precisionDigits: 2);
+    }
+
+    public function stockLevels(): array
+    {
+        return $this->stockLevels ??= ProductQuantity::withoutGlobalScopes()
+            ->when(
+                $this->config->operationType?->source_location_id,
+                fn ($query, $locationId) => $query->where('location_id', $locationId),
+            )
+            ->selectRaw('product_id, SUM(quantity - reserved_quantity) AS free_qty')
+            ->groupBy('product_id')
+            ->pluck('free_qty', 'product_id')
+            ->map(fn ($quantity): float => (float) $quantity)
+            ->all();
+    }
+
+    public function lineImageUrl(int $productId): ?string
+    {
+        $this->lineImages ??= [];
+
+        if (array_key_exists($productId, $this->lineImages)) {
+            return $this->lineImages[$productId];
+        }
+
+        $product = Product::find($productId);
+
+        return $this->lineImages[$productId] = $product && filled($product->images)
+            ? $this->imageUrl($product)
+            : null;
+    }
+
+    public function cartLineCount(): int
+    {
+        return collect($this->cart)->sum(fn (array $line): float => (float) $line['qty']);
+    }
+
+    public function clearCart(): void
+    {
+        $this->cart = [];
+
+        $this->activeLineKey = null;
+
+        $this->globalDiscount = 0;
+
+        $this->persistDraft();
+    }
+
+    public function cartDiscount(): float
+    {
+        if ($this->globalDiscount <= 0) {
+            return 0.0;
+        }
+
+        return float_round($this->cartSubtotal() * ($this->globalDiscount / 100), precisionDigits: 2);
     }
 
     public function cartSubtotal(): float

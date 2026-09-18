@@ -1,4 +1,16 @@
 <div class="pos-receipt">
+    @if (filled($cart))
+        <div class="pos-receipt__head">
+            <span class="pos-receipt__count">
+                {{ trans_choice('point-of-sale::filament/pos/pages/terminal.cart.item-count', $this->cartLineCount(), ['count' => $this->cartLineCount()]) }}
+            </span>
+
+            <button type="button" class="pos-receipt__clear" wire:click="clearCart">
+                {{ __('point-of-sale::filament/pos/pages/terminal.cart.clear-all') }}
+            </button>
+        </div>
+    @endif
+
     <div class="pos-receipt__lines">
     @forelse ($cart as $key => $line)
         <button
@@ -9,6 +21,18 @@
                 'pos-line--active' => (string) $activeLineKey === (string) $key,
             ])
         >
+            @if ($config->show_product_images)
+                @php($lineImage = $this->lineImageUrl($line['product_id']))
+
+                <span class="pos-line__media">
+                    @if ($lineImage)
+                        <img src="{{ $lineImage }}" alt="{{ $line['name'] }}" />
+                    @else
+                        <x-filament::icon icon="heroicon-o-cube" class="h-4 w-4 text-gray-300 dark:text-gray-600" />
+                    @endif
+                </span>
+            @endif
+
             <div class="min-w-0">
                 <p class="pos-line__name truncate text-sm font-semibold text-gray-950 dark:text-white">
                     {{ $line['name'] }}
@@ -55,6 +79,13 @@
             <span>{{ __('point-of-sale::filament/pos/pages/terminal.cart.subtotal') }}</span>
             <span class="pos-figure">{{ $this->money($this->cartSubtotal()) }}</span>
         </div>
+
+        @if ($this->cartDiscount() > 0)
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>{{ __('point-of-sale::filament/pos/pages/terminal.cart.discount-total', ['percentage' => $globalDiscount + 0]) }}</span>
+                <span class="pos-figure text-danger-600 dark:text-danger-400">-{{ $this->money($this->cartDiscount()) }}</span>
+            </div>
+        @endif
 
         <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>{{ __('point-of-sale::filament/pos/pages/terminal.cart.tax') }}</span>
