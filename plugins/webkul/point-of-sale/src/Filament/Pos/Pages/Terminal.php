@@ -70,6 +70,8 @@ abstract class Terminal extends Page
 
     public ?int $priceListId = null;
 
+    public string $parkedSearch = '';
+
     public ?string $shippedAt = null;
 
     public bool $isTakeaway = false;
@@ -442,6 +444,58 @@ abstract class Terminal extends Page
         $this->screen = 'products';
     }
 
+    public function draftSummaries(): Collection
+    {
+        return $this->getDraftOrders()
+            ->loadMissing(['partner', 'table', 'lines'])
+            ->map(fn (Order $order): array => [
+                'id'        => $order->id,
+                'label'     => $this->draftLabel($order),
+                'quantity'  => (float) $order->lines->sum('qty'),
+                'total'     => $this->draftTotal($order),
+                'parked'    => $order->updated_at?->diffForHumans(),
+                'is_active' => $this->activeOrderId === $order->id,
+                'is_stale'  => (bool) $order->updated_at?->lt(now()->subHour()),
+            ])
+            ->values();
+    }
+
+    public function parkedSummaries(): Collection
+    {
+        $search = trim((string) $this->parkedSearch);
+
+        return $this->draftSummaries()->when(
+            filled($search),
+            fn (Collection $drafts): Collection => $drafts->filter(
+                fn (array $draft): bool => str_contains(Str::lower($draft['label']), Str::lower($search))
+            )->values(),
+        );
+    }
+
+    public function openParkedOrders(): void
+    {
+        $this->parkedSearch = '';
+
+        $this->dispatch('open-modal', id: 'pos-parked-orders');
+    }
+
+    protected function draftLabel(Order $order): string
+    {
+        return $order->table?->name
+            ?? $order->partner?->name
+            ?? __('point-of-sale::filament/pos/pages/terminal.parked.walk-in');
+    }
+
+    protected function draftTotal(Order $order): float
+    {
+        $total = (float) $order->lines->sum(
+            fn (OrderLine $line): float => (float) ($line->price_subtotal_incl
+                ?? (float) $line->qty * (float) $line->price_unit * (1 - ((float) $line->discount / 100)))
+        );
+
+        return float_round($total, precisionDigits: 2);
+    }
+
     public function switchOrder(int $orderId): void
     {
         $this->persistDraft();
@@ -455,6 +509,8 @@ abstract class Terminal extends Page
         $this->loadDraft($order);
 
         $this->dispatch('close-modal', id: 'pos-orders');
+
+        $this->dispatch('close-modal', id: 'pos-parked-orders');
 
         $this->screen = 'products';
     }

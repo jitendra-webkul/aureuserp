@@ -1,6 +1,24 @@
 <?php
 
 return [
+    'parked' => [
+        'walk-in'    => 'Walk-in',
+        'items'      => '{1} :count item|[2,*] :count items',
+        'count'      => ':count parked',
+        'view-all'   => 'View all',
+        'heading'    => 'Parked orders',
+        'search'     => 'Search by customer or table',
+        'parked-ago' => 'parked :time',
+        'open'       => 'Open',
+        'resume'     => 'Resume',
+        'discard'    => 'Discard',
+
+        'empty' => [
+            'heading'     => 'Nothing parked',
+            'description' => 'Orders you set aside will wait here.',
+        ],
+    ],
+
     'navigation' => [
         'register' => 'Register',
         'orders'   => 'Orders',

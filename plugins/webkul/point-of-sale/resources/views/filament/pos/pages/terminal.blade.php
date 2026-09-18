@@ -55,6 +55,7 @@
         @include('point-of-sale::filament.pos.partials.modals.closing')
         @include('point-of-sale::filament.pos.partials.modals.money-details')
         @include('point-of-sale::filament.pos.partials.modals.price-lists')
+        @include('point-of-sale::filament.pos.partials.modals.parked-orders')
 
         @unless ($this->needsOpeningControl())
             @include('point-of-sale::filament.pos.partials.panes')

@@ -1163,3 +1163,128 @@
 .pos-receipt__foot {
     flex: none;
 }
+
+.pos-orders-bar {
+    display: flex;
+    flex: none;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.pos-order-card {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.25rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0.75rem;
+    background: #fff;
+    padding: 0.5rem 0.625rem;
+    text-align: left;
+    transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.pos-order-card:hover {
+    border-color: var(--color-gray-300);
+}
+
+.pos-order-card__name {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-gray-950);
+}
+
+.pos-order-card__dot {
+    flex: none;
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background: var(--color-primary-600);
+}
+
+.pos-order-card__meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.6875rem;
+    color: var(--color-gray-500);
+}
+
+.pos-order-card--active {
+    border-color: var(--color-primary-600);
+    background: var(--color-primary-50);
+}
+
+.pos-order-card--active .pos-order-card__meta {
+    color: var(--color-primary-700);
+}
+
+.pos-order-card--more {
+    flex: none;
+}
+
+.pos-order-card--new {
+    flex: none;
+    width: 3.25rem;
+    align-items: center;
+    justify-content: center;
+    border-style: dashed;
+    background: transparent;
+    color: var(--color-gray-600);
+}
+
+.pos-parked-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0.625rem;
+    padding: 0.625rem 0.75rem;
+}
+
+.pos-parked-row > .min-w-0 {
+    flex: 1 1 auto;
+}
+
+.pos-parked-row--active {
+    border-color: var(--color-primary-600);
+    background: var(--color-primary-50);
+}
+
+.pos-parked-row--stale {
+    border-color: var(--color-warning-300);
+    background: color-mix(in srgb, var(--color-warning-500) 8%, #fff);
+}
+
+.dark .pos-order-card,
+.dark .pos-parked-row {
+    border-color: var(--color-gray-700);
+    background: var(--color-gray-900);
+}
+
+.dark .pos-order-card__name {
+    color: #fff;
+}
+
+.dark .pos-order-card--active,
+.dark .pos-parked-row--active {
+    border-color: var(--color-primary-500);
+    background: color-mix(in srgb, var(--color-primary-500) 16%, transparent);
+}
+
+.dark .pos-order-card--new {
+    background: transparent;
+    color: var(--color-gray-300);
+}
+
+.dark .pos-parked-row--stale {
+    border-color: var(--color-warning-600);
+    background: color-mix(in srgb, var(--color-warning-500) 14%, transparent);
+}
