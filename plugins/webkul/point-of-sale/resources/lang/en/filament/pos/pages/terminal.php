@@ -12,6 +12,10 @@ return [
         'open'       => 'Open',
         'resume'     => 'Resume',
         'discard'    => 'Discard',
+        'discard-confirm' => [
+            'heading'     => 'Discard parked order?',
+            'description' => 'Its lines will be lost. This cannot be undone.',
+        ],
 
         'empty' => [
             'heading'     => 'Nothing parked',
@@ -134,9 +138,26 @@ return [
     ],
 
     'customers' => [
+        'search'   => 'Search by name, email or phone',
+        'no-match' => 'No customer matches ":search".',
+        'narrow'   => 'Showing the first 50 matches — narrow your search to see more.',
+
+        'create' => [
+            'label'   => 'New customer',
+            'heading' => 'New customer',
+            'submit'  => 'Create and select',
+            'created' => ':name added and selected.',
+
+            'fields' => [
+                'name'  => 'Name',
+                'email' => 'Email',
+                'phone' => 'Phone',
+            ],
+        ],
+
         'heading'  => 'Select a customer',
         'search'   => 'Search customers…',
-        'clear'    => 'Walk-in customer',
+        'clear'    => 'Remove customer',
         'close'    => 'Close',
         'empty'    => 'No customers yet.',
     ],

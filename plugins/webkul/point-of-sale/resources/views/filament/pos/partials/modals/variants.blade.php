@@ -12,7 +12,7 @@
                     {{ $variant?->name ?? $this->configurableProductName() }}
                 </span>
 
-                <span class="pos-figure font-semibold text-gray-950 dark:text-white">
+                <span class="font-mono tabular-nums font-semibold text-gray-950 dark:text-white">
                     {{ $variant ? $this->money($variant->price) : '—' }}
                 </span>
             </div>

@@ -32,7 +32,7 @@
                 $wire.markQueued(pending)
             },
         }"
-        class="pos-terminal"
+        class="pos-terminal fixed inset-x-0 bottom-0 top-16 flex min-h-0 flex-col"
     >
         <div class="mb-3 flex flex-wrap items-center gap-2" x-cloak x-show="! online || pending > 0">
             <x-filament::badge color="warning" icon="heroicon-o-signal-slash" x-show="! online">
@@ -44,22 +44,22 @@
             </x-filament::badge>
         </div>
 
-        @include('point-of-sale::filament.pos.partials.modals.opening-control')
-        @include('point-of-sale::filament.pos.partials.modals.customers')
-        @include('point-of-sale::filament.pos.partials.modals.notes')
-        @include('point-of-sale::filament.pos.partials.modals.cash-movement')
-        @include('point-of-sale::filament.pos.partials.modals.product-form')
-        @include('point-of-sale::filament.pos.partials.modals.product-info')
-        @include('point-of-sale::filament.pos.partials.modals.variants')
-        @include('point-of-sale::filament.pos.partials.modals.orders')
-        @include('point-of-sale::filament.pos.partials.modals.closing')
-        @include('point-of-sale::filament.pos.partials.modals.money-details')
-        @include('point-of-sale::filament.pos.partials.modals.price-lists')
-        @include('point-of-sale::filament.pos.partials.modals.parked-orders')
-
         @unless ($this->needsOpeningControl())
             @include('point-of-sale::filament.pos.partials.panes')
         @endunless
-
     </div>
+
+    @include('point-of-sale::filament.pos.partials.modals.opening-control')
+    @include('point-of-sale::filament.pos.partials.modals.customers')
+    @include('point-of-sale::filament.pos.partials.modals.notes')
+    @include('point-of-sale::filament.pos.partials.modals.cash-movement')
+    @include('point-of-sale::filament.pos.partials.modals.product-form')
+    @include('point-of-sale::filament.pos.partials.modals.product-info')
+    @include('point-of-sale::filament.pos.partials.modals.variants')
+    @include('point-of-sale::filament.pos.partials.modals.orders')
+    @include('point-of-sale::filament.pos.partials.modals.closing')
+    @include('point-of-sale::filament.pos.partials.modals.money-details')
+    @include('point-of-sale::filament.pos.partials.modals.price-lists')
+    @include('point-of-sale::filament.pos.partials.modals.parked-orders')
+
 </x-filament-panels::page>

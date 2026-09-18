@@ -27,7 +27,7 @@
                                 {{ $order->state->getLabel() }}
                             </x-filament::badge>
 
-                            <span class="pos-figure text-sm font-semibold text-gray-950 dark:text-white">
+                            <span class="font-mono tabular-nums text-sm font-semibold text-gray-950 dark:text-white">
                                 {{ money($order->amount_total, $order->currency?->name) }}
                             </span>
                         </div>

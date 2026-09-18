@@ -7,30 +7,30 @@
 
     <x-slot name="description">
         {{ __('point-of-sale::filament/pos/pages/terminal.closing.orders', ['quantity' => $control['orders_details']['quantity']]) }}:
-        <span class="pos-figure">{{ $this->money($control['orders_details']['amount']) }}</span>
+        <span class="font-mono tabular-nums">{{ $this->money($control['orders_details']['amount']) }}</span>
     </x-slot>
 
     <div class="flex flex-col gap-5">
         @if ($control['default_cash_details'])
             @php($cash = $control['default_cash_details'])
 
-            <div class="pos-close-block">
-                <div class="pos-close-row pos-close-row--head">
+            <div class="flex flex-col gap-1 border-b border-gray-100 pb-3 last-of-type:border-b-0 last-of-type:pb-0 dark:border-gray-800">
+                <div class="flex items-center justify-between gap-4 text-base font-semibold text-gray-950 dark:text-gray-50">
                     <span>{{ $cash['name'] }}</span>
-                    <span class="pos-figure">{{ $this->money($cash['amount']) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money($cash['amount']) }}</span>
                 </div>
 
-                <div class="pos-close-row">
+                <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.opening') }}</span>
-                    <span class="pos-figure">{{ $this->money($cash['opening']) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money($cash['opening']) }}</span>
                 </div>
 
-                <div class="pos-close-row">
+                <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.payments') }}</span>
-                    <span class="pos-figure">{{ $this->money($cash['payment_amount']) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money($cash['payment_amount']) }}</span>
                 </div>
 
-                <button type="button" class="pos-close-row pos-close-row--toggle" wire:click="toggleCashMoves">
+                <button type="button" class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 w-full text-left" wire:click="toggleCashMoves">
                     <span class="flex items-center gap-1">
                         <x-filament::icon
                             :icon="$showCashMoves ? 'heroicon-m-chevron-down' : 'heroicon-m-chevron-right'"
@@ -40,38 +40,38 @@
                         {{ __('point-of-sale::filament/pos/pages/terminal.closing.moves') }}
                     </span>
 
-                    <span class="pos-figure">{{ $this->money(collect($cash['moves'])->sum('amount')) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money(collect($cash['moves'])->sum('amount')) }}</span>
                 </button>
 
                 @if ($showCashMoves)
                     @foreach ($cash['moves'] as $move)
-                        <div class="pos-close-row pos-close-row--nested">
+                        <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 pl-5">
                             <span>{{ $move['name'] }}</span>
-                            <span class="pos-figure">{{ $this->money($move['amount']) }}</span>
+                            <span class="font-mono tabular-nums">{{ $this->money($move['amount']) }}</span>
                         </div>
                     @endforeach
                 @endif
 
-                <div class="pos-close-row">
+                <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.counted') }}</span>
-                    <span class="pos-figure">{{ $this->money((float) ($closingCash ?? 0)) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money((float) ($closingCash ?? 0)) }}</span>
                 </div>
 
-                <div @class(['pos-close-row', 'pos-close-row--diff' => ! float_is_zero($this->cashDifference($cash), precisionDigits: 2)])>
+                <div @class(['flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400', 'font-semibold text-danger-600' => ! float_is_zero($this->cashDifference($cash), precisionDigits: 2)])>
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.difference') }}</span>
-                    <span class="pos-figure">{{ $this->money($this->cashDifference($cash)) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money($this->cashDifference($cash)) }}</span>
                 </div>
             </div>
         @endif
 
         @foreach ($control['non_cash_payment_methods'] as $method)
-            <div class="pos-close-block">
-                <div class="pos-close-row pos-close-row--head">
+            <div class="flex flex-col gap-1 border-b border-gray-100 pb-3 last-of-type:border-b-0 last-of-type:pb-0 dark:border-gray-800">
+                <div class="flex items-center justify-between gap-4 text-base font-semibold text-gray-950 dark:text-gray-50">
                     <span>{{ $method['name'] }}</span>
-                    <span class="pos-figure">{{ $this->money($method['amount']) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money($method['amount']) }}</span>
                 </div>
 
-                <div class="pos-close-row">
+                <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.counted') }}</span>
 
                     <x-filament::input.wrapper class="w-40">
@@ -83,9 +83,9 @@
                     </x-filament::input.wrapper>
                 </div>
 
-                <div @class(['pos-close-row', 'pos-close-row--diff' => ! float_is_zero($this->paymentDifference($method), precisionDigits: 2)])>
+                <div @class(['flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400', 'font-semibold text-danger-600' => ! float_is_zero($this->paymentDifference($method), precisionDigits: 2)])>
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.difference') }}</span>
-                    <span class="pos-figure">{{ $this->money($this->paymentDifference($method)) }}</span>
+                    <span class="font-mono tabular-nums">{{ $this->money($this->paymentDifference($method)) }}</span>
                 </div>
             </div>
         @endforeach
@@ -130,7 +130,7 @@
                     {{ __('point-of-sale::filament/pos/pages/terminal.closing.opening-note') }}
                 </p>
 
-                <p class="pos-close-note">{{ $control['opening_notes'] ?: '—' }}</p>
+                <p class="min-h-20 whitespace-pre-line rounded-lg border border-gray-200 px-3 py-2 text-[0.8125rem] text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ $control['opening_notes'] ?: '—' }}</p>
             </div>
 
             <div class="flex flex-col gap-1">

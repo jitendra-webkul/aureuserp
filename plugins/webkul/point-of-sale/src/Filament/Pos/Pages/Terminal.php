@@ -3,6 +3,8 @@
 namespace Webkul\PointOfSale\Filament\Pos\Pages;
 
 use BackedEnum;
+use Filament\Forms\Components\TextInput;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Colors\Color;
@@ -19,6 +21,7 @@ use Webkul\Account\Models\Tax as TaxModel;
 use Webkul\Inventory\Models\Product as InventoryProduct;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Support\StockScope;
+use Webkul\Partner\Enums\AccountType;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\TaxDisplay;
@@ -71,6 +74,8 @@ abstract class Terminal extends Page
     public ?int $priceListId = null;
 
     public string $parkedSearch = '';
+
+    public string $customerSearch = '';
 
     public ?string $shippedAt = null;
 
@@ -515,6 +520,23 @@ abstract class Terminal extends Page
         $this->screen = 'products';
     }
 
+    public function discardOrderAction(): Action
+    {
+        $prefix = 'point-of-sale::filament/pos/pages/terminal.parked.';
+
+        return Action::make('discardOrder')
+            ->label(__($prefix.'discard'))
+            ->icon('heroicon-m-trash')
+            ->color('danger')
+            ->iconButton()
+            ->size('sm')
+            ->requiresConfirmation()
+            ->modalHeading(__($prefix.'discard-confirm.heading'))
+            ->modalDescription(__($prefix.'discard-confirm.description'))
+            ->modalSubmitActionLabel(__($prefix.'discard'))
+            ->action(fn (array $arguments) => $this->discardOrder((int) $arguments['order']));
+    }
+
     public function discardOrder(int $orderId): void
     {
         $order = Order::withoutGlobalScopes()->find($orderId);
@@ -832,11 +854,67 @@ abstract class Terminal extends Page
 
     public function getCustomers(): Collection
     {
+        $search = trim($this->customerSearch);
+
         return Partner::query()
             ->where(owned_by_company($this->config->company_id))
+            ->when($search !== '', fn (Builder $query) => $query->where(
+                fn (Builder $matches) => $matches
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%")
+            ))
             ->orderBy('name')
             ->limit(50)
             ->get();
+    }
+
+    public function createCustomerAction(): Action
+    {
+        $prefix = 'point-of-sale::filament/pos/pages/terminal.customers.create.';
+
+        return Action::make('createCustomer')
+            ->label(__($prefix.'label'))
+            ->icon('heroicon-m-plus')
+            ->button()
+            ->hiddenLabel()
+            ->tooltip(__($prefix.'label'))
+            ->modalHeading(__($prefix.'heading'))
+            ->modalSubmitActionLabel(__($prefix.'submit'))
+            ->schema([
+                TextInput::make('name')
+                    ->label(__($prefix.'fields.name'))
+                    ->required()
+                    ->maxLength(255)
+                    ->autofocus(),
+                TextInput::make('email')
+                    ->label(__($prefix.'fields.email'))
+                    ->email()
+                    ->maxLength(255),
+                TextInput::make('phone')
+                    ->label(__($prefix.'fields.phone'))
+                    ->tel()
+                    ->maxLength(64),
+            ])
+            ->action(function (array $data): void {
+                $partner = Partner::create([
+                    'account_type' => AccountType::INDIVIDUAL,
+                    'sub_type'     => 'customer',
+                    'name'         => $data['name'],
+                    'email'        => $data['email'] ?? null,
+                    'phone'        => $data['phone'] ?? null,
+                    'company_id'   => $this->config->company_id,
+                    'creator_id'   => Auth::id(),
+                ]);
+
+                $this->selectCustomer($partner->getKey());
+
+                Notification::make()
+                    ->success()
+                    ->title(__('point-of-sale::filament/pos/pages/terminal.customers.create.created', ['name' => $partner->name]))
+                    ->send();
+            });
     }
 
     public function selectCustomer(?int $partnerId): void

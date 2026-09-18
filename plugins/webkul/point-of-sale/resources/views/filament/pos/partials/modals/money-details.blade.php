@@ -29,7 +29,7 @@
                 :label="__('point-of-sale::filament/pos/pages/terminal.money-details.increase')"
             />
 
-            <span class="pos-figure text-sm text-gray-950 dark:text-white">
+            <span class="font-mono tabular-nums text-sm text-gray-950 dark:text-white">
                 {{ $this->money((float) $bill->value) }}
             </span>
         </div>
@@ -40,7 +40,7 @@
             {{ __('point-of-sale::filament/pos/pages/terminal.money-details.confirm') }}
         </x-filament::button>
 
-        <p class="pos-figure text-lg font-semibold text-gray-950 dark:text-white">
+        <p class="font-mono tabular-nums text-lg font-semibold text-gray-950 dark:text-white">
             {{ __('point-of-sale::filament/pos/pages/terminal.money-details.total', ['total' => $this->money($this->moneyDetailsTotal())]) }}
         </p>
     </x-slot>

@@ -4,8 +4,8 @@
     </x-slot>
 
     @forelse ($this->getSessionOrders() as $order)
-        <div class="pos-order-row">
-            <span class="pos-figure text-xs text-gray-500 dark:text-gray-400">
+        <div class="grid grid-cols-[10rem_1fr_1fr_8rem_7rem_11rem] items-center gap-4 border-b border-gray-100 px-5 py-3 dark:border-gray-800">
+            <span class="font-mono tabular-nums text-xs text-gray-500 dark:text-gray-400">
                 {{ $order->ordered_at?->format('Y-m-d H:i') }}
             </span>
 
@@ -17,7 +17,7 @@
                 {{ $order->partner?->name ?? '—' }}
             </span>
 
-            <span class="pos-figure text-sm text-gray-950 dark:text-white">
+            <span class="font-mono tabular-nums text-sm text-gray-950 dark:text-white">
                 {{ $this->money((float) $order->amount_total) }}
             </span>
 
@@ -31,12 +31,7 @@
                         {{ __('point-of-sale::filament/pos/pages/terminal.orders.load') }}
                     </x-filament::button>
 
-                    <x-filament::icon-button
-                        icon="heroicon-o-trash"
-                        color="danger"
-                        wire:click="discardOrder({{ $order->getKey() }})"
-                        :label="__('point-of-sale::filament/pos/pages/terminal.orders.discard')"
-                    />
+                    {{ ($this->discardOrderAction)(['order' => $order->getKey()]) }}
                 @endif
             </div>
         </div>
