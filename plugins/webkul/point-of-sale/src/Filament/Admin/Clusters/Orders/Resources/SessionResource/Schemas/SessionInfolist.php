@@ -21,13 +21,9 @@ class SessionInfolist
                     ->hiddenLabel()
                     ->inline()
                     ->columnSpanFull()
-                    ->options(function (): array {
-                        $options = SessionState::options();
-
-                        return collect([SessionState::OPENED, SessionState::CLOSING_CONTROL, SessionState::CLOSED])
-                            ->mapWithKeys(fn (SessionState $state): array => [$state->value => $options[$state->value]])
-                            ->all();
-                    })
+                    ->options(fn (): array => collect([SessionState::OPENED, SessionState::CLOSING_CONTROL, SessionState::CLOSED])
+                        ->mapWithKeys(fn (SessionState $state): array => [$state->value => $state->getLabel()])
+                        ->all())
                     ->default(SessionState::OPENING_CONTROL->value),
 
                 Section::make(__('point-of-sale::filament/admin/clusters/orders/resources/session.infolist.section.general.title'))

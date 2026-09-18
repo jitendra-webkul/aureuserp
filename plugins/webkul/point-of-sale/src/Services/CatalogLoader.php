@@ -9,6 +9,7 @@ use Webkul\Account\Models\Tax;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
+use Webkul\PointOfSale\Models\Session;
 use Webkul\Product\Models\Product;
 
 class CatalogLoader
@@ -35,7 +36,7 @@ class CatalogLoader
             'name'                     => $config->name,
             'code'                     => $config->code,
             'tax_display'              => $config->tax_display,
-            'stock_update_mode'        => $config->stock_update_mode,
+            'stock_update_mode'        => Session::defaultStockUpdateMode(),
             'enable_line_discount'     => $config->enable_line_discount,
             'enable_price_control'     => $config->enable_price_control,
             'enable_customer_required' => $config->enable_customer_required,
@@ -44,6 +45,7 @@ class CatalogLoader
             'is_restaurant'            => $config->is_restaurant,
             'enable_split_bill'        => $config->enable_split_bill,
             'show_product_images'      => $config->show_product_images,
+            'show_category_images'     => $config->show_category_images,
             'receipt_header'           => $config->receipt_header,
             'receipt_footer'           => $config->receipt_footer,
         ];

@@ -46,6 +46,11 @@ class ManageAccounts extends SettingsPage
         return __('point-of-sale::filament/admin/clusters/settings/pages/manage-accounts.title');
     }
 
+    public static function getNavigationLabel(): string
+    {
+        return __('point-of-sale::filament/admin/clusters/settings/pages/manage-accounts.title');
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema

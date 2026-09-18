@@ -2,9 +2,7 @@
 
 use Webkul\Account\Enums\AccountType;
 use Webkul\Account\Enums\JournalType;
-use Webkul\PointOfSale\Enums\InvoicePaymentMode;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
-use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Warehouse;
@@ -30,8 +28,6 @@ it('creates a terminal with the expected defaults', function () {
     $config = PosHelper::config($this->warehouse);
 
     expect($config->tax_display)->toBe(TaxDisplay::SUBTOTAL)
-        ->and($config->stock_update_mode)->toBe(StockUpdateMode::REAL_TIME)
-        ->and($config->invoice_payment_mode)->toBe(InvoicePaymentMode::AT_ORDER)
         ->and($config->is_active)->toBeTrue()
         ->and($config->enable_cash_control)->toBeTrue()
         ->and($config->is_restaurant)->toBeFalse();

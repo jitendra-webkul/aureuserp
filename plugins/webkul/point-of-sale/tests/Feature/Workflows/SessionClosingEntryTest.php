@@ -110,6 +110,66 @@ it('merges two orders of the same product into one income line', function () {
         ->and((float) $creditLines->first()->credit)->toBe(150.0);
 });
 
+it('splits the sales lines by product when the terminal asks for it', function () {
+    $this->config->update(['is_closing_entry_by_product' => true]);
+
+    $other = InventoryHelper::product(['name' => 'Counter Mug', 'price' => 40.0, 'cost' => 20.0]);
+
+    InventoryHelper::stockUp($other, $this->warehouse->lotStockLocation, 10);
+
+    PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [
+            PosHelper::line($this->product->id, 2, 100.0),
+            PosHelper::line($other->id, 3, 40.0),
+        ],
+        [PosHelper::payment($this->cash, 320.0)],
+    ));
+
+    $session = PointOfSale::closeSessionWithAccounting($this->session->refresh());
+
+    $salesLines = Move::findOrFail($session->move_id)
+        ->lines
+        ->where('credit', '>', 0)
+        ->where('display_type', DisplayType::PRODUCT);
+
+    expect($salesLines)->toHaveCount(2)
+        ->and($salesLines->pluck('name')->sort()->values()->all())
+        ->toBe([$other->name, $this->product->name])
+        ->and((float) $salesLines->firstWhere('name', $this->product->name)->credit)->toBe(200.0)
+        ->and((float) $salesLines->firstWhere('name', $this->product->name)->quantity)->toBe(2.0)
+        ->and((float) $salesLines->firstWhere('name', $other->name)->credit)->toBe(120.0)
+        ->and((float) $salesLines->firstWhere('name', $other->name)->quantity)->toBe(3.0);
+});
+
+it('keeps one sales line per income account when closing by product is off', function () {
+    $other = InventoryHelper::product(['name' => 'Counter Mug', 'price' => 40.0, 'cost' => 20.0]);
+
+    InventoryHelper::stockUp($other, $this->warehouse->lotStockLocation, 10);
+
+    PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [
+            PosHelper::line($this->product->id, 2, 100.0),
+            PosHelper::line($other->id, 3, 40.0),
+        ],
+        [PosHelper::payment($this->cash, 320.0)],
+    ));
+
+    $session = PointOfSale::closeSessionWithAccounting($this->session->refresh());
+
+    $salesLines = Move::findOrFail($session->move_id)
+        ->lines
+        ->where('credit', '>', 0)
+        ->where('display_type', DisplayType::PRODUCT);
+
+    expect($salesLines)->toHaveCount(1)
+        ->and((float) $salesLines->first()->credit)->toBe(320.0)
+        ->and($salesLines->first()->quantity)->toBeNull();
+});
+
 it('flips the sale line to the debit side for a refund only session', function () {
     $order = PointOfSale::syncOrder(PosHelper::orderPayload(
         $this->config,

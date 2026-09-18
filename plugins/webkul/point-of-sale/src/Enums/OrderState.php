@@ -18,17 +18,6 @@ enum OrderState: string implements HasColor, HasIcon, HasLabel
 
     case CANCELED = 'canceled';
 
-    public static function options(): array
-    {
-        return [
-            self::DRAFT->value    => __('point-of-sale::enums/order-state.draft'),
-            self::PAID->value     => __('point-of-sale::enums/order-state.paid'),
-            self::DONE->value     => __('point-of-sale::enums/order-state.done'),
-            self::INVOICED->value => __('point-of-sale::enums/order-state.invoiced'),
-            self::CANCELED->value => __('point-of-sale::enums/order-state.canceled'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

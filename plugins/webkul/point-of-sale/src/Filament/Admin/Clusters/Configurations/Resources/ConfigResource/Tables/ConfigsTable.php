@@ -56,10 +56,6 @@ class ConfigsTable
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.columns.journal'))
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('stock_update_mode')
-                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.columns.stock-update-mode'))
-                    ->badge()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_restaurant')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.columns.is-restaurant'))
                     ->boolean()

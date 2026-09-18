@@ -19,6 +19,7 @@ use Webkul\Inventory\Models\Product as InventoryProduct;
 use Webkul\Inventory\Support\StockScope;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
@@ -35,6 +36,7 @@ use Webkul\PointOfSale\Services\ClosingControlReport;
 use Webkul\PointOfSale\Services\PriceResolver;
 use Webkul\PointOfSale\Services\SessionWorkflow;
 use Webkul\PointOfSale\Services\TerminalProductCreator;
+use Webkul\Product\Models\PriceList;
 use Webkul\Product\Models\Product;
 use Webkul\Product\Models\ProductAttribute;
 use Webkul\Product\Models\ProductAttributeValue;
@@ -63,6 +65,12 @@ class Terminal extends Page
     public string $paymentBuffer = '';
 
     public bool $toInvoice = false;
+
+    public ?int $priceListId = null;
+
+    public ?string $shippedAt = null;
+
+    public bool $isTakeaway = false;
 
     public ?int $selectedCategoryId = null;
 
@@ -232,11 +240,7 @@ class Terminal extends Page
 
         return $query->get();
     }
-
     /**
-     * Odoo badges the tile with the quantity of the whole template, so a
-     * configurable product counts every variant of it sitting in the cart.
-     *
      * @return array<int, float>
      */
     public function cartQuantityByProduct(): array
@@ -866,7 +870,150 @@ class Terminal extends Page
 
         $this->cart[$key]['price_unit'] = max(0, $price);
 
+        $this->cart[$key]['price_manual'] = true;
+
         $this->persistDraft();
+    }
+
+    public function resolvePrice(Product $product, float $quantity = 1.0): float
+    {
+        return app(PriceResolver::class)->resolve($product, $this->selectedPriceList(), $quantity);
+    }
+
+    public function selectedPriceList(): ?PriceList
+    {
+        if ($this->priceListId) {
+            return $this->availablePriceLists()->firstWhere('id', $this->priceListId);
+        }
+
+        return app(PriceResolver::class)->priceListForConfig($this->config);
+    }
+
+    public function availablePriceLists(): Collection
+    {
+        if (! $this->config->enable_price_list) {
+            return collect();
+        }
+
+        return $this->config->priceLists->when(
+            $this->config->priceList && ! $this->config->priceLists->contains('id', $this->config->price_list_id),
+            fn (Collection $lists): Collection => $lists->push($this->config->priceList),
+        )->values();
+    }
+
+    public function openPriceLists(): void
+    {
+        $this->dispatch('open-modal', id: 'pos-price-lists');
+    }
+
+    public function selectPriceList(?int $priceListId): void
+    {
+        $this->priceListId = $priceListId;
+
+        foreach ($this->cart as $key => $line) {
+            if ($line['price_manual'] ?? false) {
+                continue;
+            }
+
+            $product = Product::find($line['product_id']);
+
+            if (! $product) {
+                continue;
+            }
+
+            $this->cart[$key]['price_unit'] = $this->resolvePrice($product, (float) $line['qty']);
+        }
+
+        $this->persistDraft();
+
+        $this->dispatch('close-modal', id: 'pos-price-lists');
+    }
+
+    public function selectedPriceListName(): ?string
+    {
+        return $this->selectedPriceList()?->name;
+    }
+
+    public function toggleTakeaway(): void
+    {
+        if (! $this->config->enable_takeaway) {
+            return;
+        }
+
+        $this->isTakeaway = ! $this->isTakeaway;
+
+        $this->persistDraft();
+    }
+
+    public function fiscalPositionId(): ?int
+    {
+        if ($this->isTakeaway && $this->config->takeaway_fiscal_position_id) {
+            return $this->config->takeaway_fiscal_position_id;
+        }
+
+        return $this->config->fiscal_position_id;
+    }
+
+    public function setShippedAt(?string $shippedAt): void
+    {
+        if (! $this->config->enable_ship_later) {
+            return;
+        }
+
+        $this->shippedAt = $shippedAt;
+
+        $this->persistDraft();
+    }
+
+    public function addTip(float $amount): void
+    {
+        if (! $this->config->enable_tip || ! $this->config->tip_product_id) {
+            return;
+        }
+
+        $tipProduct = Product::find($this->config->tip_product_id);
+
+        if (! $tipProduct) {
+            return;
+        }
+
+        $existing = collect($this->cart)
+            ->search(fn (array $line): bool => (int) $line['product_id'] === $tipProduct->id);
+
+        if ($existing !== false) {
+            $this->cart[$existing]['price_unit'] = max(0, $amount);
+            $this->cart[$existing]['price_manual'] = true;
+
+            $this->persistDraft();
+
+            return;
+        }
+
+        $key = (string) Str::uuid();
+
+        $this->cart[$key] = [
+            'uuid'          => $key,
+            'product_id'    => $tipProduct->id,
+            'name'          => $tipProduct->name,
+            'qty'           => 1,
+            'price_unit'    => max(0, $amount),
+            'price_manual'  => true,
+            'discount'      => 0,
+            'note'          => null,
+            'customer_note' => null,
+        ];
+
+        $this->persistDraft();
+    }
+
+    public function tipAmount(): float
+    {
+        if (! $this->config->tip_product_id) {
+            return 0.0;
+        }
+
+        return (float) collect($this->cart)
+            ->firstWhere('product_id', $this->config->tip_product_id)['price_unit'] ?? 0.0;
     }
 
     public function getPaymentMethods(): Collection
@@ -1004,7 +1151,8 @@ class Terminal extends Page
             'product_id'    => $product->id,
             'name'          => $product->name,
             'qty'           => 1,
-            'price_unit'    => app(PriceResolver::class)->resolve($product, app(PriceResolver::class)->priceListForConfig($this->config)),
+            'price_unit'    => $this->resolvePrice($product),
+            'price_manual'  => false,
             'discount'      => 0,
             'note'          => null,
             'customer_note' => null,
@@ -1166,6 +1314,29 @@ class Terminal extends Page
         return $this->cartTotals()['total'];
     }
 
+    public function displayUnitPrice(int $productId, float $priceUnit): float
+    {
+        if ($this->config->tax_display !== TaxDisplay::TOTAL) {
+            return float_round($priceUnit, precisionDigits: 2);
+        }
+
+        $taxes = $this->taxesFor($productId);
+
+        if ($taxes->isEmpty()) {
+            return float_round($priceUnit, precisionDigits: 2);
+        }
+
+        $result = Tax::computeAll(
+            $taxes,
+            $priceUnit,
+            $this->config->company?->currency,
+            1.0,
+            $this->productFor($productId),
+        );
+
+        return float_round((float) $result['total_included'], precisionDigits: 2);
+    }
+
     public function cartTotals(): array
     {
         $untaxed = 0.0;
@@ -1261,8 +1432,47 @@ class Terminal extends Page
         $this->screen = 'products';
     }
 
+    public function customerRequirementReason(): ?string
+    {
+        if ($this->partnerId) {
+            return null;
+        }
+
+        if ($this->config->enable_customer_required) {
+            return 'required-by-terminal';
+        }
+
+        if ($this->toInvoice) {
+            return 'required-to-invoice';
+        }
+
+        if (filled($this->shippedAt)) {
+            return 'required-to-ship';
+        }
+
+        $splitPayment = collect($this->payments)->contains(
+            fn (array $payment): bool => (bool) $this->getPaymentMethods()
+                ->firstWhere('id', $payment['payment_method_id'] ?? null)?->is_split_transaction
+        );
+
+        return $splitPayment ? 'required-by-payment-method' : null;
+    }
+
     public function validateOrder(): void
     {
+        $reason = $this->customerRequirementReason();
+
+        if ($reason !== null) {
+            Notification::make()
+                ->warning()
+                ->body(__("point-of-sale::system.order-workflow.customer.{$reason}"))
+                ->send();
+
+            $this->openCustomers();
+
+            return;
+        }
+
         try {
             $order = PointOfSale::syncOrder([
                 'uuid'          => $this->draftUuid(),
@@ -1270,6 +1480,10 @@ class Terminal extends Page
                 'session_id'    => $this->session->id,
                 'partner_id'    => $this->partnerId,
                 'is_to_invoice' => $this->toInvoice,
+                'price_list_id' => $this->selectedPriceList()?->id,
+                'fiscal_position_id' => $this->fiscalPositionId(),
+                'shipped_at'    => $this->shippedAt,
+                'is_takeaway'   => $this->isTakeaway,
                 'lines'         => $this->linePayloads(),
                 'payments'      => $this->paymentPayloads(),
             ]);
@@ -1278,7 +1492,15 @@ class Terminal extends Page
 
             $this->resetCart();
 
-            $this->screen = 'receipt';
+            if ($this->config->enable_receipt_print) {
+                $this->screen = 'receipt';
+
+                if ($this->config->enable_receipt_auto_print) {
+                    $this->dispatch('pos-print-receipt');
+                }
+            } else {
+                $this->newOrder();
+            }
 
             Notification::make()
                 ->success()
@@ -1365,6 +1587,8 @@ class Terminal extends Page
             'amount_total'   => $order->amount_total,
             'amount_paid'    => $order->amount_paid,
             'amount_return'  => $order->amount_return,
+            'header'         => $this->config->receipt_header,
+            'footer'         => $this->config->receipt_footer,
             'lines'          => $order->lines->map(fn ($line): array => [
                 'name'  => $line->full_product_name,
                 'qty'   => $line->qty,

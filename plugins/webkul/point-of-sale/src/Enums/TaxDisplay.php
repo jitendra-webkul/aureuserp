@@ -10,14 +10,6 @@ enum TaxDisplay: string implements HasLabel
 
     case TOTAL = 'total';
 
-    public static function options(): array
-    {
-        return [
-            self::SUBTOTAL->value => __('point-of-sale::enums/tax-display.subtotal'),
-            self::TOTAL->value    => __('point-of-sale::enums/tax-display.total'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

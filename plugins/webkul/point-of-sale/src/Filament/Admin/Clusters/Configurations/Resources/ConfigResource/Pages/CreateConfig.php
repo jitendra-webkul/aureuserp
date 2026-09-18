@@ -25,6 +25,11 @@ class CreateConfig extends CreateRecord
         return [];
     }
 
+    protected function afterCreate(): void
+    {
+        $this->getRecord()->ensureDefaultPaymentMethods();
+    }
+
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()

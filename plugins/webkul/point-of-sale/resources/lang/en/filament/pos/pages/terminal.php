@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'price-lists' => [
+        'label'   => 'Pricelist',
+        'heading' => 'Select a pricelist',
+        'default' => 'Default Price',
+    ],
+
     'opening-control' => [
         'heading'     => 'Opening Control',
         'cash'        => 'Opening cash',
@@ -197,6 +203,10 @@ return [
     ],
 
     'actions' => [
+        'tip'        => 'Tip',
+        'takeaway'   => 'Take Away',
+        'dine-in'    => 'Dine In',
+        'ship-later' => 'Ship Later',
         'customer'    => 'Customer',
         'remove-line' => 'Remove line',
         'note'        => 'Internal Note',

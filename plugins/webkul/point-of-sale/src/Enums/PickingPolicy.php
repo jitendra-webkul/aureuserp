@@ -10,14 +10,6 @@ enum PickingPolicy: string implements HasLabel
 
     case ONE = 'one';
 
-    public static function options(): array
-    {
-        return [
-            self::DIRECT->value => __('point-of-sale::enums/picking-policy.direct'),
-            self::ONE->value    => __('point-of-sale::enums/picking-policy.one'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

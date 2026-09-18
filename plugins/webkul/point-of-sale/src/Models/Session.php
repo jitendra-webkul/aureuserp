@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 use Webkul\Account\Models\Journal;
 use Webkul\Account\Models\Move;
 use Webkul\Chatter\Traits\HasChatter;
@@ -17,6 +18,7 @@ use Webkul\Field\Traits\HasCustomFields;
 use Webkul\PointOfSale\Database\Factories\SessionFactory;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Enums\StockUpdateMode;
+use Webkul\PointOfSale\Settings\InventorySettings;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Currency;
@@ -232,12 +234,21 @@ class Session extends Model
 
         $this->currency_id ??= $config->currency_id;
 
-        $this->stock_update_mode ??= $config->stock_update_mode;
+        $this->stock_update_mode ??= static::defaultStockUpdateMode();
 
         $this->cash_journal_id ??= $config->paymentMethods
             ->firstWhere('is_cash_count', true)?->journal_id;
 
         $this->has_cash_control = $config->enable_cash_control && filled($this->cash_journal_id);
+    }
+
+    public static function defaultStockUpdateMode(): StockUpdateMode
+    {
+        try {
+            return settings(InventorySettings::class)->stock_update_mode;
+        } catch (Throwable) {
+            return StockUpdateMode::REAL_TIME;
+        }
     }
 
     public function computeState(): void

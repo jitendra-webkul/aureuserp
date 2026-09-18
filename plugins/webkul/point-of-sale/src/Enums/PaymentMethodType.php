@@ -14,15 +14,6 @@ enum PaymentMethodType: string implements HasColor, HasIcon, HasLabel
 
     case PAY_LATER = 'pay_later';
 
-    public static function options(): array
-    {
-        return [
-            self::CASH->value      => __('point-of-sale::enums/payment-method-type.cash'),
-            self::BANK->value      => __('point-of-sale::enums/payment-method-type.bank'),
-            self::PAY_LATER->value => __('point-of-sale::enums/payment-method-type.pay-later'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

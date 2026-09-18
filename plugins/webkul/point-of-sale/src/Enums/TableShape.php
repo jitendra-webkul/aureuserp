@@ -11,14 +11,6 @@ enum TableShape: string implements HasIcon, HasLabel
 
     case ROUND = 'round';
 
-    public static function options(): array
-    {
-        return [
-            self::SQUARE->value => __('point-of-sale::enums/table-shape.square'),
-            self::ROUND->value  => __('point-of-sale::enums/table-shape.round'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

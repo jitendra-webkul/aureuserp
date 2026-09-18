@@ -11,14 +11,6 @@ enum PrinterType: string implements HasColor, HasLabel
 
     case EPSON_EPOS = 'epson_epos';
 
-    public static function options(): array
-    {
-        return [
-            self::IOT->value        => __('point-of-sale::enums/printer-type.iot'),
-            self::EPSON_EPOS->value => __('point-of-sale::enums/printer-type.epson-epos'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

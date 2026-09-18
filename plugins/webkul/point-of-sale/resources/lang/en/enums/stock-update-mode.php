@@ -1,6 +1,6 @@
 <?php
 
 return [
-    'real-time'  => 'At each order',
-    'at-closing' => 'At session closing',
+    'real-time'  => 'In real time',
+    'at-closing' => 'At the session closing',
 ];

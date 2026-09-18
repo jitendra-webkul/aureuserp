@@ -11,6 +11,7 @@ use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Events\OrderCanceled;
 use Webkul\PointOfSale\Events\OrderDone;
 use Webkul\PointOfSale\Events\OrderPaid;
+use Webkul\PointOfSale\Exceptions\CustomerRequiredException;
 use Webkul\PointOfSale\Exceptions\InsufficientPaymentException;
 use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
 use Webkul\PointOfSale\Models\Config;
@@ -32,6 +33,48 @@ class OrderWorkflow
         protected ShipLaterProcurementRequester $shipLater,
     ) {}
 
+    public function assertCustomer(Order $order): void
+    {
+        $reason = $this->customerRequirement($order, settlementOnly: true);
+
+        if ($reason === null) {
+            return;
+        }
+
+        throw new CustomerRequiredException(
+            __("point-of-sale::system.order-workflow.customer.{$reason}")
+        );
+    }
+
+    public function customerRequirement(Order $order, bool $settlementOnly = false): ?string
+    {
+        if ($order->partner_id) {
+            return null;
+        }
+
+        if ($order->config?->enable_customer_required) {
+            return 'required-by-terminal';
+        }
+
+        if ($order->is_to_invoice) {
+            return 'required-to-invoice';
+        }
+
+        if ($settlementOnly) {
+            return null;
+        }
+
+        if (filled($order->shipped_at)) {
+            return 'required-to-ship';
+        }
+
+        $splitPayment = $order->payments->contains(
+            fn ($payment): bool => (bool) $payment->paymentMethod?->is_split_transaction
+        );
+
+        return $splitPayment ? 'required-by-payment-method' : null;
+    }
+
     public function markPaid(Order $order): Order
     {
         return DB::transaction(function () use ($order): Order {
@@ -44,6 +87,8 @@ class OrderWorkflow
             $order->loadMissing(['session', 'config', 'lines', 'payments']);
 
             $this->sessions->assertOpen($order->session);
+
+            $this->assertCustomer($order);
 
             $order = $this->fiscalPositions->applyTo($order);
 

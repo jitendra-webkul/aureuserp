@@ -3,9 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Webkul\PointOfSale\Enums\InvoicePaymentMode;
 use Webkul\PointOfSale\Enums\PickingPolicy;
-use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 
 return new class extends Migration
@@ -23,8 +21,6 @@ return new class extends Migration
             $table->integer('sort')->nullable();
             $table->string('tax_display')->default(TaxDisplay::SUBTOTAL);
             $table->string('picking_policy')->default(PickingPolicy::DIRECT);
-            $table->string('stock_update_mode')->default(StockUpdateMode::REAL_TIME);
-            $table->string('invoice_payment_mode')->default(InvoicePaymentMode::AT_ORDER);
             $table->text('receipt_header')->nullable();
             $table->text('receipt_footer')->nullable();
             $table->unsignedInteger('limited_products_amount')->default(500);

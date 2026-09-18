@@ -1,7 +1,9 @@
 <?php
 
+use Webkul\Inventory\Enums\DeliveryStep;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Models\Operation;
+use Webkul\Inventory\Models\Rule;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Facades\PointOfSale;
@@ -16,6 +18,8 @@ beforeEach(function () {
     TestBootstrapHelper::ensurePluginInstalled('point-of-sale');
 
     InventoryHelper::actingAsAdmin();
+
+    PosHelper::stockUpdateMode(StockUpdateMode::REAL_TIME);
 
     $this->warehouse = InventoryHelper::warehouse();
     $this->session = PosHelper::openSession($this->warehouse);
@@ -98,10 +102,40 @@ it('still delivers immediately when no shipping date is set', function () {
         ->and($order->procurement_group_id)->toBeNull();
 });
 
+it('runs the ship later procurement on the route configured for the terminal', function () {
+    $this->warehouse->update(['delivery_steps' => DeliveryStep::TWO_STEPS]);
+
+    $route = $this->warehouse->refresh()->deliveryRoute;
+
+    expect($route)->not->toBeNull();
+
+    $this->config->update(['ship_later_route_id' => $route->id]);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+        ['shipped_at' => now()->addWeek()->toDateString()],
+    ));
+
+    $operations = Operation::query()
+        ->where('procurement_group_id', $order->procurement_group_id)
+        ->get();
+
+    $ruleRouteIds = Rule::query()
+        ->whereIn('operation_type_id', $operations->pluck('operation_type_id')->unique())
+        ->pluck('route_id')
+        ->unique();
+
+    expect($operations)->not->toBeEmpty()
+        ->and($ruleRouteIds)->toContain($route->id);
+});
+
 it('groups the session stock into one operation when stock updates at closing', function () {
-    $config = PosHelper::configWithCashMethod(InventoryHelper::warehouse(), [
-        'stock_update_mode' => StockUpdateMode::AT_CLOSING,
-    ]);
+    PosHelper::stockUpdateMode(StockUpdateMode::AT_CLOSING);
+
+    $config = PosHelper::configWithCashMethod(InventoryHelper::warehouse());
 
     $session = PointOfSale::confirmSessionOpeningControl(PointOfSale::openSession($config), 0.0);
 
@@ -128,9 +162,9 @@ it('groups the session stock into one operation when stock updates at closing', 
 });
 
 it('does not create an immediate operation in closing stock mode', function () {
-    $config = PosHelper::configWithCashMethod(InventoryHelper::warehouse(), [
-        'stock_update_mode' => StockUpdateMode::AT_CLOSING,
-    ]);
+    PosHelper::stockUpdateMode(StockUpdateMode::AT_CLOSING);
+
+    $config = PosHelper::configWithCashMethod(InventoryHelper::warehouse());
 
     $session = PointOfSale::confirmSessionOpeningControl(PointOfSale::openSession($config), 0.0);
 

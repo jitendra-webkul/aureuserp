@@ -12,14 +12,6 @@ enum CashMovementType: string implements HasColor, HasIcon, HasLabel
 
     case OUT = 'out';
 
-    public static function options(): array
-    {
-        return [
-            self::IN->value  => __('point-of-sale::enums/cash-movement-type.in'),
-            self::OUT->value => __('point-of-sale::enums/cash-movement-type.out'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

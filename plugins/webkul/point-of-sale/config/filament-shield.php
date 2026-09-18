@@ -13,6 +13,7 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\OrderResource;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\PaymentResource;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\PrinterResource;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\SessionResource;
+use Webkul\PointOfSale\Filament\Admin\Clusters\PluginSettings;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Products;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources\ProductResource;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting;
@@ -20,7 +21,8 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\OrderReport;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\SalesDetails;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\SessionReport;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageAccounts;
-use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageTerminal;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageInventory;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageRestaurant;
 use Webkul\PointOfSale\Filament\Admin\Pages\Dashboard;
 
 $basic = ['view_any', 'view', 'create', 'update'];
@@ -51,8 +53,9 @@ return [
     'pages' => [
         'manage' => [
             Dashboard::class,
-            ManageTerminal::class,
+            ManageRestaurant::class,
             ManageAccounts::class,
+            ManageInventory::class,
             OrderReport::class,
             SalesDetails::class,
             SessionReport::class,
@@ -61,6 +64,7 @@ return [
         'exclude' => [
             Configurations::class,
             Orders::class,
+            PluginSettings::class,
             Products::class,
             Reporting::class,
         ],

@@ -26,14 +26,12 @@ class OrderInfolist
                     ->inline()
                     ->columnSpanFull()
                     ->options(function ($record): array {
-                        $options = OrderState::options();
-
                         $visible = $record->state === OrderState::CANCELED
                             ? [OrderState::DRAFT, OrderState::CANCELED]
                             : [OrderState::DRAFT, OrderState::PAID, OrderState::DONE];
 
                         return collect($visible)
-                            ->mapWithKeys(fn (OrderState $state): array => [$state->value => $options[$state->value]])
+                            ->mapWithKeys(fn (OrderState $state): array => [$state->value => $state->getLabel()])
                             ->all();
                     })
                     ->default(OrderState::DRAFT->value),

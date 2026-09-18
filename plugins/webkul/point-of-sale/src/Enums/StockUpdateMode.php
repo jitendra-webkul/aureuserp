@@ -11,14 +11,6 @@ enum StockUpdateMode: string implements HasColor, HasLabel
 
     case AT_CLOSING = 'at_closing';
 
-    public static function options(): array
-    {
-        return [
-            self::REAL_TIME->value  => __('point-of-sale::enums/stock-update-mode.real-time'),
-            self::AT_CLOSING->value => __('point-of-sale::enums/stock-update-mode.at-closing'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

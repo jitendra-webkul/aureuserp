@@ -16,6 +16,11 @@ class AccountSettings extends Settings
 
     public bool $allow_balancing_line;
 
+    public static function cacheKey(): string
+    {
+        return static::class.':'.(current_company_id() ?? 0);
+    }
+
     public static function group(): string
     {
         return 'point_of_sale_account';

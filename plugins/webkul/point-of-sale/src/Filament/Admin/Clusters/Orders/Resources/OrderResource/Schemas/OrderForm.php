@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
+use Webkul\Field\Filament\Forms\Components\ProgressStepper as FormProgressStepper;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\Product\Filament\Resources\ProductResource;
 use Webkul\Support\Filament\Forms\Components\Repeater;
@@ -27,6 +28,24 @@ class OrderForm
 
         return $schema
             ->components([
+                FormProgressStepper::make('state')
+                    ->hiddenLabel()
+                    ->inline()
+                    ->columnSpanFull()
+                    ->options(function ($record): array {
+                        $visible = $record?->state === OrderState::CANCELED
+                            ? [OrderState::DRAFT, OrderState::CANCELED]
+                            : [OrderState::DRAFT, OrderState::PAID, OrderState::DONE];
+
+                        return collect($visible)
+                            ->mapWithKeys(fn (OrderState $state): array => [$state->value => $state->getLabel()])
+                            ->all();
+                    })
+                    ->default(OrderState::DRAFT->value)
+                    ->disabled()
+                    ->live()
+                    ->reactive(),
+
                 Section::make(__($prefix.'section.general.title'))
                     ->icon('heroicon-o-document-text')
                     ->schema([

@@ -27,10 +27,8 @@ use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\Route;
 use Webkul\Inventory\Models\Warehouse;
 use Webkul\PointOfSale\Database\Factories\ConfigFactory;
-use Webkul\PointOfSale\Enums\InvoicePaymentMode;
 use Webkul\PointOfSale\Enums\PickingPolicy;
 use Webkul\PointOfSale\Enums\SessionState;
-use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Services\PaymentMethodProvisioner;
 use Webkul\PointOfSale\Settings\AccountSettings;
@@ -62,8 +60,6 @@ class Config extends Model implements Sortable
         'sort',
         'tax_display',
         'picking_policy',
-        'stock_update_mode',
-        'invoice_payment_mode',
         'receipt_header',
         'receipt_footer',
         'limited_products_amount',
@@ -117,8 +113,6 @@ class Config extends Model implements Sortable
     protected $casts = [
         'tax_display'                   => TaxDisplay::class,
         'picking_policy'                => PickingPolicy::class,
-        'stock_update_mode'             => StockUpdateMode::class,
-        'invoice_payment_mode'          => InvoicePaymentMode::class,
         'amount_authorized_diff'        => 'decimal:4',
         'is_active'                     => 'boolean',
         'is_restaurant'                 => 'boolean',
@@ -149,8 +143,6 @@ class Config extends Model implements Sortable
     protected $attributes = [
         'tax_display'                   => 'subtotal',
         'picking_policy'                => 'direct',
-        'stock_update_mode'             => 'real_time',
-        'invoice_payment_mode'          => 'at_order',
         'limited_products_amount'       => 500,
         'is_active'                     => true,
         'is_restaurant'                 => false,

@@ -46,7 +46,7 @@ class ClosingEntryBuilder
             $changes = Tax::buildTaxLineChanges($baseLines, $company, []);
 
             $lines = $lines
-                ->merge($this->salesLines($changes['base_lines_to_update'], $currency, $company))
+                ->merge($this->salesLines($changes['base_lines_to_update'], $currency, $company, (bool) $session->config->is_closing_entry_by_product))
                 ->merge($this->taxLines($changes['tax_lines_to_add'], $currency, $company));
         }
 
@@ -133,7 +133,7 @@ class ClosingEntryBuilder
         );
     }
 
-    protected function salesLines(array $baseLines, $currency, $company): Collection
+    protected function salesLines(array $baseLines, $currency, $company, bool $byProduct = false): Collection
     {
         $grouped = [];
 
@@ -149,11 +149,26 @@ class ClosingEntryBuilder
                 ->sort()
                 ->implode(',');
 
-            $key = $accountId.'|'.($balance < 0 ? '-' : '+').'|'.$taxIds;
+            $product = $byProduct ? ($baseLine['product'] ?? null) : null;
 
-            $grouped[$key] ??= ['account_id' => $accountId, 'balance' => 0.0];
+            $productId = is_object($product) ? $product->id : null;
+
+            $key = $accountId.'|'.($balance < 0 ? '-' : '+').'|'.$taxIds.'|'.($productId ?? '');
+
+            $grouped[$key] ??= [
+                'account_id' => $accountId,
+                'balance'    => 0.0,
+                'quantity'   => $byProduct ? 0.0 : null,
+                'name'       => $productId
+                    ? ($product->name ?? __('point-of-sale::system.session-closer.sales-line'))
+                    : __('point-of-sale::system.session-closer.sales-line'),
+            ];
 
             $grouped[$key]['balance'] += $balance;
+
+            if ($byProduct) {
+                $grouped[$key]['quantity'] += (float) ($baseLine['quantity'] ?? 0);
+            }
         }
 
         return collect($grouped)
@@ -162,9 +177,10 @@ class ClosingEntryBuilder
                 $group['account_id'],
                 $group['balance'] > 0 ? $group['balance'] : 0.0,
                 $group['balance'] < 0 ? abs($group['balance']) : 0.0,
-                __('point-of-sale::system.session-closer.sales-line'),
+                $group['name'],
                 $currency,
                 $company,
+                $group['quantity'],
             ))
             ->values();
     }
@@ -374,11 +390,11 @@ class ClosingEntryBuilder
         ]);
     }
 
-    protected function line(?int $accountId, float $debit, float $credit, string $name, $currency, $company): array
+    protected function line(?int $accountId, float $debit, float $credit, string $name, $currency, $company, ?float $quantity = null): array
     {
         $balance = float_round($debit - $credit, precisionDigits: 4);
 
-        return [
+        $line = [
             'account_id'          => $accountId,
             'name'                => $name,
             'debit'               => float_round($debit, precisionDigits: 4),
@@ -388,5 +404,11 @@ class ClosingEntryBuilder
             'currency_id'         => $currency?->id,
             'company_currency_id' => $company?->currency_id,
         ];
+
+        if ($quantity !== null) {
+            $line['quantity'] = float_round($quantity, precisionDigits: 4);
+        }
+
+        return $line;
     }
 }

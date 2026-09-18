@@ -24,6 +24,7 @@ class OrderProcessor
     public function __construct(
         protected OrderCalculator $calculator,
         protected OrderWorkflow $orders,
+        protected PosInvoicer $invoicer,
         protected PriceResolver $prices,
         protected SessionWorkflow $sessions,
     ) {}
@@ -45,8 +46,25 @@ class OrderProcessor
 
             $this->syncPayments($order, $payload['payments'] ?? []);
 
-            return $this->orders->markPaid($order->refresh());
+            $order = $this->orders->markPaid($order->refresh());
+
+            return $this->invoiceIfRequested($order);
         });
+    }
+
+    protected function invoiceIfRequested(Order $order): Order
+    {
+        if (! $order->is_to_invoice || $order->is_invoiced) {
+            return $order;
+        }
+
+        if ($order->state !== OrderState::PAID) {
+            return $order;
+        }
+
+        $this->invoicer->invoice($order);
+
+        return $order->refresh();
     }
 
     public function saveDraft(array $payload): Order

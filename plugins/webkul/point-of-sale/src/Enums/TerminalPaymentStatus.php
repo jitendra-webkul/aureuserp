@@ -17,17 +17,6 @@ enum TerminalPaymentStatus: string implements HasColor, HasLabel
 
     case FAILED = 'failed';
 
-    public static function options(): array
-    {
-        return [
-            self::PENDING->value    => __('point-of-sale::enums/terminal-payment-status.pending'),
-            self::AUTHORIZED->value => __('point-of-sale::enums/terminal-payment-status.authorized'),
-            self::DONE->value       => __('point-of-sale::enums/terminal-payment-status.done'),
-            self::REVERSED->value   => __('point-of-sale::enums/terminal-payment-status.reversed'),
-            self::FAILED->value     => __('point-of-sale::enums/terminal-payment-status.failed'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

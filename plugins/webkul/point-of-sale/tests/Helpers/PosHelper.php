@@ -17,6 +17,7 @@ use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Models\Warehouse as InventoryWarehouse;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
+use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
@@ -25,6 +26,7 @@ use Webkul\PointOfSale\Models\PaymentMethod;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Table;
 use Webkul\PointOfSale\Models\Warehouse;
+use Webkul\PointOfSale\Settings\InventorySettings;
 use Webkul\Product\Enums\PriceRuleApplyTo;
 use Webkul\Product\Enums\PriceRuleBase;
 use Webkul\Product\Enums\PriceRuleType;
@@ -62,6 +64,15 @@ class PosHelper
             'type'       => JournalType::CASH,
             'company_id' => static::company()->id,
         ], $overrides));
+    }
+
+    public static function stockUpdateMode(StockUpdateMode $mode): void
+    {
+        $settings = settings(InventorySettings::class);
+
+        $settings->stock_update_mode = $mode;
+
+        $settings->save();
     }
 
     public static function receivableAccount(): Account

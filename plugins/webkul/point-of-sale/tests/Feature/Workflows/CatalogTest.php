@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Services\CatalogLoader;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
@@ -69,4 +70,72 @@ it('keeps the variants of a template out of the catalogue', function () {
 
     expect($names)->toContain('Configurable Shirt')
         ->not->toContain('Configurable Shirt - S');
+});
+
+it('carries the terminal display settings into the catalogue payload', function () {
+    $this->config->update([
+        'tax_display'              => TaxDisplay::TOTAL,
+        'show_product_images'      => false,
+        'show_category_images'     => false,
+        'enable_customer_required' => true,
+        'receipt_header'           => 'Webkul Store',
+        'receipt_footer'           => 'Thanks for shopping',
+    ]);
+
+    $catalog = app(CatalogLoader::class)->load($this->config->refresh());
+
+    expect($catalog['config']['tax_display'])->toBe(TaxDisplay::TOTAL)
+        ->and($catalog['config']['show_product_images'])->toBeFalse()
+        ->and($catalog['config']['show_category_images'])->toBeFalse()
+        ->and($catalog['config']['enable_customer_required'])->toBeTrue()
+        ->and($catalog['config']['receipt_header'])->toBe('Webkul Store')
+        ->and($catalog['config']['receipt_footer'])->toBe('Thanks for shopping');
+});
+
+it('offers only the categories picked on the terminal when they are restricted', function () {
+    $allowed = PosHelper::posCategory(['name' => 'Drinks']);
+
+    PosHelper::posCategory(['name' => 'Back Office Only']);
+
+    $this->config->update(['limit_categories' => true]);
+
+    $this->config->categories()->sync([$allowed->id]);
+
+    $catalog = app(CatalogLoader::class)->load($this->config->refresh());
+
+    $names = collect($catalog['categories'])->pluck('name');
+
+    expect($names)->toContain('Drinks')
+        ->and($names)->not->toContain('Back Office Only');
+});
+
+it('falls back to every category when the terminal restricts but picks none', function () {
+    PosHelper::posCategory(['name' => 'Drinks']);
+
+    PosHelper::posCategory(['name' => 'Back Office Only']);
+
+    $this->config->update(['limit_categories' => true]);
+
+    $this->config->categories()->sync([]);
+
+    $catalog = app(CatalogLoader::class)->load($this->config->refresh());
+
+    $names = collect($catalog['categories'])->pluck('name');
+
+    expect($names)->toContain('Drinks')
+        ->and($names)->toContain('Back Office Only');
+});
+
+it('caps the catalogue at the configured product limit', function () {
+    foreach (range(1, 3) as $index) {
+        $product = InventoryHelper::product(['name' => "Counter Item {$index}", 'price' => 5.0]);
+
+        DB::table('products_products')->where('id', $product->id)->update(['available_in_pos' => true]);
+    }
+
+    $this->config->update(['limited_products_amount' => 2]);
+
+    $catalog = app(CatalogLoader::class)->load($this->config->refresh());
+
+    expect($catalog['products'])->toHaveCount(2);
 });

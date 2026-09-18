@@ -106,6 +106,10 @@
 
                 <p class="text-center text-gray-500 dark:text-gray-400">{{ $lastOrder['name'] }}</p>
 
+                @if (filled($lastOrder['header'] ?? null))
+                    <p class="whitespace-pre-line text-center text-gray-500 dark:text-gray-400">{{ $lastOrder['header'] }}</p>
+                @endif
+
                 <div class="border-t border-dashed border-gray-300 dark:border-gray-600"></div>
 
                 @foreach ($lastOrder['lines'] as $line)
@@ -126,6 +130,12 @@
                     <span class="text-gray-500 dark:text-gray-400">{{ __('point-of-sale::filament/pos/pages/terminal.receipt.change') }}</span>
                     <span class="tabular-nums text-gray-950 dark:text-white">{{ $this->money($lastOrder['amount_return']) }}</span>
                 </div>
+
+                @if (filled($lastOrder['footer'] ?? null))
+                    <div class="border-t border-dashed border-gray-300 dark:border-gray-600"></div>
+
+                    <p class="whitespace-pre-line text-center text-gray-500 dark:text-gray-400">{{ $lastOrder['footer'] }}</p>
+                @endif
             </div>
         @endif
 

@@ -15,7 +15,7 @@
                 </p>
 
                 <p class="pos-figure text-xs text-gray-500 dark:text-gray-400">
-                    {{ $line['qty'] }} &times; {{ $this->money($line['price_unit']) }}
+                    {{ $line['qty'] }} &times; {{ $this->money($this->displayUnitPrice($line['product_id'], $line['price_unit'])) }}
                     @if ($line['discount'] > 0)
                         &middot; {{ __('point-of-sale::filament/pos/pages/terminal.cart.discount', ['percentage' => $line['discount'] + 0]) }}
                     @endif
@@ -33,7 +33,7 @@
             </div>
 
             <span class="pos-figure text-sm font-semibold text-gray-950 dark:text-white">
-                {{ $this->money($line['qty'] * $line['price_unit'] * (1 - $line['discount'] / 100)) }}
+                {{ $this->money($line['qty'] * $this->displayUnitPrice($line['product_id'], $line['price_unit']) * (1 - $line['discount'] / 100)) }}
             </span>
         </button>
     @empty

@@ -13,15 +13,6 @@ enum PaymentTerminalType: string implements HasColor, HasLabel
 
     case QR_CODE = 'qr_code';
 
-    public static function options(): array
-    {
-        return [
-            self::NONE->value     => __('point-of-sale::enums/payment-terminal-type.none'),
-            self::TERMINAL->value => __('point-of-sale::enums/payment-terminal-type.terminal'),
-            self::QR_CODE->value  => __('point-of-sale::enums/payment-terminal-type.qr-code'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {

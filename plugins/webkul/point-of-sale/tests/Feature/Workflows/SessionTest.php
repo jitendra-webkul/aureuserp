@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Event;
 use Webkul\PointOfSale\Enums\CashMovementType;
 use Webkul\PointOfSale\Enums\SessionState;
+use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Events\CashMovementRecorded;
 use Webkul\PointOfSale\Events\SessionClosed;
 use Webkul\PointOfSale\Events\SessionOpened;
@@ -12,6 +13,7 @@ use Webkul\PointOfSale\Exceptions\SessionAlreadyOpenException;
 use Webkul\PointOfSale\Exceptions\SessionNotOpenException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Session;
+use Webkul\PointOfSale\Services\ClosingControlReport;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -23,6 +25,8 @@ beforeEach(function () {
     TestBootstrapHelper::ensurePluginInstalled('point-of-sale');
 
     InventoryHelper::actingAsAdmin();
+
+    PosHelper::stockUpdateMode(StockUpdateMode::REAL_TIME);
 
     $this->warehouse = InventoryHelper::warehouse();
 });
@@ -203,10 +207,38 @@ it('signs cash movements by type', function () {
         ->and($out->signedAmount())->toBe(-20.0);
 });
 
-it('snapshots the stock update mode from the terminal', function () {
+it('snapshots the stock update mode from the point of sale settings', function () {
+    PosHelper::stockUpdateMode(StockUpdateMode::AT_CLOSING);
+
     $session = PosHelper::openSession($this->warehouse);
 
-    expect($session->stock_update_mode)->toBe($session->config->stock_update_mode);
+    expect($session->stock_update_mode)->toBe(StockUpdateMode::AT_CLOSING);
+});
+
+it('reports the allowed closing difference when the terminal caps it', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $session->config->update([
+        'enable_maximum_difference' => true,
+        'amount_authorized_diff'    => 5.0,
+    ]);
+
+    $report = app(ClosingControlReport::class)->build($session->refresh());
+
+    expect($report['amount_authorized_diff'])->toBe(5.0);
+});
+
+it('reports no allowed closing difference when the terminal does not cap it', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $session->config->update([
+        'enable_maximum_difference' => false,
+        'amount_authorized_diff'    => 5.0,
+    ]);
+
+    $report = app(ClosingControlReport::class)->build($session->refresh());
+
+    expect($report['amount_authorized_diff'])->toBeNull();
 });
 
 it('keeps sessions queryable by terminal and state', function () {

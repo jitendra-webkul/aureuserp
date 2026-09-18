@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 use Webkul\PointOfSale\Models\Category;
+use Webkul\Product\Enums\AttributeType;
 use Webkul\Product\Enums\ProductType;
 use Webkul\Product\Models\Attribute;
 use Webkul\Product\Models\AttributeOption;
@@ -159,7 +160,10 @@ class DemoProductSeeder extends Seeder
         $attributes = [];
 
         foreach ($definitions as $name => $options) {
-            $attribute = Attribute::firstOrCreate(['name' => $name]);
+            $attribute = Attribute::firstOrCreate(
+                ['name' => $name],
+                ['type' => AttributeType::RADIO],
+            );
 
             foreach ($options as $sort => $option) {
                 AttributeOption::firstOrCreate(

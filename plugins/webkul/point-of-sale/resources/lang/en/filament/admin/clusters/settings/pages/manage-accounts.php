@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'Point of Sale Accounting',
+    'title' => 'Accounting',
 
     'form' => [
         'fields' => [

@@ -4,9 +4,7 @@ namespace Webkul\PointOfSale\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\Inventory\Models\Warehouse;
-use Webkul\PointOfSale\Enums\InvoicePaymentMode;
 use Webkul\PointOfSale\Enums\PickingPolicy;
-use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\Security\Models\User;
@@ -27,8 +25,6 @@ class ConfigFactory extends Factory
             'name'                 => fake()->unique()->company().' Shop',
             'tax_display'          => TaxDisplay::SUBTOTAL,
             'picking_policy'       => PickingPolicy::DIRECT,
-            'stock_update_mode'    => StockUpdateMode::REAL_TIME,
-            'invoice_payment_mode' => InvoicePaymentMode::AT_ORDER,
             'is_active'            => true,
             'enable_cash_control'  => true,
             'warehouse_id'         => Warehouse::query()->value('id') ?? Warehouse::factory(),
@@ -44,15 +40,5 @@ class ConfigFactory extends Factory
     public function withoutCashControl(): static
     {
         return $this->state(fn () => ['enable_cash_control' => false]);
-    }
-
-    public function stockAtClosing(): static
-    {
-        return $this->state(fn () => ['stock_update_mode' => StockUpdateMode::AT_CLOSING]);
-    }
-
-    public function invoicedAtClose(): static
-    {
-        return $this->state(fn () => ['invoice_payment_mode' => InvoicePaymentMode::AT_CLOSE]);
     }
 }

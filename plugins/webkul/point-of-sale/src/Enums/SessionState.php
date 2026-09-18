@@ -16,16 +16,6 @@ enum SessionState: string implements HasColor, HasIcon, HasLabel
 
     case CLOSED = 'closed';
 
-    public static function options(): array
-    {
-        return [
-            self::OPENING_CONTROL->value => __('point-of-sale::enums/session-state.opening-control'),
-            self::OPENED->value          => __('point-of-sale::enums/session-state.opened'),
-            self::CLOSING_CONTROL->value => __('point-of-sale::enums/session-state.closing-control'),
-            self::CLOSED->value          => __('point-of-sale::enums/session-state.closed'),
-        ];
-    }
-
     public function getLabel(): string
     {
         return match ($this) {
