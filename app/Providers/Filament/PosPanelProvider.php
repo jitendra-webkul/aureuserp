@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Http\Middleware\ApplyBrandSettings;
 use App\Http\Middleware\SetLocale;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -18,6 +19,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
+use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
 
 class PosPanelProvider extends PanelProvider
 {
@@ -35,6 +38,26 @@ class PosPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(Width::Full)
             ->topNavigation()
+            ->darkMode(false)
+            ->userMenuItems([
+                'cashMovement' => Action::make('cashMovement')
+                    ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.cash-in-out'))
+                    ->icon('heroicon-m-banknotes')
+                    ->visible(fn (): bool => Registers::ownSession() !== null)
+                    ->action(fn ($livewire) => $livewire->dispatch('pos-open-cash-movement')),
+
+                'backOffice' => Action::make('backOffice')
+                    ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.back-office'))
+                    ->icon('heroicon-m-arrow-top-right-on-square')
+                    ->url(fn (): string => ConfigResource::getUrl(panel: 'admin')),
+
+                'closeRegister' => Action::make('closeRegister')
+                    ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.close-register'))
+                    ->icon('heroicon-m-lock-closed')
+                    ->color('danger')
+                    ->visible(fn (): bool => Registers::ownSession() !== null)
+                    ->action(fn ($livewire) => $livewire->dispatch('pos-close-register')),
+            ])
             ->spa()
             ->middleware([
                 EncryptCookies::class,

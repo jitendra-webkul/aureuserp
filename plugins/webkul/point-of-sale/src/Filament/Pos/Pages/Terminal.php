@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Livewire\Attributes\On;
 use Throwable;
 use Webkul\Account\Enums\TypeTaxUse;
 use Webkul\Account\Facades\Tax;
@@ -607,6 +608,19 @@ abstract class Terminal extends Page
         $this->activeOrderId = null;
 
         $this->rememberActiveOrder();
+    }
+
+
+    #[On('pos-open-cash-movement')]
+    public function openCashMovementFromMenu(): void
+    {
+        $this->openCashMovement('in');
+    }
+
+    #[On('pos-close-register')]
+    public function closeRegisterFromMenu(): void
+    {
+        $this->goToClosing();
     }
 
     public function openCashMovement(string $type): void
