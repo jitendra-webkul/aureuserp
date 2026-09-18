@@ -1,12 +1,12 @@
 @php
     $actions ??= null;
-    $tabs ??= null;
+    $nav ??= null;
 @endphp
 
 <header class="pos-header">
-    @if ($tabs)
-        <div class="pos-header__tabs">
-            @include($tabs)
+    @if ($nav)
+        <div class="pos-header__nav">
+            @include($nav)
         </div>
     @endif
 

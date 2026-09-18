@@ -4,6 +4,8 @@
     </div>
 
     <div class="pos-pane pos-pane--order">
+        @include('point-of-sale::filament.pos.partials.tabs')
+
         @if ($screen === 'payment')
             @include('point-of-sale::filament.pos.partials.panes.payment-sidebar')
         @else

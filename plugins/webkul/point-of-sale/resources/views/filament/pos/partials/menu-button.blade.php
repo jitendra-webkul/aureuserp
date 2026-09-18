@@ -9,16 +9,8 @@
     </x-slot>
 
     <x-filament::dropdown.list>
-        <x-filament::dropdown.list.item icon="heroicon-m-receipt-percent" wire:click="goToOrders" :badge="$this->getSessionOrders()->count()">
-            {{ __('point-of-sale::filament/pos/pages/terminal.menu.orders') }}
-        </x-filament::dropdown.list.item>
-
         <x-filament::dropdown.list.item icon="heroicon-m-banknotes" wire:click="openCashMovement('in')">
             {{ __('point-of-sale::filament/pos/pages/terminal.menu.cash-in-out') }}
-        </x-filament::dropdown.list.item>
-
-        <x-filament::dropdown.list.item icon="heroicon-m-plus-circle" wire:click="openProductForm">
-            {{ __('point-of-sale::filament/pos/pages/terminal.menu.create-product') }}
         </x-filament::dropdown.list.item>
 
         <x-filament::dropdown.list.item icon="heroicon-m-arrow-top-right-on-square" :href="$this->backUrl()" tag="a">

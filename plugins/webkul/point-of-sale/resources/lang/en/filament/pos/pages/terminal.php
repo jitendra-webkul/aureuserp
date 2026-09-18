@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'navigation' => [
+        'register' => 'Register',
+        'orders'   => 'Orders',
+    ],
+
     'price-lists' => [
         'label'   => 'Pricelist',
         'heading' => 'Select a pricelist',

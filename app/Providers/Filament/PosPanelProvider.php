@@ -34,8 +34,7 @@ class PosPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->maxContentWidth(Width::Full)
-            ->navigation(false)
-            ->topbar(false)
+            ->topNavigation()
             ->spa()
             ->middleware([
                 EncryptCookies::class,

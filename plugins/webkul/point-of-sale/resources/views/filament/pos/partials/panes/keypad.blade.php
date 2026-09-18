@@ -1,9 +1,7 @@
 @if ($screen === 'products' && ! empty($cart))
-    @unless ($activeLineKey)
-        <p class="pos-hint">
-            {{ __('point-of-sale::filament/pos/pages/terminal.numpad.hint') }}
-        </p>
-    @endunless
+    <p @class(['pos-hint', 'pos-hint--hidden' => $activeLineKey])>
+        {{ __('point-of-sale::filament/pos/pages/terminal.numpad.hint') }}
+    </p>
 
     <div class="pos-actions">
         <button type="button" class="pos-key pos-key--muted" wire:click="openCustomers">

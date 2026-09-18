@@ -6,7 +6,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Throwable;
 use Webkul\PointOfSale\Facades\PointOfSale;
-use Webkul\PointOfSale\Filament\Pos\Pages\Terminal;
+use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 use Webkul\PointOfSale\Models\Config;
 
 class OpenTerminalAction extends Action
@@ -36,7 +36,7 @@ class OpenTerminalAction extends Action
                     return;
                 }
 
-                return redirect()->to(Terminal::getUrl(
+                return redirect()->to(Home::getUrl(
                     ['session' => $session->getKey()],
                     panel: 'pos',
                 ));

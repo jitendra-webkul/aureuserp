@@ -34,11 +34,6 @@
         }"
         class="pos-terminal"
     >
-        @include('point-of-sale::components.header', [
-            'tabs' => 'point-of-sale::filament.pos.partials.tabs',
-            'actions' => 'point-of-sale::filament.pos.partials.menu-button',
-        ])
-
         <div class="mb-3 flex flex-wrap items-center gap-2" x-cloak x-show="! online || pending > 0">
             <x-filament::badge color="warning" icon="heroicon-o-signal-slash" x-show="! online">
                 {{ __('point-of-sale::filament/pos/pages/terminal.offline.offline') }}

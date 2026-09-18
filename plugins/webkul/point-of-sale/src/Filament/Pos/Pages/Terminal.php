@@ -9,6 +9,7 @@ use Filament\Support\Colors\Color;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Throwable;
 use Webkul\Account\Enums\TypeTaxUse;
@@ -43,7 +44,7 @@ use Webkul\Product\Models\ProductAttribute;
 use Webkul\Product\Models\ProductAttributeValue;
 use Webkul\Product\Models\ProductCombination;
 
-class Terminal extends Page
+abstract class Terminal extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
 
@@ -412,6 +413,7 @@ class Terminal extends Page
             ->orderByDesc('id')
             ->get();
     }
+
 
     public function goToOrders(): void
     {

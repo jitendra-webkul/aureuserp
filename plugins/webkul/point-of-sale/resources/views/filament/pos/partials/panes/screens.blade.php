@@ -1,11 +1,21 @@
 @if ($screen === 'products')
-    <x-filament::input.wrapper prefix-icon="heroicon-o-magnifying-glass" class="shrink-0">
-        <x-filament::input
-            type="search"
-            wire:model.live.debounce.400ms="search"
-            placeholder="{{ __('point-of-sale::filament/pos/pages/terminal.catalogue.search') }}"
-        />
-    </x-filament::input.wrapper>
+    <div class="pos-catalogue__toolbar">
+        <x-filament::input.wrapper prefix-icon="heroicon-o-magnifying-glass" class="flex-1">
+            <x-filament::input
+                type="search"
+                wire:model.live.debounce.400ms="search"
+                placeholder="{{ __('point-of-sale::filament/pos/pages/terminal.catalogue.search') }}"
+            />
+        </x-filament::input.wrapper>
+
+        <x-filament::button
+            icon="heroicon-m-plus"
+            wire:click="openProductForm"
+            class="shrink-0"
+        >
+            {{ __('point-of-sale::filament/pos/pages/terminal.menu.create-product') }}
+        </x-filament::button>
+    </div>
 
     @php($categories = $this->getCategories())
 

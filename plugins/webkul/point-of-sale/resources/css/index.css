@@ -77,16 +77,41 @@
     --color-gray-950: var(--gray-950);
 }
 
+.fi-page-header-main-ctn:has(.pos-terminal) {
+    padding-block: 0;
+}
+
+.fi-main-ctn:has(.pos-terminal),
+.fi-main:has(.pos-terminal),
+.fi-page:has(.pos-terminal),
+.fi-page-header-main-ctn:has(.pos-terminal),
+.fi-page-main:has(.pos-terminal),
+.fi-page-content:has(.pos-terminal) {
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Pinned below the topbar: viewport units resolve inconsistently here, so the
+   terminal is anchored to the layout viewport and its panes scroll internally. */
 .pos-terminal {
+    --pos-topbar: 4rem;
+    position: fixed;
+    inset: var(--pos-topbar) 0 0 0;
     display: flex;
-    height: 100%;
     min-height: 0;
     flex-direction: column;
 }
 
 .pos-panes,
 .pos-terminal > .pos-sheet {
-    padding: 0 1rem 1rem;
+    padding: 1rem;
+}
+
+.pos-panes,
+.pos-terminal > .pos-sheet {
+    height: 100%;
+    min-height: 0;
 }
 
 .pos-panes {
@@ -99,6 +124,7 @@
     min-height: 0;
     gap: 1rem;
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
 }
 
 @media (min-width: 1024px) {
@@ -111,6 +137,7 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
     gap: 0.75rem;
 }
 
@@ -409,10 +436,11 @@
     padding: 0.75rem 1rem;
 }
 
-.pos-header__tabs {
+.pos-header__nav {
     min-width: 0;
     flex: 1 1 auto;
 }
+
 
 .dark .pos-header {
     border-bottom-color: rgb(255 255 255 / 0.1);
@@ -1112,4 +1140,26 @@
 
 .pos-line > .min-w-0 {
     flex: 1 1 auto;
+}
+
+.pos-catalogue__toolbar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+
+.pos-hint--hidden {
+    visibility: hidden;
+}
+
+.pos-tabs,
+.pos-hint,
+.pos-actions,
+.pos-keypad,
+.pos-pay,
+.pos-receipt__head,
+.pos-receipt__foot {
+    flex: none;
 }
