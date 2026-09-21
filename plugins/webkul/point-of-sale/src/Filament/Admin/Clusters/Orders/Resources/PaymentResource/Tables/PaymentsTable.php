@@ -30,7 +30,7 @@ class PaymentsTable
                     ->searchable(),
                 TextColumn::make('amount')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/payment.table.columns.amount'))
-                    ->money(fn (Payment $record): ?string => $record->order?->currency?->code)
+                    ->money(fn (Payment $record): ?string => $record->order?->currency?->name)
                     ->sortable(),
                 TextColumn::make('partner.name')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/payment.table.columns.partner'))

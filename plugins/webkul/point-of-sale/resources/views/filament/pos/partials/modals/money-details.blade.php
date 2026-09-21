@@ -4,7 +4,7 @@
     </x-slot>
 
     @foreach ($this->getBills() as $bill)
-        @php($key = (string) (float) $bill->value)
+        @php($key = $bill->id)
 
         <div class="flex items-center gap-2">
             <x-filament::icon-button

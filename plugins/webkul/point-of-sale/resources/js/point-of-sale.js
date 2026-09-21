@@ -1,133 +1,63 @@
-const QUEUE_KEY = 'point-of-sale.pending-orders'
+const stylesheetsReady = (frameDocument) => {
+    const links = [...frameDocument.querySelectorAll('link[rel="stylesheet"]')]
 
-const readQueue = () => {
-    try {
-        return JSON.parse(window.localStorage.getItem(QUEUE_KEY) || '[]')
-    } catch (error) {
-        return []
-    }
-}
-
-const writeQueue = (orders) => {
-    try {
-        window.localStorage.setItem(QUEUE_KEY, JSON.stringify(orders))
-    } catch (error) {
-        return
-    }
-}
-
-const removeFromQueue = (uuids) => {
-    if (! uuids.length) {
-        return
+    if (! links.length) {
+        return Promise.resolve()
     }
 
-    writeQueue(readQueue().filter((order) => ! uuids.includes(order.uuid)))
+    return Promise.race([
+        Promise.all(links.map((link) => link.sheet
+            ? Promise.resolve()
+            : new Promise((resolve) => {
+                link.addEventListener('load', resolve, { once: true })
+                link.addEventListener('error', resolve, { once: true })
+            }))),
+        new Promise((resolve) => window.setTimeout(resolve, 3000)),
+    ])
 }
 
-const markFailed = (errors) => {
-    if (! errors.length) {
-        return
-    }
+window.pointOfSaleReceipt = {
+    async print(target) {
+        const source = typeof target === 'string' ? document.querySelector(target) : target
 
-    const messages = new Map(errors.filter((error) => error.uuid).map((error) => [error.uuid, error.message]))
-
-    writeQueue(readQueue().map((order) => messages.has(order.uuid)
-        ? { ...order, attempts: (order.attempts ?? 0) + 1, last_error: messages.get(order.uuid) }
-        : order))
-}
-
-const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
-
-window.pointOfSaleQueue = {
-    key: QUEUE_KEY,
-
-    all() {
-        return readQueue()
-    },
-
-    size() {
-        return readQueue().length
-    },
-
-    failures() {
-        return readQueue().filter((order) => order.last_error)
-    },
-
-    remove(uuid) {
-        removeFromQueue([uuid])
-
-        return this.size()
-    },
-
-    push(order) {
-        const orders = readQueue()
-
-        if (orders.some((queued) => queued.uuid === order.uuid)) {
-            return this.size()
+        if (! source) {
+            return
         }
 
-        orders.push(order)
+        const receipt = source.cloneNode(true)
 
-        writeQueue(orders)
+        receipt.classList.remove('hidden')
 
-        return orders.length
-    },
+        const frame = document.createElement('iframe')
 
-    clear() {
-        writeQueue([])
-    },
+        frame.setAttribute('aria-hidden', 'true')
+        frame.setAttribute('title', 'receipt')
+        frame.style.cssText = 'position:fixed;inset-block-start:0;inset-inline-start:-10000px;width:210mm;height:297mm;border:0'
 
-    async flush(endpoint) {
-        const orders = readQueue()
+        document.body.appendChild(frame)
 
-        if (! orders.length || ! navigator.onLine) {
-            return { synced: 0, failed: 0, pending: orders.length }
+        const frameDocument = frame.contentDocument
+
+        frameDocument.open()
+        frameDocument.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>')
+        frameDocument.close()
+
+        for (const node of document.querySelectorAll('link[rel="stylesheet"], style')) {
+            frameDocument.head.appendChild(node.cloneNode(true))
         }
 
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                },
-                body: JSON.stringify({ orders }),
-            })
+        const overrides = frameDocument.createElement('style')
 
-            if (! response.ok) {
-                return { synced: 0, failed: 0, pending: orders.length }
-            }
+        overrides.textContent = '@page{margin:6mm}html,body{margin:0;padding:0;background:#fff;color:#000;color-scheme:light}.pos-receipt{display:block;margin:0;color:#000;background:#fff}.pos-receipt *{color:inherit;background:transparent;border-color:currentColor}'
 
-            const payload = await response.json()
+        frameDocument.head.appendChild(overrides)
+        frameDocument.body.appendChild(receipt)
 
-            const synced = (payload.data ?? []).map((order) => order.uuid)
+        await stylesheetsReady(frameDocument)
 
-            const errors = (payload.errors ?? []).filter((error) => error.uuid)
+        frame.contentWindow.focus()
+        frame.contentWindow.print()
 
-            const failed = errors.map((error) => error.uuid)
-
-            removeFromQueue(synced)
-
-            markFailed(errors)
-
-            window.dispatchEvent(new CustomEvent('point-of-sale:queue-flushed', {
-                detail: { synced: synced.length, failed: failed.length, pending: this.size() },
-            }))
-
-            return { synced: synced.length, failed: failed.length, pending: this.size() }
-        } catch (error) {
-            return { synced: 0, failed: 0, pending: orders.length }
-        }
-    },
-
-    watch(endpoint, intervalMs = 15000) {
-        const flush = () => this.flush(endpoint)
-
-        window.addEventListener('online', flush)
-
-        window.setInterval(flush, intervalMs)
-
-        flush()
+        window.setTimeout(() => frame.remove(), 1000)
     },
 }

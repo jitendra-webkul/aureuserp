@@ -9,7 +9,7 @@ use Webkul\PluginManager\Package;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
-use Webkul\PointOfSale\Filament\Pos\Pages\Terminal;
+use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 use Webkul\PointOfSale\Models\Order;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
@@ -51,13 +51,13 @@ beforeEach(function () {
 it('renders the terminal for a live session', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    Livewire::test(Terminal::class, ['session' => $session])->assertOk();
+    Livewire::test(Home::class, ['session' => $session])->assertOk();
 });
 
 it('shows the opening control until the drawer is counted', function () {
     $session = PointOfSale::openSession($this->config);
 
-    Livewire::test(Terminal::class, ['session' => $session])
+    Livewire::test(Home::class, ['session' => $session])
         ->assertOk()
         ->call('confirmOpening')
         ->assertOk();
@@ -68,11 +68,11 @@ it('shows the opening control until the drawer is counted', function () {
 it('counts the drawer through the coins and notes dialog', function () {
     $session = PointOfSale::openSession($this->config);
 
-    Livewire::test(Terminal::class, ['session' => $session])
+    Livewire::test(Home::class, ['session' => $session])
         ->call('openMoneyDetails')
         ->assertDispatched('open-modal', id: 'pos-money-details')
-        ->call('stepMoneyDetail', '50', 1)
-        ->call('stepMoneyDetail', '200', 2)
+        ->call('stepMoneyDetail', (string) PosHelper::bill(50)->id, 1)
+        ->call('stepMoneyDetail', (string) PosHelper::bill(200)->id, 2)
         ->call('confirmMoneyDetails')
         ->assertDispatched('close-modal', id: 'pos-money-details')
         ->assertSet('openingCash', 450.0);
@@ -81,9 +81,9 @@ it('counts the drawer through the coins and notes dialog', function () {
 it('records the counted drawer as the opening balance', function () {
     $session = PointOfSale::openSession($this->config);
 
-    Livewire::test(Terminal::class, ['session' => $session])
+    Livewire::test(Home::class, ['session' => $session])
         ->call('openMoneyDetails')
-        ->call('stepMoneyDetail', '100', 1)
+        ->call('stepMoneyDetail', (string) PosHelper::bill(100)->id, 1)
         ->call('confirmMoneyDetails')
         ->call('confirmOpening');
 
@@ -91,42 +91,41 @@ it('records the counted drawer as the opening balance', function () {
         ->and($session->opening_notes)->toContain('100.00');
 });
 
-it('sells a product from the terminal', function () {
+it('hands the catalogue to the client through the boot payload', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    Livewire::test(Terminal::class, ['session' => $session])
-        ->call('addProduct', $this->product->id)
-        ->call('goToPayment')
-        ->call('addPayment', $this->cash->id)
-        ->call('validateOrder')
-        ->assertSet('screen', 'receipt');
+    $payload = Livewire::test(Home::class, ['session' => $session])
+        ->assertOk()
+        ->instance()
+        ->bootPayload();
 
-    $order = Order::withoutGlobalScopes()->where('session_id', $session->id)->first();
-
-    expect($order)->not->toBeNull()
-        ->and($order->state)->toBe(OrderState::PAID)
-        ->and((float) $order->amount_total)->toBe(25.0);
+    expect(collect($payload['products'])->pluck('id'))->toContain($this->product->id)
+        ->and($payload['session']['id'])->toBe($session->id)
+        ->and($payload['config']['id'])->toBe($session->config_id);
 });
 
-it('filters the catalogue by point of sale category', function () {
+it('records a cash movement from the terminal', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    $category = PosHelper::posCategory();
+    Livewire::test(Home::class, ['session' => $session])
+        ->call('openCashMovement', 'in')
+        ->assertDispatched('open-modal', id: 'pos-cash-movement')
+        ->set('cashMovementAmount', 40.0)
+        ->set('cashMovementReason', 'Float top up')
+        ->call('recordCashMovement')
+        ->assertDispatched('close-modal', id: 'pos-cash-movement');
 
-    $category->products()->attach($this->product);
-
-    Livewire::test(Terminal::class, ['session' => $session])
-        ->call('selectCategory', $category->id)
-        ->assertSet('selectedCategoryId', $category->id);
+    expect((float) $session->refresh()->cashMovements()->sum('amount'))->toBe(40.0);
 });
 
-it('edits a cart line through the numpad', function () {
+it('counts the drawer again when closing the register', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    Livewire::test(Terminal::class, ['session' => $session])
-        ->call('addProduct', $this->product->id)
-        ->call('setNumpadMode', 'qty')
-        ->call('pressNumpad', '3')
-        ->assertSet('numpadMode', 'qty')
-        ->assertSet('cart.'.$this->product->id.'.qty', 3.0);
+    Livewire::test(Home::class, ['session' => $session])
+        ->call('goToClosing')
+        ->assertDispatched('open-modal', id: 'pos-closing')
+        ->call('openMoneyDetails', 'closing')
+        ->call('stepMoneyDetail', (string) PosHelper::bill(100)->id, 2)
+        ->call('confirmMoneyDetails')
+        ->assertSet('closingCash', 200.0);
 });

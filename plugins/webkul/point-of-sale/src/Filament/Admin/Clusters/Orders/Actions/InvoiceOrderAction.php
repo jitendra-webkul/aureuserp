@@ -6,6 +6,7 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Throwable;
+use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Order;
 
@@ -45,6 +46,8 @@ class InvoiceOrderAction extends Action
                     $this->halt(shouldRollBackDatabaseTransaction: true);
                 }
             })
-            ->visible(fn (Order $record): bool => $record->state->isSettled() && ! $record->is_invoiced);
+            ->visible(fn (Order $record): bool => $record->state->isSettled()
+                && ! $record->is_invoiced
+                && $record->session?->state !== SessionState::CLOSED);
     }
 }

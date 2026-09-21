@@ -78,15 +78,12 @@
     --color-gray-950: var(--gray-950);
 }
 
-/* Filament owns these wrappers, so the terminal cannot style them from its own
-   markup: it takes the page out of flow and the wrappers must not keep their
-   flow height or the page scrolls behind it. */
-.fi-page:has(.pos-terminal),
-.fi-page-header-main-ctn:has(.pos-terminal),
-.fi-page-main:has(.pos-terminal),
-.fi-page-content:has(.pos-terminal),
-.fi-main:has(.pos-terminal),
-.fi-main-ctn:has(.pos-terminal) {
+.fi-page:has(.pos-screen),
+.fi-page-header-main-ctn:has(.pos-screen),
+.fi-page-main:has(.pos-screen),
+.fi-page-content:has(.pos-screen),
+.fi-main:has(.pos-screen),
+.fi-main-ctn:has(.pos-screen) {
     height: 0;
     min-height: 0;
     padding-block: 0;

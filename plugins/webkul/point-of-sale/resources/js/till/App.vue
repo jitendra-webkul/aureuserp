@@ -20,7 +20,7 @@ const state = till.state
 </script>
 
 <template>
-    <div class="pos-terminal fixed inset-x-0 bottom-0 top-16 flex min-h-0 flex-col">
+    <div class="pos-screen fixed inset-x-0 bottom-0 top-16 flex min-h-0 flex-col">
         <StatusBar />
 
         <div class="grid h-full min-h-0 flex-auto grid-cols-[1fr] grid-rows-[minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[1fr_minmax(22rem,32%)]">

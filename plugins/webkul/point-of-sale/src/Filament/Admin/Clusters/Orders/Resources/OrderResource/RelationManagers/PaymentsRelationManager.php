@@ -28,7 +28,7 @@ class PaymentsRelationManager extends RelationManager
                     ->searchable(),
                 TextColumn::make('amount')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order/relation-managers/payments.table.columns.amount'))
-                    ->money(fn (Payment $record): ?string => $record->order?->currency?->code),
+                    ->money(fn (Payment $record): ?string => $record->order?->currency?->name),
                 IconColumn::make('is_change')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order/relation-managers/payments.table.columns.is-change'))
                     ->boolean(),

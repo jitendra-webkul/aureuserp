@@ -8,6 +8,7 @@ use Webkul\Account\Enums\MoveType;
 use Webkul\Account\Facades\Account as AccountFacade;
 use Webkul\Account\Models\Move;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
@@ -28,6 +29,12 @@ class PosInvoicer
             if (! $order->partner_id) {
                 throw new PosConfigurationException(
                     __('point-of-sale::system.invoicer.customer-required', ['order' => $order->reference])
+                );
+            }
+
+            if ($order->session?->state === SessionState::CLOSED) {
+                throw new PosConfigurationException(
+                    __('point-of-sale::system.invoicer.session-closed', ['order' => $order->reference])
                 );
             }
 

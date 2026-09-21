@@ -58,7 +58,7 @@ class SessionInfolist
                                     ->placeholder('-')
                                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.infolist.section.general.entries.starting-balance'))
                                     ->icon('heroicon-o-banknotes')
-                                    ->money(fn (Session $record): ?string => $record->currency?->code),
+                                    ->money(fn (Session $record): ?string => $record->currency?->name),
                             ])->columns(2),
                     ]),
             ]);

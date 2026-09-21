@@ -53,6 +53,61 @@ class OrderCalculator
         return $order->refresh();
     }
 
+    /**
+     * @return array<int, array{id: int, name: string, amount: float, base: float}>
+     */
+    public function taxBreakdown(Order $order): array
+    {
+        $order->loadMissing(['lines.product', 'lines.taxes', 'fiscalPosition', 'partner', 'currency']);
+
+        $groups = [];
+
+        foreach ($order->lines as $line) {
+            $taxes = $this->fiscalPositions->mapTaxes($order->fiscalPosition, $line->taxes);
+
+            if ($taxes->isEmpty()) {
+                continue;
+            }
+
+            $priceUnit = float_compare((float) $line->discount, 0, precisionDigits: 2) > 0
+                ? (float) $line->price_unit * (1 - ((float) $line->discount / 100))
+                : (float) $line->price_unit;
+
+            $result = Tax::computeAll(
+                $taxes,
+                $priceUnit,
+                $order->currency,
+                (float) $line->qty,
+                $line->product,
+                $order->partner,
+            );
+
+            $counted = [];
+
+            foreach ($result['taxes'] as $entry) {
+                $key = $entry['id'];
+
+                $groups[$key] ??= ['id' => $entry['id'], 'name' => $entry['name'], 'amount' => 0.0, 'base' => 0.0];
+                $groups[$key]['amount'] += (float) $entry['amount'];
+
+                if (! isset($counted[$key])) {
+                    $groups[$key]['base'] += (float) $entry['base'];
+
+                    $counted[$key] = true;
+                }
+            }
+        }
+
+        return collect($groups)
+            ->map(fn (array $group): array => [
+                ...$group,
+                'amount' => float_round($group['amount'], precisionDigits: 4),
+                'base'   => float_round($group['base'], precisionDigits: 4),
+            ])
+            ->values()
+            ->all();
+    }
+
     public function roundingDifference(Order $order, float $amountTotal): float
     {
         $config = $order->config;

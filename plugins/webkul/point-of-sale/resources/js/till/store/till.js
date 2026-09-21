@@ -27,6 +27,7 @@ export class Till {
         this.boot = boot
         this.syncEndpoint = syncEndpoint
         this.accessToken = accessToken
+        this.deferredEvictions = []
 
         this.master = createRecordSets(
             Object.fromEntries(Object.entries(MASTER_INDEXES).map(([name, indexes]) => [name, { key: 'id', indexes }])),
@@ -162,12 +163,12 @@ export class Till {
         for (const order of restored) {
             order.tracking_number ??= this.nextTrackingNumber()
 
-            order.pos_reference ||= `${this.config.code ?? 'POS'}/${order.tracking_number}`
+            order.pos_reference ||= this.nextReference(this.state.sequenceNumber)
 
             if (seen.has(order.pos_reference)) {
                 order.tracking_number = this.nextTrackingNumber()
 
-                order.pos_reference = `${this.config.code ?? 'POS'}/${order.tracking_number}`
+                order.pos_reference = this.nextReference(this.state.sequenceNumber)
             }
 
             seen.add(order.pos_reference)
@@ -184,7 +185,7 @@ export class Till {
         return reactive({
             uuid: order.uuid ?? uuidv4(),
             serverId: order.id ?? null,
-            pos_reference: order.pos_reference || `${this.config.code ?? 'POS'}/${trackingNumber}`,
+            pos_reference: order.pos_reference || this.nextReference(this.state.sequenceNumber),
             tracking_number: trackingNumber,
             partner_id: order.partner_id ?? null,
             state: order.state ?? 'draft',
@@ -292,12 +293,40 @@ export class Till {
         await this.database.write('pos.payment', payments)
     }
 
+    flushDeferredEvictions() {
+        const deferred = this.deferredEvictions
+
+        if (!deferred.length) {
+            return
+        }
+
+        this.deferredEvictions = []
+
+        this.evictSynced(deferred)
+    }
+
     evictSynced(uuids) {
         if (!uuids.length) {
             return
         }
 
-        const evictable = new Set(uuids)
+        const showingReceipt = this.state.screen === 'receipt'
+
+        const evictable = new Set(uuids.filter((uuid) => {
+            if (showingReceipt && uuid === this.state.activeOrderUuid) {
+                if (!this.deferredEvictions.includes(uuid)) {
+                    this.deferredEvictions.push(uuid)
+                }
+
+                return false
+            }
+
+            return true
+        }))
+
+        if (!evictable.size) {
+            return
+        }
 
         const removedLines = []
         const removedPayments = []
@@ -604,6 +633,14 @@ export class Till {
         return this.state.orders.filter((order) => order.state === 'draft')
     }
 
+    nextReference(sequence) {
+        const session = String(this.boot.session.id).padStart(5, '0')
+
+        const login = String(this.boot.session.login_number ?? 0).padStart(3, '0')
+
+        return `${session}-${login}-${String(sequence).padStart(4, '0')}`
+    }
+
     nextTrackingNumber() {
         this.state.sequenceNumber += 1
 
@@ -611,6 +648,8 @@ export class Till {
     }
 
     newOrder() {
+        this.flushDeferredEvictions()
+
         const order = this.hydrateServerOrder({
             uuid: uuidv4(),
             lines: [],
@@ -633,6 +672,8 @@ export class Till {
         this.state.activeOrderUuid = uuid
         this.state.activeLineUuid = null
         this.state.screen = 'products'
+
+        this.flushDeferredEvictions()
     }
 
     discardOrder(uuid) {
@@ -1109,11 +1150,15 @@ export class Till {
             uuid: uuidv4(),
             order_uuid: order.uuid,
             payment_method_id: paymentMethodId,
-            amount: amount === null ? Math.max(totals.due, 0) : amount,
+            amount: amount === null ? 0 : amount,
             is_change: false,
         })
 
         order.payments.push(payment)
+
+        if (amount === null) {
+            payment.amount = Math.max(this.orderTotals(order).due, 0)
+        }
 
         this.selectPayment(payment.uuid)
 
@@ -1218,8 +1263,6 @@ export class Till {
     }
 
     orderPayload(order) {
-        const totals = this.orderTotals(order)
-
         const payments = order.payments
             .filter((payment) => !payment.is_change)
             .map((payment) => ({
@@ -1228,24 +1271,13 @@ export class Till {
                 amount: payment.amount,
             }))
 
-        if (!floatIsZero(totals.change, { precisionRounding: this.currency.rounding })) {
-            const cashMethod = this.master.payment_methods.find((method) => method.is_cash_count)
-
-            if (cashMethod) {
-                payments.push({
-                    uuid: `${order.uuid}-change`,
-                    payment_method_id: cashMethod.id,
-                    amount: -totals.change,
-                    is_change: true,
-                })
-            }
-        }
+        const totals = this.orderTotals(order)
 
         const partnerDraft = this.partnerDraftFor(order)
 
         return {
             uuid: order.uuid,
-            pos_reference: order.pos_reference,
+            reference: order.pos_reference,
             tracking_number: order.tracking_number,
             config_id: this.config.id,
             session_id: this.boot.session.id,

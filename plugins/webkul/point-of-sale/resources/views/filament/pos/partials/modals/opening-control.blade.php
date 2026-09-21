@@ -1,4 +1,9 @@
 @if ($this->needsOpeningControl())
+    <div
+        x-data
+        x-init="$nextTick(() => $dispatch('open-modal', { id: 'pos-opening-control' }))"
+    ></div>
+
     <x-filament::modal
             id="pos-opening-control"
             width="md"
@@ -50,5 +55,11 @@
                 ></textarea>
             </x-filament::input.wrapper>
         </div>
+
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="confirmOpening" size="lg">
+                {{ __('point-of-sale::filament/pos/pages/terminal.opening-control.confirm') }}
+            </x-filament::button>
+        </x-slot>
         </x-filament::modal>
 @endif

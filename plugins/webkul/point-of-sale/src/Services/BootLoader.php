@@ -12,6 +12,7 @@ use Webkul\Account\Models\Product as AccountProduct;
 use Webkul\Account\Models\Tax as TaxModel;
 use Webkul\Account\Settings\TaxesSettings;
 use Webkul\Inventory\Enums\ProductTracking;
+use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Models\Bill;
@@ -68,6 +69,10 @@ class BootLoader
         return [
             'id'                              => $company->id,
             'name'                            => $company->name,
+            'logo'                            => $company->logo ? Storage::url($company->logo) : null,
+            'phone'                           => $company->phone,
+            'email'                           => $company->email,
+            'website'                         => $company->website,
             'currency_id'                     => $company->currency_id,
             'tax_calculation_rounding_method' => (new TaxesSettings)->tax_calculation_rounding_method,
         ];
@@ -160,9 +165,11 @@ class BootLoader
             'state'                       => $session->state?->value,
             'config_id'                   => $session->config_id,
             'user_id'                     => $session->user_id,
-            'opened_at'                   => $session->opened_at?->toIso8601String(),
-            'cash_register_balance_start' => (float) $session->cash_register_balance_start,
+            'user_name'                   => $session->user?->name,
+            'opened_at'                   => $session->started_at?->toIso8601String(),
+            'cash_register_balance_start' => (float) $session->cash_balance_start,
             'sequence_number'             => (int) ($session->order_count ?? 0),
+            'login_number'                => (int) ($session->login_number ?? 0),
         ];
     }
 
@@ -255,15 +262,39 @@ class BootLoader
 
     protected function stock(Config $config): array
     {
+        $locationIds = $this->stockLocationIds($config);
+
+        if ($locationIds === []) {
+            return [];
+        }
+
         return ProductQuantity::withoutGlobalScopes()
-            ->when(
-                $config->operationType?->source_location_id,
-                fn ($query, $locationId) => $query->where('location_id', $locationId),
-            )
+            ->whereIn('location_id', $locationIds)
             ->selectRaw('product_id, SUM(quantity - reserved_quantity) AS free_qty')
             ->groupBy('product_id')
             ->pluck('free_qty', 'product_id')
             ->map(fn ($quantity): float => (float) $quantity)
+            ->all();
+    }
+
+    protected function stockLocationIds(Config $config): array
+    {
+        $sourceId = $config->operationType?->source_location_id
+            ?? $config->warehouse?->lot_stock_location_id;
+
+        if (! $sourceId) {
+            return [];
+        }
+
+        $parentPath = Location::withoutGlobalScopes()->whereKey($sourceId)->value('parent_path');
+
+        if (! $parentPath) {
+            return [(int) $sourceId];
+        }
+
+        return Location::withoutGlobalScopes()
+            ->where('parent_path', 'like', $parentPath.'%')
+            ->pluck('id')
             ->all();
     }
 
@@ -534,12 +565,12 @@ class BootLoader
             ->map(fn (Order $order): array => [
                 'id'            => $order->id,
                 'uuid'          => $order->uuid,
-                'pos_reference' => $order->pos_reference,
+                'pos_reference' => $order->reference,
                 'partner_id'    => $order->partner_id,
                 'state'         => $order->state?->value,
                 'note'          => $order->note,
                 'is_takeaway'   => (bool) $order->is_takeaway,
-                'to_invoice'    => (bool) $order->to_invoice,
+                'to_invoice'    => (bool) $order->is_to_invoice,
                 'lines'         => $order->lines->map(fn ($line): array => [
                     'uuid'       => $line->uuid,
                     'product_id' => $line->product_id,

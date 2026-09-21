@@ -40,6 +40,8 @@ abstract class Terminal extends Page
 
     public array $moneyDetails = [];
 
+    public string $moneyDetailsTarget = 'opening';
+
     public string $cashMovementType = 'in';
 
     public ?float $cashMovementAmount = null;
@@ -113,22 +115,27 @@ abstract class Terminal extends Page
             ->get();
     }
 
-    public function openMoneyDetails(): void
+    public function openMoneyDetails(string $target = 'opening'): void
     {
+        $this->moneyDetailsTarget = $target;
+
         $this->dispatch('open-modal', id: 'pos-money-details');
     }
 
-    public function stepMoneyDetail(string $value, int $step): void
+    public function stepMoneyDetail(int|string $billId, int $step): void
     {
-        $quantity = (int) ($this->moneyDetails[$value] ?? 0) + $step;
+        $quantity = (int) ($this->moneyDetails[(string) $billId] ?? 0) + $step;
 
-        $this->moneyDetails[$value] = max(0, $quantity);
+        $this->moneyDetails[(string) $billId] = max(0, $quantity);
     }
 
     public function moneyDetailsTotal(): float
     {
+        $bills = $this->getBills()->keyBy('id');
+
         return float_round(collect($this->moneyDetails)->reduce(
-            fn (float $total, $quantity, $value): float => $total + ((float) $value * (int) $quantity),
+            fn (float $total, $quantity, $billId): float => $total
+                + ((float) ($bills->get((int) $billId)?->value ?? 0) * (int) $quantity),
             0.0,
         ), precisionDigits: 2);
     }
@@ -137,9 +144,15 @@ abstract class Terminal extends Page
     {
         $total = $this->moneyDetailsTotal();
 
-        $this->openingCash = $total;
+        if ($this->moneyDetailsTarget === 'closing') {
+            $this->closingCash = $total;
 
-        $this->openingNote = $this->moneyDetailsNote($total);
+            $this->closingNote = $this->moneyDetailsNote($total);
+        } else {
+            $this->openingCash = $total;
+
+            $this->openingNote = $this->moneyDetailsNote($total);
+        }
 
         $this->dispatch('close-modal', id: 'pos-money-details');
     }
@@ -153,7 +166,7 @@ abstract class Terminal extends Page
         $note = __('point-of-sale::filament/pos/pages/terminal.money-details.heading')."\n";
 
         foreach ($this->getBills() as $bill) {
-            $quantity = (int) ($this->moneyDetails[(string) (float) $bill->value] ?? 0);
+            $quantity = (int) ($this->moneyDetails[(string) $bill->id] ?? 0);
 
             if ($quantity === 0) {
                 continue;

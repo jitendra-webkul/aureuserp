@@ -19,6 +19,7 @@ use Webkul\Inventory\Models\Warehouse as InventoryWarehouse;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Facades\PointOfSale;
+use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Floor;
@@ -167,6 +168,14 @@ class PosHelper
         }
 
         return $config->refresh();
+    }
+
+    public static function bill(float $value): Bill
+    {
+        return Bill::query()->firstOrCreate(
+            ['name' => number_format($value, 2, '.', '')],
+            ['value' => $value, 'is_for_all_configs' => true],
+        );
     }
 
     public static function openSession(InventoryWarehouse $warehouse, float $cashBalanceStart = 0.0): Session

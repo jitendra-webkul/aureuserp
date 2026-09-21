@@ -2,7 +2,6 @@
 
 namespace Webkul\PointOfSale\Services;
 
-use Illuminate\Support\Collection;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Models\Lot;
 use Webkul\Inventory\Models\Move;
@@ -36,21 +35,14 @@ class LotResolver
                 'uom_id'                  => $line->uom_id ?? $line->product?->uom_id,
                 'lot_id'                  => $lot?->id,
                 'lot_name'                => $orderLineLot->lot_name,
-                'quantity'                => $quantity,
+                'qty'                     => $quantity,
+                'uom_qty'                 => $quantity,
                 'source_location_id'      => $move->source_location_id,
                 'destination_location_id' => $move->destination_location_id,
                 'operation_id'            => $move->operation_id,
                 'company_id'              => $move->company_id,
             ]);
         });
-    }
-
-    public function existingLots(OrderLine $line): Collection
-    {
-        return Lot::query()
-            ->where('product_id', $line->product_id)
-            ->where(owned_by_company($line->company_id))
-            ->get();
     }
 
     protected function resolveLot(Order $order, OrderLine $line, OrderLineLot $orderLineLot): ?Lot

@@ -52,9 +52,9 @@ class OrdersTable
                     ->placeholder('—'),
                 TextColumn::make('amount_total')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.amount-total'))
-                    ->money(fn (Order $record): ?string => $record->currency?->code)
+                    ->money(fn (Order $record): ?string => $record->currency?->name)
                     ->alignEnd()
-                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->code))
+                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->name))
                     ->sortable(),
                 TextColumn::make('state')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.state'))
@@ -68,7 +68,7 @@ class OrdersTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('amount_paid')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.amount-paid'))
-                    ->money(fn (Order $record): ?string => $record->currency?->code)
+                    ->money(fn (Order $record): ?string => $record->currency?->name)
                     ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('has_failed_operation')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.has-failed-operation'))

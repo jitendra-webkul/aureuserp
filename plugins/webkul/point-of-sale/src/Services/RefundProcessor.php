@@ -160,6 +160,7 @@ class RefundProcessor
             'price_type'             => $line->price_type,
             'discount'               => $line->discount,
             'unit_cost'              => $line->unit_cost,
+            'is_cost_computed'       => (bool) $line->is_cost_computed,
             'customer_note'          => $line->customer_note,
             'refunded_order_line_id' => $line->id,
             'route_id'               => $line->route_id,

@@ -112,7 +112,7 @@
                     icon="heroicon-o-banknotes"
                     color="gray"
                     size="lg"
-                    wire:click="openMoneyDetails"
+                    wire:click="openMoneyDetails('closing')"
                     :label="__('point-of-sale::filament/pos/pages/terminal.money-details.label')"
                 />
             </div>

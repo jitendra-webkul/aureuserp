@@ -47,21 +47,21 @@ class SessionsTable
                     ->sortable(),
                 TextColumn::make('cash_balance_start')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.table.columns.cash-balance-start'))
-                    ->money(fn (Session $record): ?string => $record->currency?->code)
+                    ->money(fn (Session $record): ?string => $record->currency?->name)
                     ->alignEnd()
-                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->code)),
+                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->name)),
                 TextColumn::make('cash_balance_end_real')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.table.columns.cash-balance-end-real'))
-                    ->money(fn (Session $record): ?string => $record->currency?->code)
+                    ->money(fn (Session $record): ?string => $record->currency?->name)
                     ->placeholder('—')
                     ->alignEnd()
-                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->code)),
+                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->name)),
                 TextColumn::make('cash_balance_end')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.table.columns.cash-balance-end'))
-                    ->money(fn (Session $record): ?string => $record->currency?->code)
+                    ->money(fn (Session $record): ?string => $record->currency?->name)
                     ->placeholder('—')
                     ->alignEnd()
-                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->code)),
+                    ->summarize(Sum::make()->money(fn (): ?string => Company::first()?->currency?->name)),
                 TextColumn::make('state')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.table.columns.state'))
                     ->badge(),
@@ -70,11 +70,11 @@ class SessionsTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('total_payments_amount')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.table.columns.total-payments-amount'))
-                    ->money(fn (Session $record): ?string => $record->currency?->code)
+                    ->money(fn (Session $record): ?string => $record->currency?->name)
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('cash_difference')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/session.table.columns.cash-difference'))
-                    ->money(fn (Session $record): ?string => $record->currency?->code)
+                    ->money(fn (Session $record): ?string => $record->currency?->name)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_rescue')

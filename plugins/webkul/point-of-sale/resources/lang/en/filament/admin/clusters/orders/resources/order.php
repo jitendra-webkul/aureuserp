@@ -39,6 +39,15 @@ return [
                 'actions' => [
                     'open-product' => 'Open product',
                 ],
+
+                'summary' => [
+                    'untaxed'  => 'Untaxed Amount',
+                    'taxes'    => 'Taxes',
+                    'rounding' => 'Rounding',
+                    'total'    => 'Total',
+                    'paid'     => 'Paid',
+                    'change'   => 'Change',
+                ],
             ],
 
             'payments' => [

@@ -129,7 +129,7 @@ it('computes identical totals in php and javascript for every tax shape', functi
 
         $actual = $javascript[$index];
 
-        expect($actual)->not->toHaveKey('error', "scenario [{$scenario['name']}] threw in javascript");
+        expect($actual['error'] ?? null)->toBeNull("scenario [{$scenario['name']}] threw in javascript");
 
         expect(abs($actual['total_excluded'] - $expected['total_excluded']))
             ->toBeLessThanOrEqual($tolerance, "total_excluded mismatch in [{$scenario['name']}]");
@@ -158,7 +158,7 @@ it('computes identical per-tax amounts in php and javascript', function () {
             ->all();
 
         foreach ($expected['per_tax'] as $taxId => $amount) {
-            expect($actual)->toHaveKey((string) $taxId, "tax {$taxId} missing in javascript for [{$scenario['name']}]");
+            expect($actual)->toHaveKey((string) $taxId, message: "tax {$taxId} missing in javascript for [{$scenario['name']}]");
 
             expect(abs($actual[$taxId] - $amount))
                 ->toBeLessThanOrEqual($tolerance, "tax {$taxId} amount mismatch in [{$scenario['name']}]");
@@ -189,7 +189,7 @@ it('rounds floats identically in php and javascript', function () {
     foreach ($cases as $index => $case) {
         $expected = float_round($case[0], precisionRounding: $case[1], roundingMethod: $case[2]);
 
-        expect($javascript[$index]['value'])
+        expect((float) $javascript[$index]['value'])
             ->toBe($expected, "float_round mismatch for {$case[0]} @ {$case[1]} {$case[2]}");
     }
 });

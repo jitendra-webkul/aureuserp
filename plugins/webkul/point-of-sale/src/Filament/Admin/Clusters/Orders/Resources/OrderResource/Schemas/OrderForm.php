@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Webkul\Field\Filament\Forms\Components\ProgressStepper as FormProgressStepper;
@@ -169,6 +170,9 @@ class OrderForm
                                             ->openUrlInNewTab()
                                             ->visible(fn (array $arguments, Get $get): bool => filled($get('lines')[$arguments['item']]['product_id'] ?? null)),
                                     ]),
+
+                                View::make('point-of-sale::filament.admin.clusters.orders.resources.order.summary')
+                                    ->columnSpanFull(),
                             ]),
 
                         Tab::make(__($prefix.'tabs.payments.title'))

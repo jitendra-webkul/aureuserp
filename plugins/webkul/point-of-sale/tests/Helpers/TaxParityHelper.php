@@ -12,8 +12,6 @@ use Webkul\Support\Models\Company;
 
 class TaxParityHelper
 {
-    protected static array $created = [];
-
     public static function company(): Company
     {
         return Company::query()->firstOrFail();

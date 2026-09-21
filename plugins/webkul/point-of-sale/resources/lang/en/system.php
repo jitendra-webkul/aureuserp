@@ -121,6 +121,7 @@ return [
     'invoicer' => [
         'customer-required' => 'Order :order needs a customer before it can be invoiced.',
         'journal-missing'   => 'Set an invoice journal on the point of sale.',
+        'session-closed'    => 'Order :order belongs to a closed session and is already accounted for in the closing entry.',
     ],
 
     'session-workflow' => [

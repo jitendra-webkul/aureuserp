@@ -82,6 +82,7 @@ class BillSplitter
             'price_type'        => $line->price_type,
             'discount'          => $line->discount,
             'unit_cost'         => $line->unit_cost,
+            'is_cost_computed'  => (bool) $line->is_cost_computed,
             'customer_note'     => $line->customer_note,
         ]);
 

@@ -249,7 +249,7 @@ class ConfigForm
                 Select::make('journal_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.journal'))
                     ->helperText(static::label('sections.configurations.tabs.accounting.fields.journal-helper-text'))
-                    ->options(fn (Get $get): array => static::scoped(Journal::query()->where('type', JournalType::SALE), $get)->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::scoped(Journal::query()->where('type', JournalType::GENERAL), $get)->pluck('name', 'id')->all())
                     ->searchable()
                     ->native(false),
 
@@ -258,7 +258,6 @@ class ConfigForm
                     ->options(fn (Get $get): array => static::scoped(Journal::query()->where('type', JournalType::SALE), $get)->pluck('name', 'id')->all())
                     ->searchable()
                     ->native(false),
-
 
                 Toggle::make('is_closing_entry_by_product')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.is-closing-entry-by-product'))

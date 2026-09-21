@@ -41,7 +41,7 @@ class ConfigsTable
                     ->sortable(),
                 TextColumn::make('lastClosedSession.cash_balance_end_real')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.columns.balance'))
-                    ->money(fn (Config $record): ?string => $record->currency?->code)
+                    ->money(fn (Config $record): ?string => $record->currency?->name)
                     ->placeholder('—'),
                 TextColumn::make('warehouse.name')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.columns.warehouse'))
