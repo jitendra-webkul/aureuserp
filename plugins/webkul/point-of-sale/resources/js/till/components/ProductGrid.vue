@@ -64,15 +64,15 @@ onBeforeUnmount(() => {
             <input
                 v-model="state.search"
                 type="search"
-                placeholder="Search products"
+                :placeholder="till.t('catalogue.search')"
                 class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
             >
 
             <button
                 type="button"
                 class="flex min-h-10 flex-none items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
-                title="Create product"
-                aria-label="Create product"
+                :title="till.t('catalogue.create-product')"
+                :aria-label="till.t('catalogue.create-product')"
                 @click="till.openProductForm()"
             >
                 <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <div v-if="categories.length && till.config.show_category_images" class="flex flex-none gap-2 overflow-x-auto pb-1 pl-0.5 pr-0.5 pt-0.5">
+        <div v-if="categories.length && till.config.show_category_images" class="flex flex-none gap-2 overflow-x-auto pb-1 ps-0.5 pe-0.5 pt-0.5">
             <button
                 v-for="category in categories"
                 :key="category.id"
@@ -124,24 +124,24 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <div class="grid min-h-0 flex-auto auto-rows-min gap-3 overflow-y-auto pb-0.5 pl-0.5 pr-1 pt-0.5 [grid-template-columns:repeat(auto-fill,minmax(9rem,1fr))]">
+        <div class="grid min-h-0 flex-auto auto-rows-min gap-3 overflow-y-auto pb-0.5 ps-0.5 pe-1 pt-0.5 [grid-template-columns:repeat(auto-fill,minmax(9rem,1fr))]">
             <div
                 v-for="product in products"
                 :key="product.id"
-                class="relative flex flex-col overflow-hidden rounded-xl border bg-white text-left transition-colors dark:bg-gray-900"
+                class="relative flex flex-col overflow-hidden rounded-xl border bg-white text-start transition-colors dark:bg-gray-900"
                 :class="cartQuantities.get(product.id)
                     ? 'border-primary-500 ring-1 ring-primary-500 dark:border-primary-400 dark:ring-primary-400'
                     : 'border-gray-200 hover:border-primary-400 dark:border-gray-700'"
             >
                 <button
                     type="button"
-                    class="absolute right-0 top-0 z-[1] flex size-7 items-center justify-center rounded-bl-lg text-white transition-colors"
+                    class="absolute end-0 top-0 z-[1] flex size-7 items-center justify-center rounded-es-lg text-white transition-colors"
                     :class="isDepleted(product)
                         ? 'bg-danger-600 hover:bg-danger-700'
                         : 'bg-gray-950/45 hover:bg-gray-950/70'"
                     :aria-label="isDepleted(product)
-                        ? `Product info for ${product.name}, none on hand`
-                        : `Product info for ${product.name}`"
+                        ? till.t('catalogue.info-depleted', { product: product.name })
+                        : till.t('catalogue.info', { product: product.name })"
                     @click.stop="till.openProductInfo(product.id)"
                 >
                     <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -151,7 +151,7 @@ onBeforeUnmount(() => {
 
                 <button
                     type="button"
-                    class="flex min-h-0 flex-auto flex-col text-left"
+                    class="flex min-h-0 flex-auto flex-col text-start"
                     @click="till.addProduct(product.id)"
                 >
                     <span

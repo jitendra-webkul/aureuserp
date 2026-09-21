@@ -52,7 +52,7 @@ function print() {
 
                     <p class="text-lg font-bold">{{ company.name }}</p>
 
-                    <p v-if="company.phone" class="text-xs">Tel: {{ company.phone }}</p>
+                    <p v-if="company.phone" class="text-xs">{{ till.t('receipt.phone') }} {{ company.phone }}</p>
 
                     <p v-if="company.email" class="text-xs">{{ company.email }}</p>
 
@@ -64,7 +64,7 @@ function print() {
                 </p>
 
                 <p v-if="till.boot.session.user_name" class="mt-2 text-center text-xs font-semibold">
-                    Served by {{ till.boot.session.user_name }}
+                    {{ till.t('receipt.served-by', { cashier: till.boot.session.user_name }) }}
                 </p>
 
                 <p v-if="order?.tracking_number" class="text-center text-3xl font-light leading-tight">
@@ -83,7 +83,7 @@ function print() {
                         </div>
 
                         <div class="text-xs tabular-nums">
-                            {{ line.qty }} &times; {{ till.money(line.price_unit) }}<template v-if="uomName(line)"> / {{ uomName(line) }}</template><template v-if="line.discount"> &middot; &minus;{{ line.discount }}%</template>
+                            {{ line.qty }} &times; {{ till.money(line.price_unit) }}<template v-if="uomName(line)"> / {{ uomName(line) }}</template><template v-if="line.discount"> &middot; &minus;{{ till.t('cart.discount', { percentage: line.discount }) }}</template>
                         </div>
 
                         <div v-if="line.customer_note" class="text-xs italic">{{ line.customer_note }}</div>
@@ -93,7 +93,7 @@ function print() {
                 <div class="my-2 border-t border-dashed border-gray-300 dark:border-gray-700"></div>
 
                 <div class="flex items-center justify-between text-sm">
-                    <span>Untaxed amount</span>
+                    <span>{{ till.t('receipt.untaxed') }}</span>
                     <span class="tabular-nums">{{ till.money(totals.subtotal) }}</span>
                 </div>
 
@@ -107,14 +107,14 @@ function print() {
                 </div>
 
                 <div v-if="totals.rounding" class="flex items-center justify-between text-sm">
-                    <span>Rounding</span>
+                    <span>{{ till.t('receipt.rounding') }}</span>
                     <span class="tabular-nums">{{ till.money(totals.rounding) }}</span>
                 </div>
 
                 <div class="my-2 border-t border-dashed border-gray-300 dark:border-gray-700"></div>
 
                 <div class="flex items-center justify-between text-lg font-bold">
-                    <span>TOTAL</span>
+                    <span>{{ till.t('receipt.total') }}</span>
                     <span class="tabular-nums">{{ till.money(totals.total) }}</span>
                 </div>
 
@@ -128,7 +128,7 @@ function print() {
                 </div>
 
                 <div v-if="totals.change > 0" class="flex items-center justify-between text-sm font-semibold">
-                    <span>Change</span>
+                    <span>{{ till.t('receipt.change') }}</span>
                     <span class="tabular-nums">{{ till.money(totals.change) }}</span>
                 </div>
 
@@ -137,7 +137,7 @@ function print() {
                 </p>
 
                 <div class="mt-3 text-center text-xs">
-                    <p>Order {{ order?.pos_reference }}</p>
+                    <p>{{ till.t('receipt.order', { order: order?.pos_reference }) }}</p>
                     <p>{{ orderedAt }}</p>
                 </div>
             </div>
@@ -146,10 +146,10 @@ function print() {
         <div class="flex flex-none gap-2">
             <button
                 type="button"
-                class="flex min-h-12 flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                class="flex min-h-12 flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                 @click="print()"
             >
-                Print
+                {{ till.t('common.print') }}
             </button>
 
             <button
@@ -157,7 +157,7 @@ function print() {
                 class="flex min-h-12 flex-2 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700"
                 @click="till.newOrder()"
             >
-                New order
+                {{ till.t('receipt.new-order') }}
             </button>
         </div>
     </div>

@@ -29,43 +29,43 @@ const info = computed(() => (state.productInfoId ? till.productInfo() : null))
                 class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                 @click="till.closeProductInfo()"
             >
-                Close
+                {{ till.t('common.close') }}
             </button>
         </div>
 
         <div v-if="info" class="flex min-h-0 flex-auto flex-col gap-5 overflow-y-auto p-4">
             <div v-if="info.is_storable" class="flex flex-col gap-1">
-                <p class="text-sm font-semibold text-gray-950 dark:text-white">Inventory</p>
+                <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ till.t('product-info.inventory') }}</p>
 
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     <span
                         class="font-mono font-semibold tabular-nums"
                         :class="info.available <= 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white'"
                     >{{ info.available.toFixed(2) }}</span>
-                    on hand at this register
+                    {{ till.t('product-info.on-hand') }}
                 </p>
 
                 <p v-if="info.available <= 0" class="text-xs text-gray-500 dark:text-gray-400">
-                    Selling is still allowed; stock will go negative and the back office will show the shortfall.
+                    {{ till.t('product-info.negative-warning') }}
                 </p>
             </div>
 
             <div class="grid gap-5 sm:grid-cols-2">
                 <div class="flex flex-col gap-2">
-                    <p class="text-sm font-semibold text-gray-950 dark:text-white">Financials</p>
+                    <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ till.t('product-info.financials') }}</p>
 
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Price</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.price') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.price) }}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Cost</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.cost') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.cost) }}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Margin</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.margin') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">
                             {{ till.money(info.margin) }} ({{ info.margin_ratio.toFixed(2) }}%)
                         </span>
@@ -73,20 +73,20 @@ const info = computed(() => (state.productInfoId ? till.productInfo() : null))
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <p class="text-sm font-semibold text-gray-950 dark:text-white">In this order</p>
+                    <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ till.t('product-info.order') }}</p>
 
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Quantity</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.quantity') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ +info.quantity.toFixed(3) }}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Total price</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.total-price') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.total_price) }}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">Total margin</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.total-margin') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.total_margin) }}</span>
                     </div>
                 </div>
@@ -97,7 +97,7 @@ const info = computed(() => (state.productInfoId ? till.productInfo() : null))
                 class="flex min-h-12 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700"
                 @click="till.addProduct(info.id); till.closeProductInfo()"
             >
-                Add to order
+                {{ till.t('product-info.add') }}
             </button>
         </div>
     </TillModal>

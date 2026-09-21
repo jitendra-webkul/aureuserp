@@ -33,7 +33,7 @@ function productImage(productId) {
                 v-for="method in methods"
                 :key="method.id"
                 type="button"
-                class="flex min-h-14 flex-none items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 text-left text-base font-medium text-gray-950 transition-colors hover:border-primary-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                class="flex min-h-14 flex-none items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 text-start text-base font-medium text-gray-950 transition-colors hover:border-primary-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 @click="till.addPayment(method.id)"
             >
                 <svg class="size-6 flex-none text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -46,18 +46,18 @@ function productImage(productId) {
 
         <div v-else class="min-h-[clamp(4rem,12vh,7rem)] flex-auto overflow-y-auto">
             <p v-if="!order?.lines.length" class="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                Scan or tap a product to start
+                {{ till.t('cart.empty.description') }}
             </p>
 
             <div
                 v-for="line in order?.lines ?? []"
                 :key="line.uuid"
-                class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-left transition-colors dark:border-gray-800"
+                class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-start transition-colors dark:border-gray-800"
                 :class="state.activeLineUuid === line.uuid ? 'bg-primary-50 dark:bg-primary-500/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
             >
                 <button
                     type="button"
-                    class="flex min-w-0 flex-1 items-start gap-3 text-left"
+                    class="flex min-w-0 flex-1 items-start gap-3 text-start"
                     @click="till.selectLine(line.uuid)"
                 >
                 <span
@@ -83,7 +83,7 @@ function productImage(productId) {
 
                     <span class="block font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
                         {{ line.qty }} &times; {{ till.money(line.price_unit) }}
-                        <template v-if="line.discount"> &middot; &minus;{{ line.discount }}% discount</template>
+                        <template v-if="line.discount"> &middot; &minus;{{ till.t('cart.discount', { percentage: line.discount }) }}</template>
                     </span>
 
                     <span v-if="line.note" class="mt-0.5 flex flex-wrap items-center gap-1">
@@ -107,7 +107,7 @@ function productImage(productId) {
                 <button
                     type="button"
                     class="flex size-9 flex-none items-center justify-center rounded-lg text-gray-400 transition active:bg-danger-100 active:text-danger-700 hover:bg-danger-50 hover:text-danger-600 dark:hover:bg-danger-500/10 dark:hover:text-danger-400 dark:active:bg-danger-500/20"
-                    :aria-label="`Remove ${productName(line.product_id)}`"
+                    :aria-label="till.t('cart.remove', { product: productName(line.product_id) })"
                     @click.stop="till.removeLine(line.uuid)"
                 >
                     <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -119,22 +119,22 @@ function productImage(productId) {
 
         <div class="flex-none border-t border-gray-100 p-[clamp(0.5rem,1.2vh,0.75rem)] dark:border-gray-800">
             <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Subtotal</span>
+                <span>{{ till.t('cart.subtotal') }}</span>
                 <span class="font-mono tabular-nums">{{ till.money(totals.subtotal) }}</span>
             </div>
 
             <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Tax</span>
+                <span>{{ till.t('cart.tax') }}</span>
                 <span class="font-mono tabular-nums">{{ till.money(totals.tax) }}</span>
             </div>
 
             <div v-if="totals.rounding" class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Rounding</span>
+                <span>{{ till.t('cart.rounding') }}</span>
                 <span class="font-mono tabular-nums">{{ till.money(totals.rounding) }}</span>
             </div>
 
             <div class="mt-1.5 flex items-center justify-between border-t border-gray-100 pt-1.5 text-lg font-semibold text-gray-950 dark:border-gray-800 dark:text-white">
-                <span>Total</span>
+                <span>{{ till.t('cart.total') }}</span>
                 <span class="font-mono tabular-nums">{{ till.money(totals.total) }}</span>
             </div>
         </div>

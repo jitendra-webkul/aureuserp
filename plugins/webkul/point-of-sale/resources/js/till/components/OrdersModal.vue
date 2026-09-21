@@ -29,7 +29,7 @@ function discard(uuid) {
                 <input
                     v-model="state.ordersSearch"
                     type="search"
-                    placeholder="Search orders by name, reference or product"
+                    :placeholder="till.t('parked.search')"
                     class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
 
@@ -38,7 +38,7 @@ function discard(uuid) {
                     class="flex-none rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
                     @click="till.newOrder(); till.closeOrders()"
                 >
-                    New
+                    {{ till.t('common.new') }}
                 </button>
 
                 <button
@@ -46,7 +46,7 @@ function discard(uuid) {
                     class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                     @click="till.closeOrders()"
                 >
-                    Close
+                    {{ till.t('common.close') }}
                 </button>
             </div>
 
@@ -65,7 +65,7 @@ function discard(uuid) {
                         </p>
 
                         <p class="truncate font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
-                            {{ till.orderQuantity(order) }} items
+                            {{ till.choice('parked.items', till.orderQuantity(order)) }}
                         </p>
                     </div>
 
@@ -78,7 +78,7 @@ function discard(uuid) {
                             v-if="state.activeOrderUuid === order.uuid"
                             class="rounded-md bg-primary-100 px-2 py-1 text-xs font-medium text-primary-700 dark:bg-primary-500/20 dark:text-primary-300"
                         >
-                            Open
+                            {{ till.t('common.open') }}
                         </span>
 
                         <button
@@ -87,14 +87,14 @@ function discard(uuid) {
                             class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                             @click="resume(order.uuid)"
                         >
-                            Resume
+                            {{ till.t('common.resume') }}
                         </button>
 
                         <button
                             v-if="confirming !== order.uuid"
                             type="button"
                             class="flex size-8 items-center justify-center rounded-lg text-gray-400 hover:bg-danger-50 hover:text-danger-600 dark:hover:bg-danger-500/10 dark:hover:text-danger-400"
-                            aria-label="Discard order"
+                            :aria-label="till.t('parked.discard')"
                             @click="confirming = order.uuid"
                         >
                             <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -108,13 +108,13 @@ function discard(uuid) {
                             class="rounded-lg bg-danger-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-danger-700"
                             @click="discard(order.uuid)"
                         >
-                            Confirm
+                            {{ till.t('common.confirm') }}
                         </button>
                     </div>
                 </div>
 
                 <p v-if="!results.length" class="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No order matches that search.
+                    {{ till.t('parked.no-match') }}
                 </p>
             </div>
     </TillModal>

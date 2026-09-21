@@ -34,7 +34,7 @@ const rows = [
                 class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-base font-medium transition-colors"
                 :class="order?.partner_id
                     ? 'border-primary-500 bg-primary-50 text-primary-800 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
                 @click="till.openCustomers()"
             >
                 <svg class="size-5 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -42,7 +42,7 @@ const rows = [
                 </svg>
 
                 <span class="truncate">
-                    {{ order?.partner_id ? (till.master.partners.get(order.partner_id)?.name ?? 'Customer') : 'Customer' }}
+                    {{ (order?.partner_id ? till.master.partners.get(order.partner_id)?.name : null) ?? till.t('actions.customer') }}
                 </span>
             </button>
 
@@ -51,17 +51,17 @@ const rows = [
                 class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border px-2 text-base font-medium transition-colors"
                 :class="order?.to_invoice
                     ? 'border-primary-500 bg-primary-50 text-primary-800 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
                 @click="till.toggleToInvoice()"
             >
                 <svg class="size-5 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path d="M3.75 3A1.75 1.75 0 0 0 2 4.75v10.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0 0 14 15.25V9.664a2.25 2.25 0 0 0-.659-1.591l-4.414-4.414A2.25 2.25 0 0 0 7.336 3H3.75Z" />
                 </svg>
 
-                Invoice
+                {{ till.t('payment.invoice') }}
 
                 <span
-                    class="ml-1 flex size-4 flex-none items-center justify-center rounded border"
+                    class="ms-1 flex size-4 flex-none items-center justify-center rounded border"
                     :class="order?.to_invoice ? 'border-primary-500 bg-primary-600 text-white' : 'border-gray-300 dark:border-gray-600'"
                 >
                     <svg v-if="order?.to_invoice" class="size-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -89,10 +89,10 @@ const rows = [
         <div class="flex gap-2">
             <button
                 type="button"
-                class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                 @click="till.goToProducts()"
             >
-                Back
+                {{ till.t('common.back') }}
             </button>
 
             <button
@@ -101,7 +101,7 @@ const rows = [
                 :disabled="!canValidate"
                 @click="till.validate()"
             >
-                Validate
+                {{ till.t('payment.validate') }}
             </button>
         </div>
     </div>

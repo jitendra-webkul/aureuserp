@@ -212,10 +212,12 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
 
     public function registerCustomAssets(): void
     {
-        FilamentAsset::register([
-            VersionedCss::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.css'),
-            VersionedJs::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.js'),
-        ], 'point-of-sale');
+        $this->app->booted(function (): void {
+            FilamentAsset::register([
+                VersionedCss::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.css'),
+                VersionedJs::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.js'),
+            ], 'point-of-sale');
+        });
     }
 
     protected function registerModelObservers(): void

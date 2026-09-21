@@ -38,7 +38,6 @@ class PosPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(Width::Full)
             ->topNavigation()
-            ->darkMode(false)
             ->userMenuItems([
                 'cashMovement' => Action::make('cashMovement')
                     ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.cash-in-out'))

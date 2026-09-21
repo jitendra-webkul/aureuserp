@@ -28,7 +28,7 @@ function methodName(id) {
 
         <div class="flex min-h-0 flex-auto flex-col justify-center gap-2 overflow-y-auto">
             <p v-if="!order?.payments.length" class="rounded-xl border border-gray-200 bg-white p-6 text-center text-base text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-                Please select a payment method
+                {{ till.t('payment.select-method') }}
             </p>
 
             <template v-else>
@@ -55,12 +55,12 @@ function methodName(id) {
                 >
                     <button
                         type="button"
-                        class="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                        class="flex min-w-0 flex-1 items-center justify-between gap-3 text-start"
                         @click="till.selectPayment(payment.uuid)"
                     >
                         <span class="truncate text-base font-medium text-gray-950 dark:text-white">
                             {{ methodName(payment.payment_method_id) }}
-                            <span v-if="payment.is_change" class="text-xs font-normal text-gray-400">change</span>
+                            <span v-if="payment.is_change" class="text-xs font-normal text-gray-400">{{ till.t('payment.change') }}</span>
                         </span>
 
                         <span class="flex-none font-mono text-lg font-semibold tabular-nums text-gray-950 dark:text-white">
@@ -71,7 +71,7 @@ function methodName(id) {
                     <button
                         type="button"
                         class="flex size-9 flex-none items-center justify-center rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10"
-                        :aria-label="`Remove ${methodName(payment.payment_method_id)} payment`"
+                        :aria-label="till.t('payment.remove', { method: methodName(payment.payment_method_id) })"
                         @click="till.removePayment(payment.uuid)"
                     >
                         <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

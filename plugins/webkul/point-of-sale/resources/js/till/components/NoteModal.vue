@@ -37,7 +37,7 @@ function chipStyle(note) {
                 class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                 @click="till.closeNotes()"
             >
-                Close
+                {{ till.t('common.close') }}
             </button>
         </div>
 
@@ -52,7 +52,7 @@ function chipStyle(note) {
                         ? ''
                         : (till.isNoteSelected(note.name)
                             ? 'border-primary-600 bg-primary-50 text-primary-700 dark:border-primary-500 dark:bg-primary-500/15 dark:text-primary-300'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300')"
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:hover:border-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300')"
                     :style="note.color ? chipStyle(note) : null"
                     @click="till.toggleNote(note.id)"
                 >
@@ -67,7 +67,7 @@ function chipStyle(note) {
             <textarea
                 v-model="state.noteDraft"
                 rows="4"
-                placeholder="Add a note for this line"
+                :placeholder="till.t('notes.placeholder')"
                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
             ></textarea>
 
@@ -77,7 +77,7 @@ function chipStyle(note) {
                     class="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                     @click="state.noteDraft = ''"
                 >
-                    Clear
+                    {{ till.t('common.clear') }}
                 </button>
 
                 <button
@@ -85,7 +85,7 @@ function chipStyle(note) {
                     class="flex min-h-11 flex-2 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700"
                     @click="till.applyNote()"
                 >
-                    Apply
+                    {{ till.t('common.apply') }}
                 </button>
             </div>
         </div>

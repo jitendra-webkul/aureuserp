@@ -371,10 +371,68 @@ export class Till {
         return this.boot.company.tax_calculation_rounding_method ?? 'round_per_line'
     }
 
+    get locale() {
+        return this.boot.locale ?? { code: 'en', direction: 'ltr' }
+    }
+
+    get isRtl() {
+        return this.locale.direction === 'rtl'
+    }
+
+    t(key, replacements = {}) {
+        let line = key.split('.').reduce(
+            (branch, segment) => (branch && typeof branch === 'object' ? branch[segment] : undefined),
+            this.boot.translations ?? {},
+        )
+
+        if (typeof line !== 'string') {
+            return key
+        }
+
+        for (const [token, value] of Object.entries(replacements)) {
+            line = line.replaceAll(`:${token}`, value)
+        }
+
+        return line
+    }
+
+    choice(key, count, replacements = {}) {
+        const line = this.t(key, { ...replacements, count })
+
+        if (!line.includes('|')) {
+            return line
+        }
+
+        const segments = line.split('|').map((segment) => segment.trim())
+
+        for (const segment of segments) {
+            const exact = segment.match(/^\{(-?\d+)\}\s*(.*)$/s)
+
+            if (exact && Number(exact[1]) === count) {
+                return exact[2]
+            }
+
+            const range = segment.match(/^\[(-?\d+|\*),\s*(-?\d+|\*)\]\s*(.*)$/s)
+
+            if (range) {
+                const from = range[1] === '*' ? -Infinity : Number(range[1])
+                const to = range[2] === '*' ? Infinity : Number(range[2])
+
+                if (count >= from && count <= to) {
+                    return range[3]
+                }
+            }
+        }
+
+        const plain = segments.filter((segment) => !/^(\{|\[)/.test(segment))
+
+        return count === 1 ? (plain[0] ?? line) : (plain[1] ?? plain[0] ?? line)
+    }
+
     money(amount) {
         const currency = this.currency
 
-        const formatted = new Intl.NumberFormat(document.documentElement.lang || 'en', {
+        const formatted = new Intl.NumberFormat(this.locale.code || document.documentElement.lang || 'en', {
             minimumFractionDigits: currency.decimal_places ?? 2,
             maximumFractionDigits: currency.decimal_places ?? 2,
         }).format(amount ?? 0)
@@ -475,7 +533,7 @@ export class Till {
     }
 
     get noteLabel() {
-        return this.config.is_restaurant ? 'Kitchen note' : 'Internal note'
+        return this.t(this.config.is_restaurant ? 'notes.kitchen' : 'notes.internal')
     }
 
     openNotes() {
@@ -570,7 +628,7 @@ export class Till {
             const body = await response.json().catch(() => ({}))
 
             if (!response.ok) {
-                this.state.productError = body.message ?? `Could not create the product (${response.status})`
+                this.state.productError = body.message ?? this.t('product-form.error.failed', { status: response.status })
 
                 return null
             }
@@ -592,7 +650,7 @@ export class Till {
         } catch (error) {
             this.state.productError = navigator.onLine
                 ? error.message
-                : 'Creating a product needs a connection.'
+                : this.t('product-form.error.offline')
 
             return null
         } finally {

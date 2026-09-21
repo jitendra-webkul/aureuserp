@@ -51,45 +51,45 @@ function toggleTax(id) {
 <template>
     <TillModal :open="state.productModalOpen" width="max-w-xl" @close="till.closeProductForm()">
         <div class="flex flex-none items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <p class="text-base font-semibold text-gray-950 dark:text-white">New product</p>
+            <p class="text-base font-semibold text-gray-950 dark:text-white">{{ till.t('product-form.heading') }}</p>
 
             <button
                 type="button"
                 class="rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                 @click="till.closeProductForm()"
             >
-                Close
+                {{ till.t('common.close') }}
             </button>
         </div>
 
         <div class="flex min-h-0 flex-auto flex-col gap-4 overflow-y-auto p-4">
             <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Product name</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.name') }}</span>
 
                 <input
                     v-model="draft.name"
                     type="text"
-                    placeholder="e.g. Cheese Burger"
+                    :placeholder="till.t('product-form.name-placeholder')"
                     class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
             </label>
 
             <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Barcode</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.barcode') }}</span>
 
                 <input
                     v-model="draft.barcode"
                     type="text"
-                    placeholder="e.g. 1234567890"
+                    :placeholder="till.t('product-form.barcode-placeholder')"
                     class="rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
             </label>
 
             <div class="flex flex-col gap-2">
                 <label class="flex items-center gap-2">
-                    <input v-model="draft.is_storable" type="checkbox" class="size-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                    <input v-model="draft.is_storable" type="checkbox" class="size-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
 
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Track inventory</span>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.tracking') }}</span>
                 </label>
 
                 <select
@@ -104,7 +104,7 @@ function toggleTax(id) {
             </div>
 
             <label class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Sales price</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.price') }}</span>
 
                 <input
                     v-model.number="draft.price"
@@ -116,7 +116,7 @@ function toggleTax(id) {
             </label>
 
             <div v-if="taxes.length" class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Sales taxes</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.taxes') }}</span>
 
                 <div class="flex flex-wrap items-center gap-2">
                     <button
@@ -133,19 +133,19 @@ function toggleTax(id) {
                     </button>
 
                     <span v-if="inclusiveTotal !== null" class="text-xs text-gray-500 dark:text-gray-400">
-                        (= {{ till.money(inclusiveTotal) }} incl. taxes)
+                        {{ till.t('product-form.tax-included', { amount: till.money(inclusiveTotal) }) }}
                     </span>
                 </div>
             </div>
 
             <label v-if="categories.length" class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">POS category</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.category') }}</span>
 
                 <select
                     v-model="draft.category_id"
                     class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
-                    <option :value="null">Unsaleable</option>
+                    <option :value="null">{{ till.t('product-form.unsaleable') }}</option>
 
                     <option v-for="category in categories" :key="category.id" :value="category.id">
                         {{ category.name }}
@@ -163,16 +163,16 @@ function toggleTax(id) {
                     class="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                     @click="till.closeProductForm()"
                 >
-                    Discard
+                    {{ till.t('common.discard') }}
                 </button>
 
                 <button
                     type="button"
-                    class="flex min-h-11 flex-2 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400"
+                    class="flex min-h-11 flex-2 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400"
                     :disabled="!draft.name.trim() || state.productSaving"
                     @click="till.createProduct(draft)"
                 >
-                    {{ state.productSaving ? 'Saving…' : 'Save' }}
+                    {{ till.t(state.productSaving ? 'common.saving' : 'common.save') }}
                 </button>
             </div>
         </div>

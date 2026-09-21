@@ -52,14 +52,14 @@
 
             <div class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                 <table class="w-full text-sm">
-                    <thead class="sticky top-0 z-[1] bg-gray-700 text-left text-xs uppercase tracking-wide text-white dark:bg-gray-800">
+                    <thead class="sticky top-0 z-[1] bg-gray-700 text-start text-xs uppercase tracking-wide text-white dark:bg-gray-800">
                         <tr>
                             <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.date') }}</th>
                             <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.receipt') }}</th>
                             <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.order') }}</th>
                             <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.customer') }}</th>
                             <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.cashier') }}</th>
-                            <th class="px-3 py-2 text-right font-medium">{{ __($prefix.'columns.total') }}</th>
+                            <th class="px-3 py-2 text-end font-medium">{{ __($prefix.'columns.total') }}</th>
                             <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.status') }}</th>
                         </tr>
                     </thead>
@@ -89,7 +89,7 @@
 
                                 <td class="max-w-32 truncate px-3 py-2">{{ $order->user?->name }}</td>
 
-                                <td class="whitespace-nowrap px-3 py-2 text-right font-mono tabular-nums font-semibold">
+                                <td class="whitespace-nowrap px-3 py-2 text-end font-mono tabular-nums font-semibold">
                                     {{ $this->money((float) $order->amount_total, $order) }}
                                 </td>
 
@@ -164,7 +164,7 @@
                                 <button
                                     type="button"
                                     wire:key="line-{{ $line->getKey() }}"
-                                    class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-left transition-colors dark:border-gray-800"
+                                    class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-start transition-colors dark:border-gray-800"
                                     :class="active === {{ $line->getKey() }}
                                         ? 'bg-primary-50 dark:bg-primary-500/10'
                                         : (quantities[{{ $line->getKey() }}] ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : 'opacity-50')"
@@ -224,7 +224,7 @@
                         <a
                             href="{{ $this->detailsUrl($selected) }}"
                             target="_blank"
-                            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
+                            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
                         >
                             <x-filament::icon icon="heroicon-o-pencil-square" class="size-5 flex-none" />
 
@@ -233,7 +233,7 @@
 
                         <button
                             type="button"
-                            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
+                            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
                             @disabled(! $this->canInvoice($selected))
                             wire:click="mountAction('invoiceOrder', { order: {{ $selected->getKey() }} })"
                         >
@@ -242,7 +242,7 @@
                             {{ __($prefix.'actions.invoice.label') }}
                         </button>
 
-                        <button type="button" class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600" x-on:click="window.pointOfSaleReceipt.print('#pos-receipt')">
+                        <button type="button" class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600" x-on:click="window.pointOfSaleReceipt.print('#pos-receipt')">
                             <x-filament::icon icon="heroicon-o-printer" class="size-5 flex-none" />
 
                             {{ __($prefix.'actions.print') }}

@@ -38,8 +38,11 @@ window.pointOfSaleReceipt = {
 
         const frameDocument = frame.contentDocument
 
+        const dir = document.documentElement.dir || 'ltr'
+        const lang = document.documentElement.lang || 'en'
+
         frameDocument.open()
-        frameDocument.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>')
+        frameDocument.write(`<!doctype html><html dir="${dir}" lang="${lang}"><head><meta charset="utf-8"></head><body></body></html>`)
         frameDocument.close()
 
         for (const node of document.querySelectorAll('link[rel="stylesheet"], style')) {

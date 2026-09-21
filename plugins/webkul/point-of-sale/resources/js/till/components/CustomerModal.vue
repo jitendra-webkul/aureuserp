@@ -45,7 +45,7 @@ function saveCustomer() {
                 <input
                     v-model="state.customerSearch"
                     type="search"
-                    placeholder="Search customers"
+                    :placeholder="till.t('customers.search')"
                     class="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
 
@@ -62,7 +62,7 @@ function saveCustomer() {
                     class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                     @click="till.closeCustomers()"
                 >
-                    Close
+                    {{ till.t('common.close') }}
                 </button>
             </div>
 
@@ -70,40 +70,40 @@ function saveCustomer() {
                 <input
                     v-model="draft.name"
                     type="text"
-                    placeholder="Name"
+                    :placeholder="till.t('customers.create.fields.name')"
                     class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
 
                 <input
                     v-model="draft.email"
                     type="email"
-                    placeholder="Email"
+                    :placeholder="till.t('customers.create.fields.email')"
                     class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
 
                 <input
                     v-model="draft.phone"
                     type="tel"
-                    placeholder="Phone"
+                    :placeholder="till.t('customers.create.fields.phone')"
                     class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 >
 
                 <div class="flex gap-2">
                     <button
                         type="button"
-                        class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+                        class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
                         @click="creating = false"
                     >
-                        Cancel
+                        {{ till.t('common.cancel') }}
                     </button>
 
                     <button
                         type="button"
-                        class="flex-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400"
+                        class="flex-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400"
                         :disabled="!draft.name.trim()"
                         @click="saveCustomer()"
                     >
-                        Save
+                        {{ till.t('common.save') }}
                     </button>
                 </div>
             </div>
@@ -112,23 +112,23 @@ function saveCustomer() {
                 <button
                     v-if="order?.partner_id"
                     type="button"
-                    class="flex w-full items-center gap-2 border-b border-gray-100 px-4 py-2.5 text-left text-sm font-medium text-danger-600 hover:bg-danger-50 dark:border-gray-800 dark:text-danger-400 dark:hover:bg-danger-500/10"
+                    class="flex w-full items-center gap-2 border-b border-gray-100 px-4 py-2.5 text-start text-sm font-medium text-danger-600 hover:bg-danger-50 dark:border-gray-800 dark:text-danger-400 dark:hover:bg-danger-500/10"
                     @click="choose(null)"
                 >
-                    Remove customer
+                    {{ till.t('customers.clear') }}
                 </button>
 
                 <button
                     v-for="partner in results"
                     :key="partner.id"
                     type="button"
-                    class="flex w-full items-start justify-between gap-3 border-b border-gray-100 px-4 py-2.5 text-left hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
+                    class="flex w-full items-start justify-between gap-3 border-b border-gray-100 px-4 py-2.5 text-start hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
                     @click="choose(partner.id)"
                 >
                     <span class="min-w-0 flex-1">
                         <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">
                             {{ partner.name }}
-                            <span v-if="partner.is_local" class="ml-1 rounded bg-warning-100 px-1 py-0.5 text-[0.625rem] font-medium uppercase text-warning-700 dark:bg-warning-500/20 dark:text-warning-300">new</span>
+                            <span v-if="partner.is_local" class="ms-1 rounded bg-warning-100 px-1 py-0.5 text-[0.625rem] font-medium uppercase text-warning-700 dark:bg-warning-500/20 dark:text-warning-300">{{ till.t('customers.badge-new') }}</span>
                         </span>
                         <span class="block truncate text-xs text-gray-500 dark:text-gray-400">
                             {{ [partner.street1, partner.city, partner.zip].filter(Boolean).join(', ') }}
@@ -141,7 +141,7 @@ function saveCustomer() {
                 </button>
 
                 <p v-if="!results.length" class="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No customer matches that search. Only customers loaded at session start are searchable offline.
+                    {{ till.t('customers.no-match') }}
                 </p>
             </div>
     </TillModal>

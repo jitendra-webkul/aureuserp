@@ -1,17 +1,33 @@
 <?php
 
 return [
+    'common' => [
+        'close'   => 'Close',
+        'cancel'  => 'Cancel',
+        'save'    => 'Save',
+        'saving'  => 'Saving…',
+        'discard' => 'Discard',
+        'clear'   => 'Clear',
+        'apply'   => 'Apply',
+        'open'    => 'Open',
+        'resume'  => 'Resume',
+        'confirm' => 'Confirm',
+        'back'    => 'Back',
+        'print'   => 'Print',
+        'new'     => 'New',
+        'more'    => '+ :count more',
+    ],
+
     'parked' => [
         'walk-in'         => 'Walk-in',
         'items'           => '{1} :count item|[2,*] :count items',
         'count'           => ':count parked',
         'view-all'        => 'View all',
         'heading'         => 'Parked orders',
-        'search'          => 'Search by customer or table',
+        'search'          => 'Search orders by name, reference or product',
+        'no-match'        => 'No order matches that search.',
         'parked-ago'      => 'parked :time',
-        'open'            => 'Open',
-        'resume'          => 'Resume',
-        'discard'         => 'Discard',
+        'discard'         => 'Discard order',
         'discard-confirm' => [
             'heading'     => 'Discard parked order?',
             'description' => 'Its lines will be lost. This cannot be undone.',
@@ -23,17 +39,6 @@ return [
         ],
     ],
 
-    'navigation' => [
-        'register' => 'Register',
-        'orders'   => 'Orders',
-    ],
-
-    'price-lists' => [
-        'label'   => 'Pricelist',
-        'heading' => 'Select a pricelist',
-        'default' => 'Default Price',
-    ],
-
     'opening-control' => [
         'heading'     => 'Opening Control',
         'cash'        => 'Opening cash',
@@ -43,7 +48,9 @@ return [
     ],
 
     'tabs' => [
-        'new' => 'New order',
+        'new'      => 'New order',
+        'all'      => 'All orders',
+        'view-all' => 'View all',
     ],
 
     'menu' => [
@@ -53,20 +60,6 @@ return [
         'create-product' => 'Create product',
         'back-office'    => 'Back office',
         'close-register' => 'Close register',
-    ],
-
-    'orders' => [
-        'heading'  => 'Orders in this session',
-        'back'     => 'Back',
-        'date'     => 'Date',
-        'receipt'  => 'Receipt',
-        'name'     => 'Order',
-        'customer' => 'Customer',
-        'total'    => 'Total',
-        'status'   => 'Status',
-        'load'     => 'Load order',
-        'discard'  => 'Discard',
-        'empty'    => 'No orders in this session yet.',
     ],
 
     'cash-movement' => [
@@ -108,44 +101,54 @@ return [
     ],
 
     'product-form' => [
-        'heading'  => 'New product',
-        'name'     => 'Product name',
-        'barcode'  => 'Barcode',
-        'price'    => 'Sales price',
-        'category' => 'PoS category',
-        'confirm'  => 'Save',
-        'close'    => 'Discard',
+        'heading'             => 'New product',
+        'name'                => 'Product name',
+        'name-placeholder'    => 'e.g. Cheese Burger',
+        'barcode'             => 'Barcode',
+        'barcode-placeholder' => 'e.g. 1234567890',
+        'tracking'            => 'Track inventory',
+        'price'               => 'Sales price',
+        'taxes'               => 'Sales taxes',
+        'tax-included'        => '(= :amount incl. taxes)',
+        'category'            => 'PoS category',
+        'unsaleable'          => 'Unsaleable',
 
         'notification' => [
             'title' => 'Product created',
         ],
+
+        'error' => [
+            'failed'  => 'Could not create the product (:status)',
+            'offline' => 'Creating a product needs a connection.',
+        ],
     ],
 
     'product-info' => [
-        'heading'      => 'Product information',
-        'inventory'    => 'Inventory',
-        'available'    => 'Units available',
-        'forecasted'   => 'Forecasted',
-        'financials'   => 'Financials',
-        'price'        => 'Price excl. tax',
-        'cost'         => 'Cost',
-        'margin'       => 'Margin',
-        'order'        => 'Order',
-        'total-price'  => 'Total price excl. tax',
-        'total-cost'   => 'Total cost',
-        'total-margin' => 'Total margin',
-        'close'        => 'Ok',
+        'heading'          => 'Product information',
+        'inventory'        => 'Inventory',
+        'on-hand'          => 'on hand at this register',
+        'negative-warning' => 'Selling is still allowed; stock will go negative and the back office will show the shortfall.',
+        'financials'       => 'Financials',
+        'price'            => 'Price',
+        'cost'             => 'Cost',
+        'margin'           => 'Margin',
+        'order'            => 'In this order',
+        'quantity'         => 'Quantity',
+        'total-price'      => 'Total price',
+        'total-margin'     => 'Total margin',
+        'add'              => 'Add to order',
     ],
 
     'customers' => [
-        'search'   => 'Search by name, email or phone',
-        'no-match' => 'No customer matches ":search".',
-        'narrow'   => 'Showing the first 50 matches — narrow your search to see more.',
+        'heading'      => 'Select a customer',
+        'search'       => 'Search customers',
+        'no-match'     => 'No customer matches that search. Only customers loaded at session start are searchable offline.',
+        'clear'        => 'Remove customer',
+        'badge-new'    => 'new',
 
         'create' => [
             'label'   => 'New customer',
             'heading' => 'New customer',
-            'submit'  => 'Create and select',
             'created' => ':name added and selected.',
 
             'fields' => [
@@ -154,29 +157,15 @@ return [
                 'phone' => 'Phone',
             ],
         ],
-
-        'heading'  => 'Select a customer',
-        'search'   => 'Search customers…',
-        'clear'    => 'Remove customer',
-        'close'    => 'Close',
-        'empty'    => 'No customers yet.',
-    ],
-
-    'variants' => [
-        'heading'     => 'Attribute selection',
-        'confirm'     => 'Add',
-        'discard'     => 'Discard',
-        'unavailable' => 'This combination does not exist.',
     ],
 
     'notes' => [
+        'internal'    => 'Internal note',
+        'kitchen'     => 'Kitchen note',
         'heading'     => 'Add Internal Note',
-        'close'       => 'Close',
         'empty'       => 'No note models configured.',
         'hint'        => 'Pick a line first, then choose a note.',
-        'placeholder' => 'Write a note for this line',
-        'apply'       => 'Apply',
-        'discard'     => 'Discard',
+        'placeholder' => 'Add a note for this line',
     ],
 
     'money-details' => [
@@ -190,83 +179,61 @@ return [
     ],
 
     'cart' => [
-        'item-count'     => '{1} :count item|[2,*] :count items',
-        'clear-all'      => 'Clear all',
-        'discount-total' => 'Discount (:percentage%)',
-        'heading'        => 'Order',
-        'discount'       => ':percentage% Discount',
-        'subtotal'       => 'Subtotal',
-        'tax'            => 'Taxes',
-        'total'          => 'Total',
-        'increase'       => 'Increase quantity',
-        'decrease'       => 'Decrease quantity',
-        'remove'         => 'Remove line',
+        'discount' => ':percentage% discount',
+        'subtotal' => 'Subtotal',
+        'tax'      => 'Taxes',
+        'rounding' => 'Rounding',
+        'total'    => 'Total',
+        'remove'   => 'Remove :product',
 
         'empty' => [
-            'heading'     => 'Nothing scanned yet',
-            'description' => 'Pick a product to start the order.',
+            'description' => 'Scan or tap a product to start',
         ],
     ],
 
     'catalogue' => [
-        'stock' => [
-            'available' => 'Available',
-            'low'       => 'Last :quantity left',
-            'out'       => 'Sold out',
-        ],
-
-        'heading'        => 'Products',
-        'search'         => 'Search products…',
-        'all-categories' => 'All',
-
-        'empty' => [
-            'heading'     => 'No product found',
-            'description' => 'Flag products as available in the point of sale from the back office.',
-        ],
+        'search'          => 'Search products',
+        'create-product'  => 'Create product',
+        'info'            => 'Product info for :product',
+        'info-depleted'   => 'Product info for :product, none on hand',
     ],
 
     'numpad' => [
         'qty'       => 'Qty',
         'price'     => 'Price',
-        'discount'  => 'Disc %',
         'backspace' => 'Backspace',
-        'clear'     => 'Clear',
-        'hint'      => 'Select a line to change its quantity, price or discount.',
     ],
 
     'payment' => [
-        'heading'       => 'Payment',
-        'due'           => 'Amount due',
-        'remove'        => 'Remove payment',
-        'invoice'       => 'Invoice',
         'select-method' => 'Please select a payment method',
-        'remaining'     => 'Remaining',
-        'change'        => 'Change',
+        'invoice'       => 'Invoice',
+        'change'        => 'change',
+        'remove'        => 'Remove :method payment',
+        'validate'      => 'Validate',
     ],
 
     'receipt' => [
-        'heading' => 'Receipt',
-        'total'   => 'Total',
-        'change'  => 'Change',
+        'phone'     => 'Tel:',
+        'served-by' => 'Served by :cashier',
+        'untaxed'   => 'Untaxed amount',
+        'rounding'  => 'Rounding',
+        'total'     => 'TOTAL',
+        'change'    => 'Change',
+        'order'     => 'Order :order',
+        'new-order' => 'New order',
     ],
 
     'offline' => [
-        'offline' => 'Offline',
-        'pending' => 'Pending sync: :count',
+        'banner'              => 'Offline — sales continue and sync when the connection returns',
+        'waiting'             => ':count order(s) waiting to sync',
+        'rejected'            => ':count order(s) rejected by the server',
+        'storage-unavailable' => 'Local storage unavailable — reload before taking more orders',
     ],
 
     'actions' => [
-        'tip'         => 'Tip',
-        'takeaway'    => 'Take Away',
-        'dine-in'     => 'Dine In',
-        'ship-later'  => 'Ship Later',
-        'customer'    => 'Customer',
-        'remove-line' => 'Remove line',
-        'note'        => 'Internal Note',
-        'payment'     => 'Payment',
-        'back'        => 'Back',
-        'validate'    => 'Validate',
-        'new-order'   => 'New Order',
+        'customer' => 'Customer',
+        'note'     => 'Note',
+        'payment'  => 'Payment',
     ],
 
     'notification' => [

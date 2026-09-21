@@ -104,6 +104,20 @@ it('hands the catalogue to the client through the boot payload', function () {
         ->and($payload['config']['id'])->toBe($session->config_id);
 });
 
+it('ships the locale and translations the client renders with', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $payload = Livewire::test(Home::class, ['session' => $session])
+        ->instance()
+        ->bootPayload();
+
+    expect($payload['locale']['code'])->toBe(app()->getLocale())
+        ->and($payload['locale']['direction'])->toBeIn(['ltr', 'rtl'])
+        ->and($payload['translations'])->toHaveKeys(['cart', 'payment', 'receipt', 'common'])
+        ->and($payload['translations']['cart']['total'])
+        ->toBe(__('point-of-sale::filament/pos/pages/terminal.cart.total'));
+});
+
 it('records a cash movement from the terminal', function () {
     $session = PosHelper::openSession($this->warehouse);
 

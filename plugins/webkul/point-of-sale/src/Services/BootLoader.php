@@ -28,6 +28,7 @@ use Webkul\Product\Models\PriceList;
 use Webkul\Product\Models\PriceRuleItem;
 use Webkul\Support\Models\Currency;
 use Webkul\Support\Models\UOM;
+use Webkul\Support\SupportServiceProvider;
 
 class BootLoader
 {
@@ -42,6 +43,8 @@ class BootLoader
         $taxes = $this->collectTaxes($config);
 
         return [
+            'locale'           => $this->locale(),
+            'translations'     => $this->translations(),
             'company'          => $this->company($config),
             'config'           => $this->config($config),
             'session'          => $this->session($session),
@@ -60,6 +63,21 @@ class BootLoader
             'orders'           => $this->openOrders($session),
             'stock'            => $this->stock($config),
         ];
+    }
+
+    protected function locale(): array
+    {
+        return [
+            'code'      => app()->getLocale(),
+            'direction' => SupportServiceProvider::isRtl() ? 'rtl' : 'ltr',
+        ];
+    }
+
+    protected function translations(): array
+    {
+        $lines = trans('point-of-sale::filament/pos/pages/terminal');
+
+        return is_array($lines) ? $lines : [];
     }
 
     protected function company(Config $config): array

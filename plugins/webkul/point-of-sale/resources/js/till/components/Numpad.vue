@@ -20,9 +20,9 @@ const keyBase = 'flex min-h-[clamp(2.1rem,4.6vh,3.25rem)] items-center justify-c
 const key = `${keyBase} border-gray-200 bg-white text-gray-950 hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800`
 
 const modes = computed(() => [
-    { value: 'qty', label: 'Qty', disabled: false },
+    { value: 'qty', label: till.t('numpad.qty'), disabled: false },
     { value: 'discount', label: '%', disabled: !till.config.enable_line_discount },
-    { value: 'price', label: 'Price', disabled: till.config.can_edit_price === false },
+    { value: 'price', label: till.t('numpad.price'), disabled: till.config.can_edit_price === false },
 ])
 
 const lastRow = [
@@ -52,20 +52,20 @@ function modeClass(mode, index) {
                 class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-base font-medium transition-colors"
                 :class="partnerName
                     ? 'border-primary-500 bg-primary-50 text-primary-800 hover:bg-primary-100 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'"
-                :title="partnerName ?? 'Customer'"
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'"
+                :title="partnerName ?? till.t('actions.customer')"
                 @click="till.openCustomers()"
             >
                 <svg class="size-5 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.96 9.96 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
                 </svg>
 
-                <span class="truncate">{{ partnerName ?? 'Customer' }}</span>
+                <span class="truncate">{{ partnerName ?? till.t('actions.customer') }}</span>
             </button>
 
             <button
                 type="button"
-                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
+                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
                 :disabled="!hasActiveLine"
                 :title="till.noteLabel"
                 @click="till.openNotes()"
@@ -74,7 +74,7 @@ function modeClass(mode, index) {
                     <path d="M3.75 3A1.75 1.75 0 0 0 2 4.75v10.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0 0 14 15.25V9.664a2.25 2.25 0 0 0-.659-1.591l-4.414-4.414A2.25 2.25 0 0 0 7.336 3H3.75Zm1.5 6.5a.75.75 0 0 1 .75-.75h4a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1-.75-.75Zm.75 2.75a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5H6Z" />
                 </svg>
 
-                Note
+                {{ till.t('actions.note') }}
             </button>
         </div>
 
@@ -117,7 +117,7 @@ function modeClass(mode, index) {
             <button
                 type="button"
                 :class="`${keyBase} border-danger-200 bg-danger-100 text-danger-800 hover:bg-danger-200 dark:border-danger-500/30 dark:bg-danger-500/20 dark:text-danger-200 dark:hover:bg-danger-500/30`"
-                aria-label="Backspace"
+                :aria-label="till.t('numpad.backspace')"
                 @click="till.pressNumpad('backspace')"
             >
                 &#9003;
@@ -130,7 +130,7 @@ function modeClass(mode, index) {
             :disabled="!canPay"
             @click="till.goToPayment()"
         >
-            Payment
+            {{ till.t('actions.payment') }}
         </button>
     </div>
 </template>

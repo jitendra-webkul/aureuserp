@@ -99,11 +99,11 @@
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                    <tr class="border-b border-gray-200 text-start text-xs uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:text-gray-400">
                         <th class="p-2">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.product') }}</th>
-                        <th class="p-2 text-right">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.quantity') }}</th>
-                        <th class="p-2 text-right">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.untaxed') }}</th>
-                        <th class="p-2 text-right">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.total') }}</th>
+                        <th class="p-2 text-end">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.quantity') }}</th>
+                        <th class="p-2 text-end">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.untaxed') }}</th>
+                        <th class="p-2 text-end">{{ __('point-of-sale::filament/admin/clusters/reporting/pages/sales-details.products.columns.total') }}</th>
                     </tr>
                 </thead>
 
@@ -111,9 +111,9 @@
                     @forelse ($report['products'] as $line)
                         <tr class="border-b border-gray-100 dark:border-gray-800">
                             <td class="p-2 text-gray-950 dark:text-white">{{ $line->product?->name }}</td>
-                            <td class="p-2 text-right tabular-nums text-gray-950 dark:text-white">{{ number_format((float) $line->quantity, 2) }}</td>
-                            <td class="p-2 text-right tabular-nums text-gray-950 dark:text-white">{{ number_format((float) $line->untaxed, 2) }}</td>
-                            <td class="p-2 text-right tabular-nums text-gray-950 dark:text-white">{{ number_format((float) $line->total, 2) }}</td>
+                            <td class="p-2 text-end tabular-nums text-gray-950 dark:text-white">{{ number_format((float) $line->quantity, 2) }}</td>
+                            <td class="p-2 text-end tabular-nums text-gray-950 dark:text-white">{{ number_format((float) $line->untaxed, 2) }}</td>
+                            <td class="p-2 text-end tabular-nums text-gray-950 dark:text-white">{{ number_format((float) $line->total, 2) }}</td>
                         </tr>
                     @empty
                         <tr>

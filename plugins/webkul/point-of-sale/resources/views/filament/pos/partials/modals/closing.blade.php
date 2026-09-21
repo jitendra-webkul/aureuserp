@@ -30,7 +30,7 @@
                     <span class="font-mono tabular-nums">{{ $this->money($cash['payment_amount']) }}</span>
                 </div>
 
-                <button type="button" class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 w-full text-left" wire:click="toggleCashMoves">
+                <button type="button" class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 w-full text-start" wire:click="toggleCashMoves">
                     <span class="flex items-center gap-1">
                         <x-filament::icon
                             :icon="$showCashMoves ? 'heroicon-m-chevron-down' : 'heroicon-m-chevron-right'"
@@ -45,7 +45,7 @@
 
                 @if ($showCashMoves)
                     @foreach ($cash['moves'] as $move)
-                        <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 pl-5">
+                        <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400 ps-5">
                             <span>{{ $move['name'] }}</span>
                             <span class="font-mono tabular-nums">{{ $this->money($move['amount']) }}</span>
                         </div>
