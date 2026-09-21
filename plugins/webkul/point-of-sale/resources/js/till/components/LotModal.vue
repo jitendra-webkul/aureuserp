@@ -44,7 +44,6 @@ const options = computed(() => (line.value ? till.existingLotsFor(line.value.pro
                     list="pos-lot-options"
                     class="min-h-11 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 font-mono text-sm text-gray-950 placeholder:font-sans placeholder:text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                     :placeholder="till.t('lots.placeholder')"
-                    :readonly="!till.canCreateLots"
                     @input="till.setLotRow(index, $event.target.value)"
                 >
 

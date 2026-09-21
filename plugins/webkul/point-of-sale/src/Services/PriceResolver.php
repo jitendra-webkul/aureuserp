@@ -42,7 +42,7 @@ class PriceResolver
 
     public function priceListForConfig(?Config $config, ?int $partnerPriceListId = null): ?PriceList
     {
-        if ($partnerPriceListId) {
+        if ($partnerPriceListId && $config?->enable_price_list) {
             $partnerPriceList = PriceList::find($partnerPriceListId);
 
             if ($partnerPriceList) {

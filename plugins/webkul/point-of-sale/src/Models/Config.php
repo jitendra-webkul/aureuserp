@@ -526,9 +526,9 @@ class Config extends Model implements Sortable
         static::saving(function (Config $config) {
             $config->computeCode();
 
-            $config->computeCurrencyId();
-
             $config->computeJournalIds();
+
+            $config->computeCurrencyId();
         });
 
         static::created(function (Config $config) {

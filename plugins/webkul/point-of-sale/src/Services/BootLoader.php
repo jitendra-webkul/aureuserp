@@ -2,6 +2,7 @@
 
 namespace Webkul\PointOfSale\Services;
 
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -34,12 +35,19 @@ class BootLoader
 {
     public const PARTNER_LIMIT = 500;
 
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $cache = [];
+
     public function __construct(
         protected PriceResolver $prices,
     ) {}
 
     public function load(Config $config, Session $session): array
     {
+        $this->cache = [];
+
         $taxes = $this->collectTaxes($config);
 
         return [
@@ -244,9 +252,7 @@ class BootLoader
 
     protected function products(Config $config, ?Session $session = null): array
     {
-        $products = $this->productQuery($config, $session)
-            ->get()
-            ->concat($this->variantProducts($config, $session));
+        $products = $this->sellableProducts($config, $session);
 
         $priceList = $this->prices->priceListForConfig($config);
 
@@ -261,10 +267,7 @@ class BootLoader
 
     protected function variants(Config $config, ?Session $session = null): array
     {
-        $parents = $this->productQuery($config, $session)
-            ->get()
-            ->where('is_configurable', true)
-            ->filter(fn ($product): bool => $product->parent_id === null);
+        $parents = $this->configurableParents($config, $session);
 
         if ($parents->isEmpty()) {
             return [];
@@ -314,24 +317,64 @@ class BootLoader
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Product>
+     * @return Collection<int, Product>
      */
     protected function variantProducts(Config $config, ?Session $session = null): Collection
     {
-        $parentIds = $this->productQuery($config, $session)
-            ->get()
+        return $this->remember('variant-products', function () use ($config, $session): Collection {
+            $parentIds = $this->configurableParents($config, $session)->pluck('id');
+
+            if ($parentIds->isEmpty()) {
+                return collect();
+            }
+
+            return Product::query()
+                ->with('posCategories')
+                ->whereIn('parent_id', $parentIds)
+                ->orderBy('name')
+                ->get();
+        });
+    }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    protected function catalogue(Config $config, ?Session $session = null): Collection
+    {
+        return $this->remember('catalogue', fn (): Collection => $this->productQuery($config, $session)->get());
+    }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    protected function sellableProducts(Config $config, ?Session $session = null): Collection
+    {
+        return $this->remember('sellable-products', fn (): Collection => $this->catalogue($config, $session)
+            ->concat($this->variantProducts($config, $session))
+            ->unique('id')
+            ->values());
+    }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    protected function configurableParents(Config $config, ?Session $session = null): Collection
+    {
+        return $this->remember('configurable-parents', fn (): Collection => $this->catalogue($config, $session)
             ->where('is_configurable', true)
-            ->pluck('id');
+            ->filter(fn (Product $product): bool => $product->parent_id === null)
+            ->values());
+    }
 
-        if ($parentIds->isEmpty()) {
-            return collect();
-        }
-
-        return Product::query()
-            ->with('posCategories')
-            ->whereIn('parent_id', $parentIds)
-            ->orderBy('name')
-            ->get();
+    /**
+     * @template TValue
+     *
+     * @param  Closure(): TValue  $resolver
+     * @return TValue
+     */
+    protected function remember(string $key, Closure $resolver)
+    {
+        return $this->cache[$key] ??= $resolver();
     }
 
     protected function productRow(Product $product, Config $config): array
@@ -373,9 +416,7 @@ class BootLoader
             return [];
         }
 
-        $trackedIds = $this->productQuery($config, $session)
-            ->get()
-            ->concat($this->variantProducts($config, $session))
+        $trackedIds = $this->sellableProducts($config, $session)
             ->filter(fn ($product): bool => in_array(
                 $product->tracking?->value,
                 [ProductTracking::LOT->value, ProductTracking::SERIAL->value],
@@ -570,7 +611,7 @@ class BootLoader
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, PriceList>
+     * @return Collection<int, PriceList>
      */
     protected function availablePriceLists(Config $config): Collection
     {
@@ -589,9 +630,7 @@ class BootLoader
 
     protected function prices(Config $config, ?Session $session = null): array
     {
-        $products = $this->productQuery($config, $session)
-            ->get()
-            ->concat($this->variantProducts($config, $session));
+        $products = $this->sellableProducts($config, $session);
 
         $matrix = ['0' => []];
 

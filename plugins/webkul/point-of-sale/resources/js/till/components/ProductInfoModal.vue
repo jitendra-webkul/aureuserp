@@ -95,7 +95,7 @@ const info = computed(() => (state.productInfoId ? till.productInfo() : null))
             <button
                 type="button"
                 class="flex min-h-12 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700"
-                @click="till.addProduct(info.id); till.closeProductInfo()"
+                @click="till.closeProductInfo(); till.pickProduct(info.id)"
             >
                 {{ till.t('product-info.add') }}
             </button>

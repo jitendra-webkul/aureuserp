@@ -733,11 +733,13 @@ export class Till {
     newOrder() {
         this.flushDeferredEvictions()
 
+        this.state.priceListId = this.config.price_list_id ?? null
+
         const order = this.hydrateServerOrder({
             uuid: uuidv4(),
             lines: [],
             payments: [],
-            price_list_id: this.state.priceListId,
+            price_list_id: this.config.price_list_id ?? null,
             fiscal_position_id: this.state.fiscalPositionId,
             is_takeaway: this.state.isTakeaway,
         })
@@ -1096,21 +1098,23 @@ export class Till {
     }
 
     applyLots(line, names) {
-        const unique = this.trackingFor(line.product_id) === 'serial'
-            ? [...new Set(names)]
-            : names
+        const serial = this.trackingFor(line.product_id) === 'serial'
+
+        const unique = serial ? [...new Set(names)] : names
 
         const existing = this.existingLotsFor(line.product_id)
+
+        if (serial && unique.length) {
+            line.qty = line.qty < 0 ? -unique.length : unique.length
+        }
+
+        const share = unique.length ? Math.abs(line.qty) / unique.length : 0
 
         line.lots = unique.map((name) => ({
             lot_name: name,
             lot_id: existing.find((lot) => lot.name === name)?.id ?? null,
-            qty: 1,
+            qty: serial ? 1 : share,
         }))
-
-        if (line.lots.length) {
-            line.qty = line.qty < 0 ? -line.lots.length : line.lots.length
-        }
 
         this.closeLots()
     }
@@ -1124,6 +1128,18 @@ export class Till {
 
         const names = this.state.lotRows.map((row) => String(row).trim()).filter(Boolean)
 
+        if (!this.canCreateLots) {
+            const available = this.existingLotsFor(line.product_id).map((lot) => lot.name)
+
+            const unknown = names.filter((name) => !available.includes(name))
+
+            if (unknown.length) {
+                this.state.lotError = this.t('lots.none-available')
+
+                return
+            }
+        }
+
         this.applyLots(line, names)
     }
 
@@ -1132,7 +1148,17 @@ export class Till {
             return []
         }
 
-        return this.sellableLines(order).filter((line) => this.isTracked(line.product_id) && !line.lots?.length)
+        return this.sellableLines(order).filter((line) => {
+            if (!this.isTracked(line.product_id)) {
+                return false
+            }
+
+            const captured = line.lots?.length ?? 0
+
+            return this.trackingFor(line.product_id) === 'serial'
+                ? captured !== Math.abs(line.qty)
+                : captured === 0
+        })
     }
 
     dismissLotWarning() {
@@ -1146,11 +1172,17 @@ export class Till {
             return
         }
 
+        this.addLine(productId)
+    }
+
+    addLine(productId) {
         const line = this.addProduct(productId)
 
         if (line && this.lotsEnabled && this.isTracked(productId) && !line.lots?.length) {
             this.openLots(line.uuid)
         }
+
+        return line
     }
 
     variantsFor(productId) {
@@ -1221,7 +1253,7 @@ export class Till {
 
         this.closeVariants()
 
-        this.addProduct(productId)
+        this.addLine(productId)
     }
 
     addProduct(productId, { qty = 1 } = {}) {

@@ -31,7 +31,7 @@ function onGlobalKey(event) {
         const product = till.productByBarcode(scanBuffer.trim())
 
         if (product) {
-            till.addProduct(product.id)
+            till.pickProduct(product.id)
         }
 
         scanBuffer = ''
