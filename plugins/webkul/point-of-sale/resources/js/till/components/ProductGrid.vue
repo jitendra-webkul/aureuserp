@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
                 <button
                     type="button"
                     class="flex min-h-0 flex-auto flex-col text-start"
-                    @click="till.addProduct(product.id)"
+                    @click="till.pickProduct(product.id)"
                 >
                     <span
                         v-if="till.config.show_product_images"

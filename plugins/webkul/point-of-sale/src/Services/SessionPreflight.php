@@ -27,7 +27,7 @@ class SessionPreflight
     {
         $config->loadMissing(['journal', 'invoiceJournal', 'paymentMethods.journal']);
 
-        $this->assertJournalType($config->journal, 'journal', JournalType::GENERAL);
+        $this->assertJournalType($config->journal, 'journal', JournalType::GENERAL, JournalType::SALE);
 
         if ($config->invoice_journal_id) {
             $this->assertJournalType($config->invoiceJournal, 'invoice-journal', JournalType::SALE);
@@ -71,13 +71,13 @@ class SessionPreflight
         );
     }
 
-    protected function assertJournalType(?Journal $journal, string $key, JournalType $type): void
+    protected function assertJournalType(?Journal $journal, string $key, JournalType ...$types): void
     {
         if (! $journal) {
             $this->fail("{$key}.missing");
         }
 
-        if ($journal->type !== $type) {
+        if (! in_array($journal->type, $types, true)) {
             $this->fail("{$key}.invalid-type");
         }
     }

@@ -13,6 +13,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Webkul\Account\Enums\AccountType;
 use Webkul\Account\Enums\JournalType;
 use Webkul\Account\Models\Account;
 use Webkul\Account\Models\CashRounding;
@@ -24,6 +25,7 @@ use Webkul\Inventory\Models\Route;
 use Webkul\Inventory\Models\Warehouse;
 use Webkul\PointOfSale\Enums\PickingPolicy;
 use Webkul\PointOfSale\Enums\TaxDisplay;
+use Webkul\Product\Enums\ProductType;
 use Webkul\Product\Models\PriceList;
 use Webkul\Product\Models\Product;
 
@@ -181,7 +183,7 @@ class ConfigForm
 
                 Select::make('tip_product_id')
                     ->label(static::label('sections.configurations.tabs.payment.fields.tip-product'))
-                    ->options(fn (): array => Product::query()->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::serviceProducts($get))
                     ->searchable()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_tip')),
@@ -249,7 +251,7 @@ class ConfigForm
                 Select::make('journal_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.journal'))
                     ->helperText(static::label('sections.configurations.tabs.accounting.fields.journal-helper-text'))
-                    ->options(fn (Get $get): array => static::scoped(Journal::query()->where('type', JournalType::GENERAL), $get)->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::scoped(Journal::query()->whereIn('type', [JournalType::GENERAL, JournalType::SALE]), $get)->pluck('name', 'id')->all())
                     ->searchable()
                     ->native(false),
 
@@ -291,19 +293,23 @@ class ConfigForm
                 Select::make('receivable_account_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.receivable-account'))
                     ->helperText(static::label('sections.configurations.tabs.accounting.fields.receivable-account-helper-text'))
-                    ->options(fn (): array => Account::query()->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::accounts($get)
+                        ->where('account_type', AccountType::ASSET_RECEIVABLE)
+                        ->where('reconcile', true)
+                        ->pluck('name', 'id')
+                        ->all())
                     ->searchable()
                     ->native(false),
 
                 Select::make('cash_movement_account_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.cash-movement-account'))
-                    ->options(fn (): array => Account::query()->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::accounts($get)->pluck('name', 'id')->all())
                     ->searchable()
                     ->native(false),
 
                 Select::make('balancing_account_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.balancing-account'))
-                    ->options(fn (): array => Account::query()->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::accounts($get)->pluck('name', 'id')->all())
                     ->searchable()
                     ->native(false),
 
@@ -322,7 +328,7 @@ class ConfigForm
 
                 Select::make('stock_output_account_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.stock-output-account'))
-                    ->options(fn (): array => Account::query()->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::accounts($get)->pluck('name', 'id')->all())
                     ->searchable()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_cogs')),
@@ -353,24 +359,25 @@ class ConfigForm
                     ->live()
                     ->columnSpanFull(),
 
-                Select::make('price_list_id')
-                    ->label(static::label('sections.configurations.tabs.pricing.fields.price-list'))
-                    ->options(fn (Get $get): array => static::scoped(PriceList::query(), $get)->pluck('name', 'id')->all())
-                    ->searchable()
-                    ->native(false)
-                    ->visible(fn (Get $get): bool => (bool) $get('enable_price_list')),
-
                 Select::make('priceLists')
                     ->label(static::label('sections.configurations.tabs.pricing.fields.price-lists'))
                     ->relationship(
                         'priceLists',
                         'name',
-                        fn (Builder $query, Get $get): Builder => static::scoped($query, $get),
+                        fn (Builder $query, Get $get): Builder => static::priceListsInCurrency($query, $get),
                     )
                     ->multiple()
                     ->searchable()
                     ->native(false)
+                    ->live()
                     ->visible(fn (Get $get): bool => (bool) $get('enable_price_list')),
+
+                Select::make('price_list_id')
+                    ->label(static::label('sections.configurations.tabs.pricing.fields.price-list'))
+                    ->helperText(static::label('sections.configurations.tabs.pricing.fields.price-list-helper-text'))
+                    ->options(fn (Get $get): array => static::availablePriceLists($get))
+                    ->searchable()
+                    ->native(false),
 
                 Toggle::make('enable_line_discount')
                     ->label(static::label('sections.configurations.tabs.pricing.fields.enable-line-discount'))
@@ -383,7 +390,7 @@ class ConfigForm
 
                 Select::make('discount_product_id')
                     ->label(static::label('sections.configurations.tabs.pricing.fields.discount-product'))
-                    ->options(fn (): array => Product::query()->pluck('name', 'id')->all())
+                    ->options(fn (Get $get): array => static::serviceProducts($get))
                     ->searchable()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_global_discount')),
@@ -495,6 +502,49 @@ class ConfigForm
                     ->visible(fn (Get $get): bool => (bool) $get('enable_ship_later')),
             ])
             ->columns(2);
+    }
+
+    protected static function accounts(Get $get): Builder
+    {
+        return static::scoped(Account::query(), $get)->where(fn (Builder $query) => $query
+            ->where('deprecated', false)
+            ->orWhereNull('deprecated'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function serviceProducts(Get $get): array
+    {
+        return static::scoped(Product::query(), $get)
+            ->where('type', ProductType::SERVICE)
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    protected static function priceListsInCurrency(Builder $query, Get $get): Builder
+    {
+        $currencyId = $get('currency_id');
+
+        return static::scoped($query, $get)
+            ->when($currencyId, fn (Builder $lists): Builder => $lists->where('currency_id', $currencyId));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function availablePriceLists(Get $get): array
+    {
+        if (! $get('enable_price_list')) {
+            return static::scoped(PriceList::query(), $get)->pluck('name', 'id')->all();
+        }
+
+        $available = array_filter((array) $get('priceLists'));
+
+        return static::priceListsInCurrency(PriceList::query(), $get)
+            ->whereIn('id', $available ?: [0])
+            ->pluck('name', 'id')
+            ->all();
     }
 
     protected static function scoped(Builder $query, Get $get): Builder

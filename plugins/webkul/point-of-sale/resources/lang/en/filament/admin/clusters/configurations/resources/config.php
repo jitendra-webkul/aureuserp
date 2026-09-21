@@ -115,6 +115,7 @@ return [
                             'enable-price-list'                  => 'Flexible Pricelists',
                             'enable-price-list-helper-text'      => 'Set multiple prices per product, automated discounts, etc.',
                             'price-list'                         => 'Default Pricelist',
+                            'price-list-helper-text'             => 'Applied to every order on this register. Cashiers can switch lists only when flexible pricelists are on.',
                             'price-lists'                        => 'Available Pricelists',
                             'enable-line-discount'               => 'Line Discounts',
                             'enable-line-discount-helper-text'   => 'Allow cashiers to set a discount per line.',

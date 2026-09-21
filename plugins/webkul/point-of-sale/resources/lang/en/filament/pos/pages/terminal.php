@@ -159,6 +159,27 @@ return [
         ],
     ],
 
+    'variants' => [
+        'heading'     => 'Attribute selection',
+        'confirm'     => 'Add',
+        'unavailable' => 'This combination does not exist.',
+    ],
+
+    'lots' => [
+        'heading'        => 'Lot/Serial Number(s) Required',
+        'placeholder'    => 'Serial/Lot Number',
+        'add'            => 'Add',
+        'remove'         => 'Remove number',
+        'missing'        => 'Set lot / serial number',
+        'none-available' => 'There is no serial/lot number for the selected product, and their creation is not allowed from the Point of Sale app.',
+
+        'warning' => [
+            'heading' => 'Some Serial/Lot Numbers are missing',
+            'body'    => "You are trying to sell products with serial/lot numbers, but some of them are not set.\nWould you like to proceed anyway?",
+            'proceed' => 'Ok',
+        ],
+    ],
+
     'notes' => [
         'internal'    => 'Internal note',
         'kitchen'     => 'Kitchen note',
@@ -234,6 +255,20 @@ return [
         'customer' => 'Customer',
         'note'     => 'Note',
         'payment'  => 'Payment',
+        'heading'  => 'Actions',
+        'label'    => 'Actions',
+
+        'cancel-order' => [
+            'label'   => 'Cancel order',
+            'confirm' => 'Confirm',
+            'hint'    => 'Its lines will be lost. This cannot be undone.',
+        ],
+    ],
+
+    'price-lists' => [
+        'label'   => 'Pricelist',
+        'heading' => 'Select the pricelist',
+        'default' => 'Default Price',
     ],
 
     'notification' => [

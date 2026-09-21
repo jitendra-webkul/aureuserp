@@ -46,7 +46,7 @@ function modeClass(mode, index) {
 
 <template>
     <div class="flex flex-col gap-[clamp(0.25rem,0.8vh,0.5rem)]">
-        <div class="grid grid-cols-2 gap-[clamp(0.25rem,0.8vh,0.5rem)]">
+        <div class="grid grid-cols-3 gap-[clamp(0.25rem,0.8vh,0.5rem)]">
             <button
                 type="button"
                 class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-base font-medium transition-colors"
@@ -75,6 +75,19 @@ function modeClass(mode, index) {
                 </svg>
 
                 {{ till.t('actions.note') }}
+            </button>
+
+            <button
+                type="button"
+                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                :title="till.t('actions.label')"
+                @click="till.openActions()"
+            >
+                <svg class="size-5 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z" />
+                </svg>
+
+                {{ till.t('actions.label') }}
             </button>
         </div>
 

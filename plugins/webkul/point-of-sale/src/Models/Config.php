@@ -448,6 +448,10 @@ class Config extends Model implements Sortable
 
     public function computeJournalIds(): void
     {
+        $this->discardJournalOfWrongType('journal_id', JournalType::GENERAL, JournalType::SALE);
+
+        $this->discardJournalOfWrongType('invoice_journal_id', JournalType::SALE);
+
         $this->journal_id ??= $this->terminalJournal()?->id;
 
         $this->invoice_journal_id ??= Journal::query()
@@ -459,6 +463,25 @@ class Config extends Model implements Sortable
         $this->unsetRelation('journal');
 
         $this->unsetRelation('invoiceJournal');
+    }
+
+    protected function discardJournalOfWrongType(string $attribute, JournalType ...$expected): void
+    {
+        if (! $this->{$attribute}) {
+            return;
+        }
+
+        $type = Journal::query()->whereKey($this->{$attribute})->value('type');
+
+        if ($type instanceof JournalType) {
+            $type = $type->value;
+        }
+
+        $allowed = array_map(fn (JournalType $journalType): string => $journalType->value, $expected);
+
+        if (! in_array($type, $allowed, true)) {
+            $this->{$attribute} = null;
+        }
     }
 
     protected function terminalJournal(): ?Journal
@@ -504,6 +527,8 @@ class Config extends Model implements Sortable
             $config->computeCode();
 
             $config->computeCurrencyId();
+
+            $config->computeJournalIds();
         });
 
         static::created(function (Config $config) {

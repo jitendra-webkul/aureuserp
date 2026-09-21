@@ -86,6 +86,15 @@ function productImage(productId) {
                         <template v-if="line.discount"> &middot; &minus;{{ till.t('cart.discount', { percentage: line.discount }) }}</template>
                     </span>
 
+                    <span
+                        v-if="till.lotsEnabled && till.isTracked(line.product_id)"
+                        class="mt-0.5 block truncate font-mono text-xs tabular-nums"
+                        :class="line.lots?.length ? 'text-gray-500 dark:text-gray-400' : 'text-danger-600 dark:text-danger-400'"
+                        @click.stop="till.openLots(line.uuid)"
+                    >
+                        {{ line.lots?.length ? line.lots.map((lot) => lot.lot_name).join(', ') : till.t('lots.missing') }}
+                    </span>
+
                     <span v-if="line.note" class="mt-0.5 flex flex-wrap items-center gap-1">
                         <span
                             v-for="(part, index) in till.noteParts(line.note)"

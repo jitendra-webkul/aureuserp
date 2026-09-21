@@ -59,6 +59,14 @@ export class Till {
             activePaymentUuid: null,
             paymentBuffer: '',
             productModalOpen: false,
+            actionsModalOpen: false,
+            variantProductId: null,
+            lotLineUuid: null,
+            lotRows: [],
+            lotError: null,
+            lotWarningOpen: false,
+            variantSelection: {},
+            priceListModalOpen: false,
             productSaving: false,
             productError: null,
             rememberedOrderUnavailable: false,
@@ -91,6 +99,14 @@ export class Till {
 
         this.stock = { ...(boot.stock ?? {}) }
         this.prices = boot.prices ?? { 0: {} }
+
+        this.variantsByProduct = new Map((boot.variants ?? []).map((entry) => [entry.product_id, entry]))
+
+        this.lotsByProduct = (boot.lots ?? []).reduce((carry, lot) => {
+            carry.set(lot.product_id, [...(carry.get(lot.product_id) ?? []), lot])
+
+            return carry
+        }, new Map())
 
         this.taxById = new Map((boot.taxes ?? []).map((tax) => [tax.id, tax]))
 
@@ -204,6 +220,7 @@ export class Till {
                 price_overridden: Boolean(line.price_overridden),
                 discount: Number(line.discount ?? 0),
                 note: line.note ?? '',
+                lots: line.lots ?? [],
                 tax_ids: line.tax_ids ?? [],
             })),
             payments: (order.payments ?? []).map((payment) => ({
@@ -424,7 +441,7 @@ export class Till {
             }
         }
 
-        const plain = segments.filter((segment) => !/^(\{|\[)/.test(segment))
+        const plain = segments.map((segment) => segment.replace(/^(\{[^}]*\}|\[[^\]]*\])\s*/, ''))
 
         return count === 1 ? (plain[0] ?? line) : (plain[1] ?? plain[0] ?? line)
     }
@@ -667,10 +684,18 @@ export class Till {
         this.state.customerModalOpen = false
     }
 
-    goToPayment() {
+    goToPayment({ ignoreLots = false } = {}) {
         if (!this.activeOrder?.lines.length) {
             return
         }
+
+        if (!ignoreLots && this.linesMissingLots().length) {
+            this.state.lotWarningOpen = true
+
+            return
+        }
+
+        this.state.lotWarningOpen = false
 
         this.state.screen = 'payment'
     }
@@ -731,7 +756,68 @@ export class Till {
         this.state.activeLineUuid = null
         this.state.screen = 'products'
 
+        this.state.priceListId = this.activeOrder?.price_list_id ?? this.config.price_list_id ?? null
+
         this.flushDeferredEvictions()
+    }
+
+    get priceLists() {
+        return this.master.price_lists.all()
+    }
+
+    get activePriceList() {
+        return this.master.price_lists.get(this.state.priceListId) ?? null
+    }
+
+    canSelectPriceList() {
+        return Boolean(this.config.enable_price_list) && this.priceLists.length > 0
+    }
+
+    openActions() {
+        this.state.actionsModalOpen = true
+    }
+
+    closeActions() {
+        this.state.actionsModalOpen = false
+    }
+
+    openPriceLists() {
+        this.state.actionsModalOpen = false
+        this.state.priceListModalOpen = true
+    }
+
+    closePriceLists() {
+        this.state.priceListModalOpen = false
+    }
+
+    selectPriceList(priceListId) {
+        this.state.priceListId = priceListId
+
+        const order = this.activeOrder
+
+        if (order) {
+            order.price_list_id = priceListId
+
+            for (const line of order.lines) {
+                if (!line.price_overridden) {
+                    line.price_unit = this.priceFor(line.product_id)
+                }
+            }
+        }
+
+        this.closePriceLists()
+    }
+
+    cancelActiveOrder() {
+        const uuid = this.state.activeOrderUuid
+
+        if (!uuid) {
+            return
+        }
+
+        this.closeActions()
+
+        this.discardOrder(uuid)
     }
 
     discardOrder(uuid) {
@@ -921,6 +1007,223 @@ export class Till {
         })
     }
 
+    trackingFor(productId) {
+        return this.master.products.get(productId)?.tracking ?? 'qty'
+    }
+
+    isTracked(productId) {
+        return ['lot', 'serial'].includes(this.trackingFor(productId))
+    }
+
+    get lotsEnabled() {
+        return Boolean(this.config.use_create_lots || this.config.use_existing_lots)
+    }
+
+    get lotLine() {
+        return this.activeOrder?.lines.find((line) => line.uuid === this.state.lotLineUuid) ?? null
+    }
+
+    get lotProduct() {
+        const line = this.lotLine
+
+        return line ? this.master.products.get(line.product_id) ?? null : null
+    }
+
+    allowsOnlyOneLot(productId) {
+        return this.trackingFor(productId) === 'lot'
+    }
+
+    get canCreateLots() {
+        return Boolean(this.config.use_create_lots || !this.config.use_existing_lots)
+    }
+
+    existingLotsFor(productId) {
+        return this.lotsByProduct.get(productId) ?? []
+    }
+
+    openLots(lineUuid) {
+        const line = this.activeOrder?.lines.find((entry) => entry.uuid === lineUuid)
+
+        if (!line) {
+            return
+        }
+
+        const existing = this.existingLotsFor(line.product_id)
+
+        if (!this.canCreateLots && !existing.length) {
+            this.state.lotError = this.t('lots.none-available')
+            this.state.lotLineUuid = lineUuid
+            this.state.lotRows = []
+
+            return
+        }
+
+        const captured = (line.lots ?? []).map((lot) => lot.lot_name)
+
+        if (!captured.length && existing.length === 1) {
+            this.applyLots(line, [existing[0].name])
+
+            return
+        }
+
+        const blanks = Math.max(Math.ceil(Math.abs(line.qty) - captured.length), 1)
+
+        const rows = this.allowsOnlyOneLot(line.product_id)
+            ? [captured[0] ?? '']
+            : [...captured, ...Array.from({ length: blanks }, () => '')]
+
+        this.state.lotError = null
+        this.state.lotRows = rows
+        this.state.lotLineUuid = lineUuid
+    }
+
+    closeLots() {
+        this.state.lotLineUuid = null
+        this.state.lotRows = []
+        this.state.lotError = null
+    }
+
+    setLotRow(index, value) {
+        this.state.lotRows[index] = value
+    }
+
+    addLotRow() {
+        this.state.lotRows.push('')
+    }
+
+    removeLotRow(index) {
+        this.state.lotRows.splice(index, 1)
+    }
+
+    applyLots(line, names) {
+        const unique = this.trackingFor(line.product_id) === 'serial'
+            ? [...new Set(names)]
+            : names
+
+        const existing = this.existingLotsFor(line.product_id)
+
+        line.lots = unique.map((name) => ({
+            lot_name: name,
+            lot_id: existing.find((lot) => lot.name === name)?.id ?? null,
+            qty: 1,
+        }))
+
+        if (line.lots.length) {
+            line.qty = line.qty < 0 ? -line.lots.length : line.lots.length
+        }
+
+        this.closeLots()
+    }
+
+    confirmLots() {
+        const line = this.lotLine
+
+        if (!line) {
+            return
+        }
+
+        const names = this.state.lotRows.map((row) => String(row).trim()).filter(Boolean)
+
+        this.applyLots(line, names)
+    }
+
+    linesMissingLots(order = this.activeOrder) {
+        if (!order || !this.lotsEnabled) {
+            return []
+        }
+
+        return this.sellableLines(order).filter((line) => this.isTracked(line.product_id) && !line.lots?.length)
+    }
+
+    dismissLotWarning() {
+        this.state.lotWarningOpen = false
+    }
+
+    pickProduct(productId) {
+        const product = this.master.products.get(productId)
+
+        if (product?.is_configurable && this.openVariants(productId)) {
+            return
+        }
+
+        const line = this.addProduct(productId)
+
+        if (line && this.lotsEnabled && this.isTracked(productId) && !line.lots?.length) {
+            this.openLots(line.uuid)
+        }
+    }
+
+    variantsFor(productId) {
+        return this.variantsByProduct.get(productId) ?? null
+    }
+
+    get variantProduct() {
+        return this.state.variantProductId ? this.master.products.get(this.state.variantProductId) : null
+    }
+
+    get variantAttributes() {
+        return this.variantsFor(this.state.variantProductId)?.attributes ?? []
+    }
+
+    openVariants(productId) {
+        const entry = this.variantsFor(productId)
+
+        if (!entry) {
+            return false
+        }
+
+        this.state.variantProductId = productId
+
+        this.state.variantSelection = Object.fromEntries(
+            entry.attributes.map((attribute) => [attribute.id, attribute.values[0]?.id ?? null]),
+        )
+
+        return true
+    }
+
+    closeVariants() {
+        this.state.variantProductId = null
+        this.state.variantSelection = {}
+    }
+
+    selectVariantValue(attributeId, valueId) {
+        this.state.variantSelection[attributeId] = valueId
+    }
+
+    resolveVariant() {
+        const entry = this.variantsFor(this.state.variantProductId)
+
+        if (!entry) {
+            return null
+        }
+
+        const chosen = Object.values(this.state.variantSelection).filter((id) => id !== null)
+
+        if (chosen.length !== entry.attributes.length) {
+            return null
+        }
+
+        const signature = [...chosen].sort((a, b) => a - b).join(',')
+
+        const match = entry.variants.find((variant) => variant.value_ids.join(',') === signature)
+
+        return match ? this.master.products.get(match.id) ?? null : null
+    }
+
+    confirmVariant() {
+        const variant = this.resolveVariant()
+
+        if (!variant) {
+            return
+        }
+
+        const productId = variant.id
+
+        this.closeVariants()
+
+        this.addProduct(productId)
+    }
+
     addProduct(productId, { qty = 1 } = {}) {
         const order = this.activeOrder ?? this.newOrder()
 
@@ -954,6 +1257,7 @@ export class Till {
             price_overridden: false,
             discount: 0,
             note: '',
+            lots: [],
             tax_ids: product.tax_ids ?? [],
         })
 
@@ -1153,6 +1457,10 @@ export class Till {
         const needle = term.trim().toLowerCase()
 
         return this.master.products.filter((product) => {
+            if (product.parent_id) {
+                return false
+            }
+
             if (categoryId && !(product.category_ids ?? []).includes(categoryId)) {
                 return false
             }
@@ -1359,6 +1667,14 @@ export class Till {
 
                 if (line.price_overridden) {
                     payload.price_unit = line.price_unit
+                }
+
+                if (line.lots?.length) {
+                    payload.lots = line.lots.map((lot) => ({
+                        lot_name: lot.lot_name,
+                        lot_id: lot.lot_id ?? null,
+                        qty: Number(lot.qty ?? 1),
+                    }))
                 }
 
                 return payload

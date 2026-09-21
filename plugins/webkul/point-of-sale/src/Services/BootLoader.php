@@ -2,6 +2,7 @@
 
 namespace Webkul\PointOfSale\Services;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Account\Enums\AmountType;
@@ -25,7 +26,6 @@ use Webkul\PointOfSale\Models\PaymentMethod;
 use Webkul\PointOfSale\Models\Product;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\Product\Models\PriceList;
-use Webkul\Product\Models\PriceRuleItem;
 use Webkul\Support\Models\Currency;
 use Webkul\Support\Models\UOM;
 use Webkul\Support\SupportServiceProvider;
@@ -52,6 +52,7 @@ class BootLoader
             'uoms'             => $this->uoms(),
             'categories'       => $this->categories($config),
             'products'         => $this->products($config, $session),
+            'variants'         => $this->variants($config, $session),
             'taxes'            => $taxes,
             'fiscal_positions' => $this->fiscalPositions($config),
             'price_lists'      => $this->priceLists($config),
@@ -62,6 +63,7 @@ class BootLoader
             'partners'         => $this->partners($config),
             'orders'           => $this->openOrders($session),
             'stock'            => $this->stock($config),
+            'lots'             => $this->lots($config, $session),
         ];
     }
 
@@ -136,6 +138,8 @@ class BootLoader
             'can_edit_price'                => $this->canEditPrice($config),
             'product_endpoint'              => route('point-of-sale.till.configs.products.store', ['config' => $config->id]),
             'tracking_options'              => $this->trackingOptions(),
+            'use_create_lots'               => (bool) $config->operationType?->use_create_lots,
+            'use_existing_lots'             => (bool) $config->operationType?->use_existing_lots,
         ];
     }
 
@@ -240,7 +244,9 @@ class BootLoader
 
     protected function products(Config $config, ?Session $session = null): array
     {
-        $products = $this->productQuery($config, $session)->get();
+        $products = $this->productQuery($config, $session)
+            ->get()
+            ->concat($this->variantProducts($config, $session));
 
         $priceList = $this->prices->priceListForConfig($config);
 
@@ -251,6 +257,81 @@ class BootLoader
             ))
             ->values()
             ->all();
+    }
+
+    protected function variants(Config $config, ?Session $session = null): array
+    {
+        $parents = $this->productQuery($config, $session)
+            ->get()
+            ->where('is_configurable', true)
+            ->filter(fn ($product): bool => $product->parent_id === null);
+
+        if ($parents->isEmpty()) {
+            return [];
+        }
+
+        $parents->load([
+            'attribute_values.attribute',
+            'attribute_values.attributeOption',
+            'variants.combinations',
+        ]);
+
+        return $parents
+            ->map(fn ($parent): array => [
+                'product_id' => $parent->id,
+                'attributes' => $parent->attribute_values
+                    ->groupBy('attribute_id')
+                    ->map(fn ($values, $attributeId): array => [
+                        'id'     => (int) $attributeId,
+                        'name'   => $values->first()->attribute?->name,
+                        'values' => $values
+                            ->map(fn ($value): array => [
+                                'id'          => $value->id,
+                                'name'        => $value->attributeOption?->name,
+                                'extra_price' => (float) ($value->extra_price ?? 0),
+                            ])
+                            ->values()
+                            ->all(),
+                    ])
+                    ->values()
+                    ->all(),
+                'variants' => $parent->variants
+                    ->map(fn ($variant): array => [
+                        'id'        => $variant->id,
+                        'name'      => $variant->name,
+                        'value_ids' => $variant->combinations
+                            ->pluck('product_attribute_value_id')
+                            ->map(fn ($id): int => (int) $id)
+                            ->sort()
+                            ->values()
+                            ->all(),
+                    ])
+                    ->values()
+                    ->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Product>
+     */
+    protected function variantProducts(Config $config, ?Session $session = null): Collection
+    {
+        $parentIds = $this->productQuery($config, $session)
+            ->get()
+            ->where('is_configurable', true)
+            ->pluck('id');
+
+        if ($parentIds->isEmpty()) {
+            return collect();
+        }
+
+        return Product::query()
+            ->with('posCategories')
+            ->whereIn('parent_id', $parentIds)
+            ->orderBy('name')
+            ->get();
     }
 
     protected function productRow(Product $product, Config $config): array
@@ -266,7 +347,9 @@ class BootLoader
             'tax_ids'         => $this->taxIdsFor($product, $config),
             'category_ids'    => $product->posCategories?->pluck('id')->all() ?? [],
             'is_storable'     => (bool) $product->is_storable,
+            'tracking'        => $product->tracking?->value ?? ProductTracking::QTY->value,
             'is_configurable' => (bool) $product->is_configurable,
+            'parent_id'       => $product->parent_id,
             'image'           => $this->imageUrl($product),
         ];
     }
@@ -276,6 +359,50 @@ class BootLoader
         $image = collect($product->images)->first();
 
         return $image ? Storage::url($image) : null;
+    }
+
+    protected function lots(Config $config, ?Session $session = null): array
+    {
+        if (! $config->operationType?->use_existing_lots) {
+            return [];
+        }
+
+        $locationIds = $this->stockLocationIds($config);
+
+        if ($locationIds === []) {
+            return [];
+        }
+
+        $trackedIds = $this->productQuery($config, $session)
+            ->get()
+            ->concat($this->variantProducts($config, $session))
+            ->filter(fn ($product): bool => in_array(
+                $product->tracking?->value,
+                [ProductTracking::LOT->value, ProductTracking::SERIAL->value],
+                true,
+            ))
+            ->pluck('id');
+
+        if ($trackedIds->isEmpty()) {
+            return [];
+        }
+
+        return ProductQuantity::withoutGlobalScopes()
+            ->whereIn('location_id', $locationIds)
+            ->whereIn('product_id', $trackedIds)
+            ->whereNotNull('lot_id')
+            ->with('lot')
+            ->get()
+            ->groupBy('lot_id')
+            ->map(fn ($rows): array => [
+                'id'         => (int) $rows->first()->lot_id,
+                'name'       => $rows->first()->lot?->name,
+                'product_id' => (int) $rows->first()->product_id,
+                'free_qty'   => (float) $rows->sum(fn ($row): float => (float) $row->quantity - (float) $row->reserved_quantity),
+            ])
+            ->filter(fn (array $lot): bool => filled($lot['name']))
+            ->values()
+            ->all();
     }
 
     protected function stock(Config $config): array
@@ -432,56 +559,39 @@ class BootLoader
 
     protected function priceLists(Config $config): array
     {
-        if (! $config->enable_price_list) {
-            return [];
-        }
+        return $this->availablePriceLists($config)
+            ->map(fn (PriceList $priceList): array => [
+                'id'          => $priceList->id,
+                'name'        => $priceList->name,
+                'currency_id' => $priceList->currency_id,
+            ])
+            ->values()
+            ->all();
+    }
 
-        $priceLists = $config->priceLists;
+    /**
+     * @return \Illuminate\Support\Collection<int, PriceList>
+     */
+    protected function availablePriceLists(Config $config): Collection
+    {
+        $priceLists = $config->enable_price_list ? $config->priceLists : collect();
 
         if ($config->price_list_id && ! $priceLists->contains('id', $config->price_list_id)) {
-            $extra = PriceList::find($config->price_list_id);
+            $default = $config->priceList ?? PriceList::find($config->price_list_id);
 
-            if ($extra) {
-                $priceLists->push($extra);
+            if ($default) {
+                $priceLists = $priceLists->prepend($default);
             }
         }
 
-        $items = PriceRuleItem::query()
-            ->whereIn('price_list_id', $priceLists->pluck('id'))
-            ->orderBy('sort')
-            ->get()
-            ->groupBy('price_list_id');
-
-        return $priceLists->map(fn (PriceList $priceList): array => [
-            'id'          => $priceList->id,
-            'name'        => $priceList->name,
-            'currency_id' => $priceList->currency_id,
-            'items'       => ($items[$priceList->id] ?? collect())
-                ->map(fn (PriceRuleItem $item): array => [
-                    'id'                 => $item->id,
-                    'apply_to'           => $item->apply_to?->value ?? $item->apply_to,
-                    'product_id'         => $item->product_id,
-                    'category_id'        => $item->category_id,
-                    'base'               => $item->base?->value ?? $item->base,
-                    'type'               => $item->type?->value ?? $item->type,
-                    'fixed_price'        => $item->fixed_price === null ? null : (float) $item->fixed_price,
-                    'price_discount'     => $item->price_discount === null ? null : (float) $item->price_discount,
-                    'price_round'        => $item->price_round === null ? null : (float) $item->price_round,
-                    'price_surcharge'    => $item->price_surcharge === null ? null : (float) $item->price_surcharge,
-                    'price_markup'       => $item->price_markup === null ? null : (float) $item->price_markup,
-                    'price_min_margin'   => $item->price_min_margin === null ? null : (float) $item->price_min_margin,
-                    'price_max_margin'   => $item->price_max_margin === null ? null : (float) $item->price_max_margin,
-                    'min_quantity'       => $item->min_quantity === null ? null : (float) $item->min_quantity,
-                    'starts_at'          => $item->starts_at?->toIso8601String(),
-                    'ends_at'            => $item->ends_at?->toIso8601String(),
-                    'sort'               => (int) $item->sort,
-                ])->values()->all(),
-        ])->values()->all();
+        return $priceLists->values();
     }
 
     protected function prices(Config $config, ?Session $session = null): array
     {
-        $products = $this->productQuery($config, $session)->get();
+        $products = $this->productQuery($config, $session)
+            ->get()
+            ->concat($this->variantProducts($config, $session));
 
         $matrix = ['0' => []];
 
@@ -489,21 +599,7 @@ class BootLoader
             $matrix['0'][(string) $product->id] = $this->prices->resolve($product, null);
         }
 
-        if (! $config->enable_price_list) {
-            return $matrix;
-        }
-
-        $priceLists = $config->priceLists;
-
-        if ($config->price_list_id && ! $priceLists->contains('id', $config->price_list_id)) {
-            $extra = PriceList::find($config->price_list_id);
-
-            if ($extra) {
-                $priceLists->push($extra);
-            }
-        }
-
-        foreach ($priceLists as $priceList) {
+        foreach ($this->availablePriceLists($config) as $priceList) {
             $matrix[(string) $priceList->id] = [];
 
             foreach ($products as $product) {

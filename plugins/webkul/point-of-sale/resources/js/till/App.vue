@@ -12,6 +12,11 @@ import OrdersModal from './components/OrdersModal.vue'
 import ProductInfoModal from './components/ProductInfoModal.vue'
 import NoteModal from './components/NoteModal.vue'
 import ProductFormModal from './components/ProductFormModal.vue'
+import ActionsModal from './components/ActionsModal.vue'
+import PriceListModal from './components/PriceListModal.vue'
+import VariantModal from './components/VariantModal.vue'
+import LotModal from './components/LotModal.vue'
+import MissingLotsModal from './components/MissingLotsModal.vue'
 import StatusBar from './components/StatusBar.vue'
 
 const till = inject('till')
@@ -52,5 +57,15 @@ const state = till.state
         <NoteModal />
 
         <ProductFormModal />
+
+        <ActionsModal />
+
+        <PriceListModal />
+
+        <VariantModal />
+
+        <LotModal />
+
+        <MissingLotsModal />
     </div>
 </template>

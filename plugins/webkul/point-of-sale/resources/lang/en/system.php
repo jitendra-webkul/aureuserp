@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'products' => [
+        'tip'      => 'Tips',
+        'discount' => 'Discount',
+    ],
+
     'config' => [
         'terminal-journal' => 'Point of Sale',
     ],
