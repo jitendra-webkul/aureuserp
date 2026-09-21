@@ -4,6 +4,8 @@ namespace Webkul\PointOfSale\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Webkul\Account\Models\Product as AccountProduct;
+use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\Product\Enums\ProductType;
@@ -39,12 +41,25 @@ class TerminalProductCreator
                 'name'             => $name,
                 'barcode'          => $data['barcode'] ?? null,
                 'price'            => (float) ($data['price'] ?? 0),
+                'is_storable'      => (bool) ($data['is_storable'] ?? false),
+                'tracking'         => ($data['is_storable'] ?? false)
+                    ? ($data['tracking'] ?? ProductTracking::QTY->value)
+                    : ProductTracking::QTY->value,
                 'uom_id'           => $uomId,
                 'uom_po_id'        => $uomId,
                 'category_id'      => $categoryId,
                 'available_in_pos' => true,
                 'company_id'       => $config->company_id,
             ]);
+
+            $taxIds = array_filter(array_map('intval', $data['tax_ids'] ?? []));
+
+            if ($taxIds) {
+                AccountProduct::withoutGlobalScopes()
+                    ->find($product->id)
+                    ?->productTaxes()
+                    ->sync($taxIds);
+            }
 
             $posCategoryId = $data['category_id'] ?? null;
 

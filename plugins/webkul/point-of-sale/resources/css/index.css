@@ -2,6 +2,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 @source '../../resources/views';
+@source '../../resources/js/till';
 
 @theme static {
     --color-primary-50: var(--primary-50);

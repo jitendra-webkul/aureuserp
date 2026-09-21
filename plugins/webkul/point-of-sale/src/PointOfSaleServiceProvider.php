@@ -42,6 +42,7 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
             ->hasViews()
             ->hasTranslations()
             ->hasRoute('api')
+            ->hasRoute('web')
             ->hasMigrations([
                 '2026_09_17_100001_create_pos_payment_methods_table',
                 '2026_09_17_100002_create_pos_configs_table',

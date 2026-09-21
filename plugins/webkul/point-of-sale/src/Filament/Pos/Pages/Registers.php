@@ -3,6 +3,7 @@
 namespace Webkul\PointOfSale\Filament\Pos\Pages;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
@@ -49,6 +50,48 @@ class Registers extends Page
     public function liveSessionFor(Config $config): ?Session
     {
         return PointOfSale::liveSessionFor($config);
+    }
+
+    public function isDiscardable(Session $session): bool
+    {
+        return PointOfSale::isSessionDiscardable($session);
+    }
+
+    public function discardSessionAction(): Action
+    {
+        $prefix = 'point-of-sale::filament/pos/pages/registers.actions.discard.';
+
+        return Action::make('discardSession')
+            ->label(__($prefix.'label'))
+            ->icon('heroicon-m-trash')
+            ->color('danger')
+            ->iconButton()
+            ->tooltip(__($prefix.'label'))
+            ->requiresConfirmation()
+            ->modalHeading(__($prefix.'heading'))
+            ->modalDescription(__($prefix.'description'))
+            ->modalSubmitActionLabel(__($prefix.'confirm'))
+            ->action(function (array $arguments): void {
+                $session = Session::find($arguments['session'] ?? null);
+
+                if (! $session) {
+                    return;
+                }
+
+                try {
+                    PointOfSale::discardSession($session);
+
+                    Notification::make()
+                        ->success()
+                        ->title(__($prefix.'notification.title'))
+                        ->send();
+                } catch (Throwable $exception) {
+                    Notification::make()
+                        ->danger()
+                        ->body($exception->getMessage())
+                        ->send();
+                }
+            });
     }
 
     public function openRegister(int $configId): void

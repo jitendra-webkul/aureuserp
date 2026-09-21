@@ -19,11 +19,17 @@
                         </x-filament::badge>
                     @endif
 
-                    <x-filament::button icon="heroicon-m-play" wire:click="openRegister({{ $register->getKey() }})">
-                        {{ $liveSession
-                            ? __('point-of-sale::filament/pos/pages/registers.actions.resume')
-                            : __('point-of-sale::filament/pos/pages/registers.actions.open') }}
-                    </x-filament::button>
+                    <div class="flex items-center gap-2">
+                        @if ($liveSession && $this->isDiscardable($liveSession))
+                            {{ ($this->discardSessionAction)(['session' => $liveSession->getKey()]) }}
+                        @endif
+
+                        <x-filament::button icon="heroicon-m-play" wire:click="openRegister({{ $register->getKey() }})">
+                            {{ $liveSession
+                                ? __('point-of-sale::filament/pos/pages/registers.actions.resume')
+                                : __('point-of-sale::filament/pos/pages/registers.actions.open') }}
+                        </x-filament::button>
+                    </div>
                 </div>
             </x-filament::section>
         @empty

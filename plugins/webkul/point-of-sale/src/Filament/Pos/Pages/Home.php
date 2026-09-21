@@ -31,7 +31,6 @@ class Home extends Terminal
             : Registers::getUrl();
     }
 
-
     public static function shouldRegisterNavigation(): bool
     {
         return (bool) static::navigationSession();

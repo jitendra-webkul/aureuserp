@@ -136,6 +136,10 @@ return [
             'invalid' => 'Session :session cannot move from :state.',
         ],
 
+        'discard' => [
+            'not-discardable' => 'Session :name has activity recorded against it and must be closed, not discarded.',
+        ],
+
         'cash-movement' => [
             'invalid-amount' => 'A cash movement amount must be greater than zero.',
         ],

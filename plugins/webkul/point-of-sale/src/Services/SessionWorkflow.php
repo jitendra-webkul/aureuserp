@@ -13,6 +13,7 @@ use Webkul\PointOfSale\Events\SessionOpened;
 use Webkul\PointOfSale\Exceptions\InvalidCashMovementException;
 use Webkul\PointOfSale\Exceptions\InvalidSessionStateException;
 use Webkul\PointOfSale\Exceptions\SessionAlreadyOpenException;
+use Webkul\PointOfSale\Exceptions\SessionNotDiscardableException;
 use Webkul\PointOfSale\Exceptions\SessionNotOpenException;
 use Webkul\PointOfSale\Models\CashMovement;
 use Webkul\PointOfSale\Models\Config;
@@ -111,6 +112,28 @@ class SessionWorkflow
             SessionClosed::dispatch($session);
 
             return $session->refresh();
+        });
+    }
+
+    public function isDiscardable(Session $session): bool
+    {
+        if (! in_array($session->state, [SessionState::OPENING_CONTROL, SessionState::OPENED], true)) {
+            return false;
+        }
+
+        return ! $session->orders()->exists() && ! $session->cashMovements()->exists();
+    }
+
+    public function discard(Session $session): void
+    {
+        DB::transaction(function () use ($session): void {
+            if (! $this->isDiscardable($session)) {
+                throw new SessionNotDiscardableException(
+                    __('point-of-sale::system.session-workflow.discard.not-discardable', ['name' => $session->name]),
+                );
+            }
+
+            $session->delete();
         });
     }
 

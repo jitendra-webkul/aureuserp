@@ -223,6 +223,16 @@ class PointOfSaleManager
         return $this->sessions->liveSessionFor($config);
     }
 
+    public function isSessionDiscardable(Session $session): bool
+    {
+        return $this->sessions->isDiscardable($session);
+    }
+
+    public function discardSession(Session $session): void
+    {
+        $this->sessions->discard($session);
+    }
+
     public function assertSessionOpen(Session $session): void
     {
         $this->sessions->assertOpen($session);

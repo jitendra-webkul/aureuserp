@@ -23,6 +23,7 @@ class OrderProcessor
 {
     public function __construct(
         protected OrderCalculator $calculator,
+        protected OfflinePartnerResolver $partners,
         protected OrderWorkflow $orders,
         protected PosInvoicer $invoicer,
         protected PriceResolver $prices,
@@ -80,7 +81,10 @@ class OrderProcessor
         return DB::transaction(function () use ($payload, $uuid, $existing): Order {
             $order = $existing ?? $this->createOrder($payload, $uuid);
 
-            $order->forceFill(Arr::only($payload, ['partner_id', 'note']))->save();
+            $order->forceFill(array_merge(
+                Arr::only($payload, ['note']),
+                ['partner_id' => $this->partners->resolve($payload, $order->config)],
+            ))->save();
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
@@ -162,6 +166,8 @@ class OrderProcessor
         $config = Config::withoutGlobalScopes()->findOrFail($payload['config_id']);
 
         $session = $this->resolveSession($config, $payload['session_id'] ?? null);
+
+        $payload['partner_id'] = $this->partners->resolve($payload, $config);
 
         $attributes = array_merge(
             Arr::only($payload, [
