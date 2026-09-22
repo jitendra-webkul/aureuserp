@@ -44,7 +44,7 @@ class ConfirmAction extends Action
                         ->body($e->getMessage())
                         ->send();
 
-                    $this->halt(shouldRollBackDatabaseTransaction: true);
+                    $this->cancel(shouldRollBackDatabaseTransaction: true);
                 }
             })
             ->hidden(function (Move $record) {

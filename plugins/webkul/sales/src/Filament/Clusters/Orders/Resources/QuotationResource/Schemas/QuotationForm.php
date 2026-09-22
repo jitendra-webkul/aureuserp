@@ -92,7 +92,8 @@ class QuotationForm
                                             ->relationship(
                                                 'partner',
                                                 'name',
-                                                modifyQueryUsing: fn (Builder $query) => $query->orderBy('id')->withTrashed()
+                                                modifyQueryUsing: fn (Builder $query, $state) => $query->orderBy('id')->withTrashed()
+                                                    ->where(hide_deleted_unless_selected($state))
                                             )
                                             ->searchable()
                                             ->preload()
@@ -260,7 +261,7 @@ class QuotationForm
                                     ->schema([
                                         Select::make('company_id')
                                             ->label(__('sales::filament/clusters/orders/resources/quotation.form.tabs.other-information.fieldset.additional-information.fields.company'))
-                                            ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query) => $query->withTrashed())
+                                            ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query, $state) => $query->withTrashed()->where(hide_deleted_unless_selected($state)))
                                             ->getOptionLabelFromRecordUsing(function ($record): string {
                                                 return $record->name.($record->trashed() ? ' (Deleted)' : '');
                                             })
@@ -456,7 +457,7 @@ class QuotationForm
                     ->relationship(
                         name: 'product',
                         titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query, Get $get, ?string $state) => $query
+                        modifyQueryUsing: fn (Builder $query, Get $get, $state) => $query
                             ->withTrashed()
                             ->where(hide_deleted_unless_selected($state))
                             ->whereNull('is_configurable')
@@ -800,7 +801,7 @@ class QuotationForm
                     ->relationship(
                         'product',
                         'name',
-                        fn (Builder $query, Get $get, ?string $state) => $query
+                        fn (Builder $query, Get $get, $state) => $query
                             ->withTrashed()
                             ->where(hide_deleted_unless_selected($state))
                             ->whereNull('is_configurable')
