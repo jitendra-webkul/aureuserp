@@ -20,18 +20,7 @@ const danger = 'flex min-h-20 flex-col items-center justify-center gap-2 rounded
 </script>
 
 <template>
-    <TillModal :open="state.actionsModalOpen" width="max-w-2xl" @close="till.closeActions()">
-        <div class="flex flex-none items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <p class="text-base font-semibold text-gray-950 dark:text-white">{{ till.t('actions.heading') }}</p>
-
-            <button
-                type="button"
-                class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 active:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:active:bg-gray-700"
-                @click="till.closeActions()"
-            >
-                {{ till.t('common.close') }}
-            </button>
-        </div>
+    <TillModal :heading="till.t('actions.heading')" :open="state.actionsModalOpen" width="max-w-2xl" @close="till.closeActions()">
 
         <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
             <button

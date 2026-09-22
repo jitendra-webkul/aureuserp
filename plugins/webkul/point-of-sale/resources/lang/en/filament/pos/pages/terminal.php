@@ -77,6 +77,7 @@ return [
     ],
 
     'closing' => [
+        'copy'            => 'Copy the expected amount',
         'heading'         => 'Closing register',
         'expected'        => 'Expected in drawer',
         'counted'         => 'Counted',
@@ -86,7 +87,7 @@ return [
         'method'          => 'Payment method',
         'total'           => 'Total',
         'opening'         => 'Opening',
-        'payments'        => 'Payments',
+        'payments'        => 'Payments in cash',
         'moves'           => 'Cash in / out',
         'cash-in'         => 'Cash in :number',
         'cash-out'        => 'Cash out :number',
@@ -190,13 +191,14 @@ return [
     ],
 
     'money-details' => [
-        'label'    => 'Coins/Notes',
-        'heading'  => 'Opening details:',
-        'total'    => 'Total: :total',
-        'confirm'  => 'Confirm',
-        'close'    => 'Close',
-        'increase' => 'Add one',
-        'decrease' => 'Remove one',
+        'label'            => 'Coins/Notes',
+        'opening-heading'  => 'Opening details:',
+        'closing-heading'  => 'Closing details:',
+        'total'            => 'Total: :total',
+        'confirm'          => 'Confirm',
+        'close'            => 'Close',
+        'increase'         => 'Add one',
+        'decrease'         => 'Remove one',
     ],
 
     'cart' => [
@@ -226,11 +228,13 @@ return [
     ],
 
     'payment' => [
-        'select-method' => 'Please select a payment method',
-        'invoice'       => 'Invoice',
-        'change'        => 'change',
-        'remove'        => 'Remove :method payment',
-        'validate'      => 'Validate',
+        'ship-later'         => 'Ship Later',
+        'ship-later-heading' => 'Select the shipping date',
+        'select-method'      => 'Please select a payment method',
+        'invoice'            => 'Invoice',
+        'change'             => 'change',
+        'remove'             => 'Remove :method payment',
+        'validate'           => 'Validate',
     ],
 
     'receipt' => [

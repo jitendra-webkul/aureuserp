@@ -71,6 +71,26 @@ const rows = [
             </button>
         </div>
 
+        <button
+            v-if="till.canShipLater()"
+            type="button"
+            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] w-full items-center gap-2 rounded-lg border px-3 text-base font-medium transition-colors"
+            :class="order?.shipped_at
+                ? 'border-primary-500 bg-primary-50 text-primary-800 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
+                : 'justify-center border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
+            @click="till.toggleShipLater()"
+        >
+            <span class="flex items-center gap-2">
+                <svg class="size-5 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+                </svg>
+
+                {{ till.t('payment.ship-later') }}
+            </span>
+
+            <span v-if="order?.shipped_at" class="ms-auto font-mono tabular-nums">{{ order.shipped_at }}</span>
+        </button>
+
         <div class="grid grid-cols-4 gap-[clamp(0.25rem,0.8vh,0.5rem)]">
             <template v-for="(row, index) in rows" :key="index">
                 <button

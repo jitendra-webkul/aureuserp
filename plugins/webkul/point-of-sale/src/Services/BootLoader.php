@@ -656,7 +656,7 @@ class BootLoader
             'name'               => $method->name,
             'type'               => $method->type?->value ?? $method->type,
             'is_cash_count'      => (bool) $method->is_cash_count,
-            'split_transactions' => (bool) $method->split_transactions,
+            'split_transactions' => (bool) $method->is_split_transaction,
             'sort'               => (int) $method->sort,
         ])->values()->all();
     }
@@ -724,6 +724,7 @@ class BootLoader
                 'note'          => $order->note,
                 'is_takeaway'   => (bool) $order->is_takeaway,
                 'to_invoice'    => (bool) $order->is_to_invoice,
+                'shipped_at'    => $order->shipped_at?->toDateString(),
                 'lines'         => $order->lines->map(fn ($line): array => [
                     'uuid'       => $line->uuid,
                     'product_id' => $line->product_id,

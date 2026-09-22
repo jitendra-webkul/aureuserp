@@ -6,11 +6,9 @@ use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use Webkul\PluginManager\Models\Plugin;
 use Webkul\PluginManager\Package;
-use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Pos\Pages\Home;
-use Webkul\PointOfSale\Models\Order;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../support/tests/Helpers/FilamentHelper.php';

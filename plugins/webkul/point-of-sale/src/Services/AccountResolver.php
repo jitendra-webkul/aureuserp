@@ -105,7 +105,13 @@ class AccountResolver
             return null;
         }
 
-        $resolvedId = Account::resolveForCompany($accountId, $companyId) ?? $accountId;
+        $resolvedId = Account::resolveForCompany($accountId, $companyId);
+
+        if (! $resolvedId) {
+            return $companyId
+                ? null
+                : Account::withoutGlobalScope(CompanyScope::class)->find($accountId);
+        }
 
         return Account::withoutGlobalScope(CompanyScope::class)->find($resolvedId);
     }

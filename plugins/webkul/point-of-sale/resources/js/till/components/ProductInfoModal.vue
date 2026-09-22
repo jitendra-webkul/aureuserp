@@ -10,30 +10,20 @@ const info = computed(() => (state.productInfoId ? till.productInfo() : null))
 </script>
 
 <template>
-    <TillModal :open="Boolean(info)" width="max-w-2xl" @close="till.closeProductInfo()">
-        <div v-if="info" class="flex flex-none items-start gap-3 border-b border-gray-100 p-4 dark:border-gray-800">
+    <TillModal
+        :open="Boolean(info)"
+        width="max-w-2xl"
+        :heading="info?.name"
+        :description="[info?.reference, info?.barcode].filter(Boolean).join(' · ') || null"
+        @close="till.closeProductInfo()"
+    >
+        <div v-if="info" class="flex flex-none items-center gap-3">
             <span class="flex size-14 flex-none items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                 <img v-if="info.image" :src="info.image" :alt="info.name" class="h-full w-full object-cover">
             </span>
-
-            <div class="min-w-0 flex-1">
-                <p class="truncate text-base font-semibold text-gray-950 dark:text-white">{{ info.name }}</p>
-
-                <p class="truncate font-mono text-xs text-gray-500 dark:text-gray-400">
-                    {{ [info.reference, info.barcode].filter(Boolean).join(' · ') || '—' }}
-                </p>
-            </div>
-
-            <button
-                type="button"
-                class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                @click="till.closeProductInfo()"
-            >
-                {{ till.t('common.close') }}
-            </button>
         </div>
 
-        <div v-if="info" class="flex min-h-0 flex-auto flex-col gap-5 overflow-y-auto p-4">
+        <div v-if="info" class="flex min-h-0 flex-auto flex-col gap-5">
             <div v-if="info.is_storable" class="flex flex-col gap-1">
                 <p class="text-sm font-semibold text-gray-950 dark:text-white">{{ till.t('product-info.inventory') }}</p>
 

@@ -49,20 +49,9 @@ function toggleTax(id) {
 </script>
 
 <template>
-    <TillModal :open="state.productModalOpen" width="max-w-xl" @close="till.closeProductForm()">
-        <div class="flex flex-none items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <p class="text-base font-semibold text-gray-950 dark:text-white">{{ till.t('product-form.heading') }}</p>
+    <TillModal :heading="till.t('product-form.heading')" :open="state.productModalOpen" width="max-w-xl" @close="till.closeProductForm()">
 
-            <button
-                type="button"
-                class="rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                @click="till.closeProductForm()"
-            >
-                {{ till.t('common.close') }}
-            </button>
-        </div>
-
-        <div class="flex min-h-0 flex-auto flex-col gap-4 overflow-y-auto p-4">
+        <div class="flex min-h-0 flex-auto flex-col gap-4">
             <label class="flex flex-col gap-1">
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ till.t('product-form.name') }}</span>
 

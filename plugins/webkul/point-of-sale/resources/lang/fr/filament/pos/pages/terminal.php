@@ -78,6 +78,7 @@ return [
     ],
 
     'closing' => [
+        'copy'            => 'Copier le montant attendu',
         'heading'         => 'Fermeture de la caisse',
         'expected'        => 'Attendu dans le tiroir',
         'counted'         => 'Compté',
@@ -87,7 +88,7 @@ return [
         'method'          => 'Mode de paiement',
         'total'           => 'Total',
         'opening'         => 'Ouverture',
-        'payments'        => 'Paiements',
+        'payments'        => 'Paiements en espèces',
         'moves'           => 'Entrée / sortie d\'espèces',
         'cash-in'         => 'Entrée d\'espèces :number',
         'cash-out'        => 'Sortie d\'espèces :number',
@@ -192,13 +193,14 @@ Souhaitez-vous continuer malgré tout ?',
     ],
 
     'money-details' => [
-        'label'    => 'Pièces/Billets',
-        'heading'  => 'Détails d\'ouverture :',
-        'total'    => 'Total : :total',
-        'confirm'  => 'Confirmer',
-        'close'    => 'Fermer',
-        'increase' => 'Ajouter un',
-        'decrease' => 'Retirer un',
+        'label'            => 'Pièces/Billets',
+        'opening-heading'  => 'Détails d\'ouverture :',
+        'closing-heading'  => 'Détails de clôture :',
+        'total'            => 'Total : :total',
+        'confirm'          => 'Confirmer',
+        'close'            => 'Fermer',
+        'increase'         => 'Ajouter un',
+        'decrease'         => 'Retirer un',
     ],
 
     'cart' => [
@@ -228,11 +230,13 @@ Souhaitez-vous continuer malgré tout ?',
     ],
 
     'payment' => [
-        'select-method' => 'Veuillez sélectionner un mode de paiement',
-        'invoice'       => 'Facture',
-        'change'        => 'monnaie',
-        'remove'        => 'Retirer le paiement :method',
-        'validate'      => 'Valider',
+        'ship-later'         => 'Livrer plus tard',
+        'ship-later-heading' => 'Sélectionnez la date d\'expédition',
+        'select-method'      => 'Veuillez sélectionner un mode de paiement',
+        'invoice'            => 'Facture',
+        'change'             => 'monnaie',
+        'remove'             => 'Retirer le paiement :method',
+        'validate'           => 'Valider',
     ],
 
     'receipt' => [

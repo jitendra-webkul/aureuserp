@@ -8,20 +8,9 @@ const state = till.state
 </script>
 
 <template>
-    <TillModal :open="state.priceListModalOpen" width="max-w-xl" @close="till.closePriceLists()">
-        <div class="flex flex-none items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <p class="text-base font-semibold text-gray-950 dark:text-white">{{ till.t('price-lists.heading') }}</p>
+    <TillModal :heading="till.t('price-lists.heading')" :open="state.priceListModalOpen" width="max-w-xl" @close="till.closePriceLists()">
 
-            <button
-                type="button"
-                class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 active:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:active:bg-gray-700"
-                @click="till.closePriceLists()"
-            >
-                {{ till.t('common.close') }}
-            </button>
-        </div>
-
-        <div class="flex min-h-0 flex-auto flex-col gap-2 overflow-y-auto p-4">
+        <div class="flex min-h-0 flex-auto flex-col gap-2">
             <button
                 v-for="priceList in till.priceLists"
                 :key="priceList.id"

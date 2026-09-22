@@ -24,8 +24,9 @@ class ClosingControlReport
 
         $payments = Payment::withoutGlobalScopes()
             ->where('session_id', $session->id)
-            ->where('is_change', false)
             ->get();
+
+        $settled = $payments->where('is_change', false);
 
         $methods = $session->config->paymentMethods
             ->reject(fn (PaymentMethod $method): bool => $method->type === PaymentMethodType::PAY_LATER);
@@ -36,10 +37,12 @@ class ClosingControlReport
             ? (float) $payments->where('payment_method_id', $cashMethod->id)->sum('amount')
             : 0.0;
 
+        $orderTotals = (float) $orders->sum('amount_total');
+
         return [
             'orders_details' => [
                 'quantity' => $orders->count(),
-                'amount'   => (float) $orders->sum('amount_total'),
+                'amount'   => $orderTotals,
             ],
             'opening_notes'        => $session->opening_notes,
             'default_cash_details' => $cashMethod ? [
@@ -56,8 +59,8 @@ class ClosingControlReport
                     'id'     => $method->id,
                     'name'   => $method->name,
                     'type'   => $method->type,
-                    'number' => $payments->where('payment_method_id', $method->id)->count(),
-                    'amount' => (float) $payments->where('payment_method_id', $method->id)->sum('amount'),
+                    'number' => $settled->where('payment_method_id', $method->id)->count(),
+                    'amount' => (float) $settled->where('payment_method_id', $method->id)->sum('amount'),
                 ])
                 ->values()
                 ->all(),

@@ -6,6 +6,10 @@ return [
         'discount' => 'Discount',
     ],
 
+    'picking' => [
+        'operation-type-missing' => 'No stock operation type is configured for order :order, so nothing was moved.',
+    ],
+
     'config' => [
         'terminal-journal' => 'Point of Sale',
     ],

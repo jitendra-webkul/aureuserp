@@ -74,13 +74,34 @@
                 <div class="flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
                     <span>{{ __('point-of-sale::filament/pos/pages/terminal.closing.counted') }}</span>
 
-                    <x-filament::input.wrapper class="w-40">
-                        <x-filament::input
-                            type="number"
-                            step="0.01"
-                            wire:model.live.debounce.500ms="paymentCounted.{{ $method['id'] }}"
+                    <div class="flex items-center gap-1">
+                        <div class="relative w-40">
+                            <x-filament::input.wrapper>
+                                <x-filament::input
+                                    type="number"
+                                    step="0.01"
+                                    class="pe-10"
+                                    wire:model.live.debounce.500ms="paymentCounted.{{ $method['id'] }}"
+                                />
+                            </x-filament::input.wrapper>
+
+                            <button
+                                type="button"
+                                class="absolute inset-y-0 end-3 my-auto flex size-6 items-center justify-center rounded text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                                wire:click="$set('paymentCounted.{{ $method['id'] }}', null)"
+                                aria-label="{{ __('point-of-sale::filament/pos/pages/terminal.closing.clear') }}"
+                            >
+                                <x-filament::icon icon="heroicon-m-x-mark" class="size-5" />
+                            </button>
+                        </div>
+
+                        <x-filament::icon-button
+                            icon="heroicon-o-document-duplicate"
+                            color="gray"
+                            wire:click="copyExpectedPayment({{ $method['id'] }}, {{ $method['amount'] }})"
+                            :label="__('point-of-sale::filament/pos/pages/terminal.closing.copy')"
                         />
-                    </x-filament::input.wrapper>
+                    </div>
                 </div>
 
                 <div @class(['flex items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400', 'font-semibold text-danger-600' => ! float_is_zero($this->paymentDifference($method), precisionDigits: 2)])>
@@ -96,17 +117,25 @@
             </p>
 
             <div class="flex items-center gap-2">
-                <x-filament::input.wrapper class="flex-1">
-                    <x-filament::input type="number" step="0.01" wire:model.live.debounce.500ms="closingCash" />
-                </x-filament::input.wrapper>
+                <div class="relative flex-1">
+                    <x-filament::input.wrapper>
+                        <x-filament::input
+                            type="number"
+                            step="0.01"
+                            class="pe-10"
+                            wire:model.live.debounce.500ms="closingCash"
+                        />
+                    </x-filament::input.wrapper>
 
-                <x-filament::icon-button
-                    icon="heroicon-o-x-mark"
-                    color="gray"
-                    size="lg"
-                    wire:click="$set('closingCash', null)"
-                    :label="__('point-of-sale::filament/pos/pages/terminal.closing.clear')"
-                />
+                    <button
+                        type="button"
+                        class="absolute inset-y-0 end-3 my-auto flex size-6 items-center justify-center rounded text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                        wire:click="$set('closingCash', null)"
+                        aria-label="{{ __('point-of-sale::filament/pos/pages/terminal.closing.clear') }}"
+                    >
+                        <x-filament::icon icon="heroicon-m-x-mark" class="size-5" />
+                    </button>
+                </div>
 
                 <x-filament::icon-button
                     icon="heroicon-o-banknotes"
@@ -114,6 +143,14 @@
                     size="lg"
                     wire:click="openMoneyDetails('closing')"
                     :label="__('point-of-sale::filament/pos/pages/terminal.money-details.label')"
+                />
+
+                <x-filament::icon-button
+                    icon="heroicon-o-document-duplicate"
+                    color="gray"
+                    size="lg"
+                    wire:click="copyExpectedCash"
+                    :label="__('point-of-sale::filament/pos/pages/terminal.closing.copy')"
                 />
             </div>
 
@@ -143,7 +180,7 @@
                         rows="3"
                         wire:model="closingNote"
                         class="block w-full border-none bg-transparent px-3 py-1.5 text-base text-gray-950 outline-none sm:text-sm dark:text-white"
-                    ></textarea>
+                    >{{ $closingNote }}</textarea>
                 </x-filament::input.wrapper>
             </div>
         </div>
@@ -162,7 +199,7 @@
             {{ __('point-of-sale::filament/pos/pages/terminal.menu.cash-in-out') }}
         </x-filament::button>
 
-        <x-filament::button color="gray" tag="a" :href="$this->salesDetailsUrl()" target="_blank" icon="heroicon-m-arrow-down-tray">
+        <x-filament::button color="gray" wire:click="downloadSalesDetails" icon="heroicon-m-arrow-down-tray">
             {{ __('point-of-sale::filament/pos/pages/terminal.closing.daily-sale') }}
         </x-filament::button>
     </x-slot>

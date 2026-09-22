@@ -9,6 +9,7 @@ use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
 use Webkul\PointOfSale\Exceptions\RefundExceedsSoldQuantityException;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
+use Webkul\PointOfSale\Models\OrderLineLot;
 use Webkul\PointOfSale\Models\Payment;
 use Webkul\PointOfSale\Models\PaymentMethod;
 use Webkul\PointOfSale\Models\Session;
@@ -134,6 +135,29 @@ class RefundProcessor
             ->all();
     }
 
+    protected function copyLots(OrderLine $refundLine, OrderLine $line, float $quantity): void
+    {
+        $remaining = $quantity;
+
+        foreach ($line->lots as $lot) {
+            if (float_compare($remaining, 0, precisionDigits: 4) <= 0) {
+                break;
+            }
+
+            $taken = min((float) $lot->qty, $remaining);
+
+            OrderLineLot::create([
+                'order_line_id' => $refundLine->id,
+                'lot_name'      => $lot->lot_name,
+                'lot_id'        => $lot->lot_id,
+                'qty'           => $taken,
+                'company_id'    => $refundLine->company_id,
+            ]);
+
+            $remaining = float_round($remaining - $taken, precisionDigits: 4);
+        }
+    }
+
     protected function resolveSession(Order $order, ?Session $session): Session
     {
         if ($session) {
@@ -170,6 +194,8 @@ class RefundProcessor
         $refundLine->taxes()->sync($line->taxes->pluck('id')->all());
 
         $refundLine->attributeValues()->sync($line->attributeValues->pluck('id')->all());
+
+        $this->copyLots($refundLine, $line, $quantity);
 
         return $refundLine;
     }

@@ -10,7 +10,6 @@ use Webkul\Account\Models\Move;
 use Webkul\Account\Models\MoveLine;
 use Webkul\Account\Models\Payment as AccountPayment;
 use Webkul\PointOfSale\Models\Order;
-use Webkul\PointOfSale\Models\Payment;
 
 class PosInvoicePayer
 {
@@ -29,8 +28,15 @@ class PosInvoicePayer
         }
 
         $order->payments
-            ->reject(fn (Payment $payment): bool => (bool) $payment->is_change)
-            ->each(function (Payment $payment) use ($invoice, $order, $receivableLine): void {
+            ->groupBy('payment_method_id')
+            ->map(fn ($rows): array => [
+                'payment' => $rows->firstWhere('is_change', false) ?? $rows->first(),
+                'amount'  => float_round((float) $rows->sum('amount'), precisionDigits: 4),
+            ])
+            ->filter(fn (array $tender): bool => float_compare($tender['amount'], 0, precisionDigits: 2) > 0)
+            ->each(function (array $tender) use ($invoice, $order, $receivableLine): void {
+                $payment = $tender['payment'];
+
                 $method = $payment->paymentMethod;
 
                 if (! $method?->payment_method_line_id) {
@@ -52,7 +58,7 @@ class PosInvoicePayer
                         'company_id'             => $order->company_id,
                         'currency_id'            => $order->currency_id,
                         'date'                   => $order->ordered_at,
-                        'amount'                 => abs((float) $payment->amount),
+                        'amount'                 => $tender['amount'],
                         'memo'                   => $order->name ?? $order->reference,
                         'outstanding_account_id' => $outstanding?->id,
                         'destination_account_id' => $receivableLine->account_id,

@@ -52,7 +52,7 @@
                     wire:model="openingNote"
                     placeholder="{{ __('point-of-sale::filament/pos/pages/terminal.opening-control.placeholder') }}"
                     class="block w-full border-none bg-transparent px-3 py-1.5 text-base text-gray-950 outline-none placeholder:text-gray-400 sm:text-sm dark:text-white dark:placeholder:text-gray-500"
-                ></textarea>
+                >{{ $openingNote }}</textarea>
             </x-filament::input.wrapper>
         </div>
 

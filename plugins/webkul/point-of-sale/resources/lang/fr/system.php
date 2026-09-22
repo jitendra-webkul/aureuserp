@@ -6,6 +6,10 @@ return [
         'discount' => 'Remise',
     ],
 
+    'picking' => [
+        'operation-type-missing' => 'Aucun type d\'opération de stock n\'est configuré pour la commande :order, rien n\'a donc été déplacé.',
+    ],
+
     'config' => [
         'terminal-journal' => 'Point de vente',
     ],

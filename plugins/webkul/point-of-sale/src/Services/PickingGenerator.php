@@ -13,6 +13,7 @@ use Webkul\Inventory\Models\Move;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\PointOfSale\Events\OrderOperationFailed;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\Product\Enums\ProductType;
@@ -46,6 +47,8 @@ class PickingGenerator
             $operationType = $this->operationTypeFor($order, $isReturn);
 
             if (! $operationType) {
+                $this->flagMissingOperationType($order);
+
                 continue;
             }
 
@@ -126,6 +129,17 @@ class PickingGenerator
         });
 
         return $operation->refresh();
+    }
+
+    protected function flagMissingOperationType(Order $order): void
+    {
+        $order->forceFill(['has_failed_operation' => true])->save();
+
+        $order->session()->update(['has_failed_operations' => true]);
+
+        OrderOperationFailed::dispatch($order, null, new PosConfigurationException(
+            __('point-of-sale::system.picking.operation-type-missing', ['order' => $order->reference ?? $order->name])
+        ));
     }
 
     protected function forceComplete(Order $order, Operation $operation): bool

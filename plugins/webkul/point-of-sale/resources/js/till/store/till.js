@@ -69,6 +69,8 @@ export class Till {
             cameraError: null,
             variantSelection: {},
             priceListModalOpen: false,
+            shipLaterModalOpen: false,
+            shipLaterDraft: '',
             productSaving: false,
             productError: null,
             rememberedOrderUnavailable: false,
@@ -212,6 +214,7 @@ export class Till {
             note: order.note ?? '',
             is_takeaway: Boolean(order.is_takeaway),
             to_invoice: Boolean(order.to_invoice),
+            shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
             fiscal_position_id: order.fiscal_position_id ?? this.state.fiscalPositionId,
             created_at: order.created_at ?? new Date().toISOString(),
@@ -295,6 +298,7 @@ export class Till {
                 note: order.note,
                 is_takeaway: order.is_takeaway,
                 to_invoice: order.to_invoice,
+                shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
                 fiscal_position_id: order.fiscal_position_id,
                 created_at: order.created_at,
@@ -1169,6 +1173,12 @@ export class Till {
         this.state.lotWarningOpen = false
     }
 
+    bufferAmount(buffer) {
+        const value = Number(buffer)
+
+        return Number.isFinite(value) ? value : 0
+    }
+
     pickProduct(productId) {
         const product = this.master.products.get(productId)
 
@@ -1365,7 +1375,7 @@ export class Till {
             if (this.state.numpadBuffer !== '') {
                 this.state.numpadBuffer = this.state.numpadBuffer.slice(0, -1)
 
-                this.applyNumpad(line, Number(this.state.numpadBuffer || 0))
+                this.applyNumpad(line, this.bufferAmount(this.state.numpadBuffer))
 
                 return
             }
@@ -1380,7 +1390,7 @@ export class Till {
                 ? this.state.numpadBuffer.slice(1)
                 : `-${this.state.numpadBuffer}`
 
-            this.applyNumpad(line, Number(this.state.numpadBuffer || 0))
+            this.applyNumpad(line, this.bufferAmount(this.state.numpadBuffer))
 
             return
         }
@@ -1391,7 +1401,7 @@ export class Till {
 
         this.state.numpadBuffer += key
 
-        this.applyNumpad(line, Number(this.state.numpadBuffer || 0))
+        this.applyNumpad(line, this.bufferAmount(this.state.numpadBuffer))
     }
 
     resetActiveField(line) {
@@ -1654,6 +1664,47 @@ export class Till {
         }
     }
 
+    canShipLater() {
+        return Boolean(this.config.enable_ship_later)
+    }
+
+    get today() {
+        return new Date().toISOString().split('T')[0]
+    }
+
+    toggleShipLater() {
+        const order = this.activeOrder
+
+        if (!order) {
+            return
+        }
+
+        if (order.shipped_at) {
+            order.shipped_at = null
+
+            return
+        }
+
+        this.state.shipLaterDraft = this.today
+        this.state.shipLaterModalOpen = true
+    }
+
+    closeShipLater() {
+        this.state.shipLaterModalOpen = false
+    }
+
+    confirmShipLater() {
+        const order = this.activeOrder
+
+        if (order) {
+            const draft = this.state.shipLaterDraft
+
+            order.shipped_at = !draft || draft < this.today ? this.today : draft
+        }
+
+        this.state.shipLaterModalOpen = false
+    }
+
     get activePayment() {
         return this.activeOrder?.payments.find((payment) => payment.uuid === this.state.activePaymentUuid)
     }
@@ -1673,7 +1724,7 @@ export class Till {
         if (key === 'backspace') {
             if (this.state.paymentBuffer.length > 1) {
                 this.state.paymentBuffer = this.state.paymentBuffer.slice(0, -1)
-                payment.amount = Number(this.state.paymentBuffer)
+                payment.amount = this.bufferAmount(this.state.paymentBuffer)
 
                 return
             }
@@ -1705,7 +1756,7 @@ export class Till {
         }
 
         this.state.paymentBuffer += key
-        payment.amount = Number(this.state.paymentBuffer) || 0
+        payment.amount = this.bufferAmount(this.state.paymentBuffer)
     }
 
     removePayment(uuid) {
@@ -1735,6 +1786,10 @@ export class Till {
         }
 
         if (this.config.enable_customer_required && !order.partner_id) {
+            return false
+        }
+
+        if ((order.to_invoice || order.shipped_at) && !order.partner_id) {
             return false
         }
 
@@ -1768,6 +1823,7 @@ export class Till {
             fiscal_position_id: order.fiscal_position_id,
             is_takeaway: order.is_takeaway,
             is_to_invoice: order.to_invoice,
+            shipped_at: order.shipped_at,
             note: order.note,
             amount_total: totals.total,
             lines: this.sellableLines(order).map((line) => {

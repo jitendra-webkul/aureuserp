@@ -78,6 +78,7 @@ return [
     ],
 
     'closing' => [
+        'copy'            => 'Copiar el importe esperado',
         'heading'         => 'Cerrando la caja',
         'expected'        => 'Esperado en el cajón',
         'counted'         => 'Contado',
@@ -87,7 +88,7 @@ return [
         'method'          => 'Método de pago',
         'total'           => 'Total',
         'opening'         => 'Apertura',
-        'payments'        => 'Pagos',
+        'payments'        => 'Pagos en efectivo',
         'moves'           => 'Entrada / salida de efectivo',
         'cash-in'         => 'Entrada de efectivo :number',
         'cash-out'        => 'Salida de efectivo :number',
@@ -192,13 +193,14 @@ return [
     ],
 
     'money-details' => [
-        'label'    => 'Monedas/Billetes',
-        'heading'  => 'Detalles de apertura:',
-        'total'    => 'Total: :total',
-        'confirm'  => 'Confirmar',
-        'close'    => 'Cerrar',
-        'increase' => 'Añadir uno',
-        'decrease' => 'Quitar uno',
+        'label'            => 'Monedas/Billetes',
+        'opening-heading'  => 'Detalles de apertura:',
+        'closing-heading'  => 'Detalles de cierre:',
+        'total'            => 'Total: :total',
+        'confirm'          => 'Confirmar',
+        'close'            => 'Cerrar',
+        'increase'         => 'Añadir uno',
+        'decrease'         => 'Quitar uno',
     ],
 
     'cart' => [
@@ -228,11 +230,13 @@ return [
     ],
 
     'payment' => [
-        'select-method' => 'Seleccione un método de pago',
-        'invoice'       => 'Factura',
-        'change'        => 'cambio',
-        'remove'        => 'Quitar el pago de :method',
-        'validate'      => 'Validar',
+        'ship-later'         => 'Enviar más tarde',
+        'ship-later-heading' => 'Seleccione la fecha de envío',
+        'select-method'      => 'Seleccione un método de pago',
+        'invoice'            => 'Factura',
+        'change'             => 'cambio',
+        'remove'             => 'Quitar el pago de :method',
+        'validate'           => 'Validar',
     ],
 
     'receipt' => [

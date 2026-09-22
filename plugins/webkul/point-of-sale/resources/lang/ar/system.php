@@ -6,6 +6,10 @@ return [
         'discount' => 'الخصم',
     ],
 
+    'picking' => [
+        'operation-type-missing' => 'لا يوجد نوع عملية مخزون مهيأ للطلب :order، لذلك لم تُنقل أي بضاعة.',
+    ],
+
     'config' => [
         'terminal-journal' => 'نقطة البيع',
     ],

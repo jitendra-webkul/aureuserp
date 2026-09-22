@@ -40,8 +40,13 @@ function saveCustomer() {
 </script>
 
 <template>
-    <TillModal :open="state.customerModalOpen" width="max-w-xl" @close="till.closeCustomers()">
-            <div class="flex flex-none items-center gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
+    <TillModal
+        :open="state.customerModalOpen"
+        width="max-w-xl"
+        :heading="till.t('customers.heading')"
+        @close="till.closeCustomers()"
+    >
+            <div class="flex flex-none items-center gap-2">
                 <input
                     v-model="state.customerSearch"
                     type="search"
@@ -54,19 +59,11 @@ function saveCustomer() {
                     class="flex-none rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
                     @click="startCreating()"
                 >
-                    +
-                </button>
-
-                <button
-                    type="button"
-                    class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                    @click="till.closeCustomers()"
-                >
-                    {{ till.t('common.close') }}
+                    {{ till.t('common.new') }}
                 </button>
             </div>
 
-            <div v-if="creating" class="flex flex-none flex-col gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
+            <div v-if="creating" class="flex flex-none flex-col gap-2 border-b border-gray-100 dark:border-gray-800">
                 <input
                     v-model="draft.name"
                     type="text"

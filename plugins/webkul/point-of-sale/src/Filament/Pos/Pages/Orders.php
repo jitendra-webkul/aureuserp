@@ -22,6 +22,7 @@ use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Services\ReceiptBuilder;
 use Webkul\PointOfSale\Services\RefundProcessor;
+use Webkul\PointOfSale\Support\PosAccess;
 
 class Orders extends Page
 {
@@ -62,6 +63,8 @@ class Orders extends Page
     public function mount(?Session $session = null): void
     {
         $this->session = $session ?? static::currentSession();
+
+        abort_unless($this->session === null || PosAccess::reachesSession($this->session), 403);
     }
 
     public static function getNavigationUrl(array $parameters = []): string
@@ -158,7 +161,12 @@ class Orders extends Page
             return null;
         }
 
+        if (! $this->session) {
+            return null;
+        }
+
         return Order::withoutGlobalScopes()
+            ->where('session_id', $this->session->getKey())
             ->with(['lines.product', 'payments.paymentMethod', 'partner', 'currency'])
             ->find($this->selectedOrderId);
     }
@@ -179,7 +187,9 @@ class Orders extends Page
             ->requiresConfirmation()
             ->modalHeading(__($prefix.'heading'))
             ->action(function (array $arguments) use ($prefix): void {
-                $order = Order::find($arguments['order'] ?? null);
+                $order = Order::withoutGlobalScopes()
+                    ->where('session_id', $this->session?->getKey())
+                    ->find($arguments['order'] ?? null);
 
                 if (! $order) {
                     return;

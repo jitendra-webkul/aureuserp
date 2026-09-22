@@ -24,8 +24,13 @@ function discard(uuid) {
 </script>
 
 <template>
-    <TillModal :open="state.ordersModalOpen" width="max-w-2xl" @close="till.closeOrders()">
-            <div class="flex flex-none items-center gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
+    <TillModal
+        :open="state.ordersModalOpen"
+        width="max-w-2xl"
+        :heading="till.t('parked.heading')"
+        @close="till.closeOrders()"
+    >
+            <div class="flex flex-none items-center gap-2">
                 <input
                     v-model="state.ordersSearch"
                     type="search"
@@ -40,17 +45,9 @@ function discard(uuid) {
                 >
                     {{ till.t('common.new') }}
                 </button>
-
-                <button
-                    type="button"
-                    class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                    @click="till.closeOrders()"
-                >
-                    {{ till.t('common.close') }}
-                </button>
             </div>
 
-            <div class="flex min-h-0 flex-auto flex-col gap-2 overflow-y-auto p-4">
+            <div class="flex min-h-0 flex-auto flex-col gap-2">
                 <div
                     v-for="order in results"
                     :key="order.uuid"

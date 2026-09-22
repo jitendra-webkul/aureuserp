@@ -78,6 +78,7 @@ return [
     ],
 
     'closing' => [
+        'copy'            => 'نسخ المبلغ المتوقع',
         'heading'         => 'إغلاق السجل النقدي',
         'expected'        => 'المتوقع في الدرج',
         'counted'         => 'المعدود',
@@ -87,7 +88,7 @@ return [
         'method'          => 'طريقة الدفع',
         'total'           => 'الإجمالي',
         'opening'         => 'الافتتاح',
-        'payments'        => 'الدفعات',
+        'payments'        => 'المدفوعات النقدية',
         'moves'           => 'إيداع / سحب نقدي',
         'cash-in'         => 'إيداع نقدي :number',
         'cash-out'        => 'سحب نقدي :number',
@@ -192,13 +193,14 @@ return [
     ],
 
     'money-details' => [
-        'label'    => 'العملات/الأوراق النقدية',
-        'heading'  => 'تفاصيل الافتتاح:',
-        'total'    => 'الإجمالي: :total',
-        'confirm'  => 'تأكيد',
-        'close'    => 'إغلاق',
-        'increase' => 'إضافة واحد',
-        'decrease' => 'إزالة واحد',
+        'label'            => 'العملات/الأوراق النقدية',
+        'opening-heading'  => 'تفاصيل الافتتاح:',
+        'closing-heading'  => 'تفاصيل الإغلاق:',
+        'total'            => 'الإجمالي: :total',
+        'confirm'          => 'تأكيد',
+        'close'            => 'إغلاق',
+        'increase'         => 'إضافة واحد',
+        'decrease'         => 'إزالة واحد',
     ],
 
     'cart' => [
@@ -228,11 +230,13 @@ return [
     ],
 
     'payment' => [
-        'select-method' => 'يرجى اختيار طريقة دفع',
-        'invoice'       => 'فاتورة',
-        'change'        => 'الباقي',
-        'remove'        => 'إزالة دفعة :method',
-        'validate'      => 'تأكيد',
+        'ship-later'         => 'الشحن لاحقاً',
+        'ship-later-heading' => 'حدد تاريخ الشحن',
+        'select-method'      => 'يرجى اختيار طريقة دفع',
+        'invoice'            => 'فاتورة',
+        'change'             => 'الباقي',
+        'remove'             => 'إزالة دفعة :method',
+        'validate'           => 'تأكيد',
     ],
 
     'receipt' => [

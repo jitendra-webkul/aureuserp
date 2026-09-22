@@ -6,6 +6,10 @@ return [
         'discount' => 'Descuento',
     ],
 
+    'picking' => [
+        'operation-type-missing' => 'No hay ningún tipo de operación de stock configurado para el pedido :order, por lo que no se movió nada.',
+    ],
+
     'config' => [
         'terminal-journal' => 'Punto de venta',
     ],

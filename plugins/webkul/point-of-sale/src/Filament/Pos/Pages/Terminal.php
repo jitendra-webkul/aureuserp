@@ -3,22 +3,25 @@
 namespace Webkul\PointOfSale\Filament\Pos\Pages;
 
 use BackedEnum;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
-use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\SalesDetails;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Services\BootLoader;
 use Webkul\PointOfSale\Services\ClosingControlReport;
+use Webkul\PointOfSale\Services\SessionSalesDetailsReport;
 use Webkul\PointOfSale\Services\SessionWorkflow;
+use Webkul\PointOfSale\Support\PosAccess;
 
 abstract class Terminal extends Page
 {
@@ -58,6 +61,8 @@ abstract class Terminal extends Page
 
     public function mount(Session $session): void
     {
+        abort_unless(PosAccess::reachesSession($session), 403);
+
         $this->session = $session;
 
         $this->config = $session->config;
@@ -90,9 +95,23 @@ abstract class Terminal extends Page
         return ConfigResource::getUrl(panel: 'admin');
     }
 
-    public function salesDetailsUrl(): string
+    public function downloadSalesDetails(): StreamedResponse
     {
-        return SalesDetails::getUrl(panel: 'admin');
+        $report = app(SessionSalesDetailsReport::class)->build($this->session->refresh());
+
+        $pdf = Pdf::loadView('point-of-sale::filament.pos.reports.sales-details', [
+            ...$report,
+            'money' => fn (float $amount): string => $this->money($amount),
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        $name = __('point-of-sale::filament/pos/reports/sales-details.filename')
+            .' - '.str_replace('/', '_', (string) $this->session->name).'.pdf';
+
+        return response()->streamDownload(function () use ($pdf): void {
+            echo $pdf->output();
+        }, $name);
     }
 
     public function bootPayload(): array
@@ -163,20 +182,22 @@ abstract class Terminal extends Page
             return null;
         }
 
-        $note = __('point-of-sale::filament/pos/pages/terminal.money-details.heading')."\n";
+        $heading = $this->moneyDetailsTarget === 'closing' ? 'closing-heading' : 'opening-heading';
 
-        foreach ($this->getBills() as $bill) {
+        $note = __("point-of-sale::filament/pos/pages/terminal.money-details.{$heading}")."\n";
+
+        foreach ($this->getBills()->sortBy('value') as $bill) {
             $quantity = (int) ($this->moneyDetails[(string) $bill->id] ?? 0);
 
             if ($quantity === 0) {
                 continue;
             }
 
-            $note .= "\t{$quantity} x ".number_format((float) $bill->value, 2)."\n";
+            $note .= "\t{$quantity} x ".$this->money((float) $bill->value)."\n";
         }
 
         return $note.__('point-of-sale::filament/pos/pages/terminal.money-details.total', [
-            'total' => number_format($total, 2),
+            'total' => $this->money($total),
         ]);
     }
 
@@ -272,6 +293,16 @@ abstract class Terminal extends Page
         return $counted === null || $counted === ''
             ? 0.0
             : float_round((float) $counted - $method['amount'], precisionDigits: 2);
+    }
+
+    public function copyExpectedCash(): void
+    {
+        $this->closingCash = float_round((float) $this->session->expectedCashBalance(), precisionDigits: 2);
+    }
+
+    public function copyExpectedPayment(int $methodId, float $amount): void
+    {
+        $this->paymentCounted[$methodId] = float_round($amount, precisionDigits: 2);
     }
 
     public function cashDifference(array $cash): float

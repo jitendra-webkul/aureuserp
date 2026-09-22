@@ -1,12 +1,20 @@
 <script setup>
-import { watch, onBeforeUnmount } from 'vue'
+import { watch, onBeforeUnmount, useSlots, inject } from 'vue'
 
 const props = defineProps({
     open: { type: Boolean, default: false },
     width: { type: String, default: 'max-w-xl' },
+    heading: { type: String, default: null },
+    description: { type: String, default: null },
+    contentClass: { type: String, default: null },
+    headerClass: { type: String, default: null },
 })
 
 const emit = defineEmits(['close'])
+
+const slots = useSlots()
+
+const till = inject('till')
 
 function onKeydown(event) {
     if (event.key === 'Escape') {
@@ -27,37 +35,74 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 <template>
     <Teleport to="body">
-        <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition duration-150 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div
-                v-if="open"
-                class="fixed inset-0 z-50 flex items-start justify-center bg-gray-950/50 px-4 pb-4 pt-24 backdrop-blur-[2px]"
-                @click.self="emit('close')"
+        <div v-if="open" class="fi-modal fi-absolute-positioning-context fi-modal-open">
+            <Transition
+                appear
+                enter-active-class="transition-opacity duration-300"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-300"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
             >
+                <div v-if="open" aria-hidden="true" class="fi-modal-close-overlay"></div>
+            </Transition>
+
+            <div class="fi-modal-window-ctn fi-clickable" @click.self="emit('close')">
                 <Transition
                     appear
-                    enter-active-class="transition duration-200 ease-out"
-                    enter-from-class="translate-y-2 scale-95 opacity-0"
-                    enter-to-class="translate-y-0 scale-100 opacity-100"
-                    leave-active-class="transition duration-150 ease-in"
-                    leave-from-class="translate-y-0 scale-100 opacity-100"
-                    leave-to-class="translate-y-2 scale-95 opacity-0"
+                    enter-active-class="fi-transition-enter"
+                    enter-from-class="fi-transition-enter-start"
+                    enter-to-class="fi-transition-enter-end"
+                    leave-active-class="fi-transition-leave"
+                    leave-from-class="fi-transition-leave-start"
+                    leave-to-class="fi-transition-leave-end"
                 >
                     <div
                         v-if="open"
-                        class="flex max-h-[calc(100vh-8rem)] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10"
-                        :class="width"
+                        class="fi-modal-window fi-modal-window-has-close-btn"
+                        :class="[width, slots.footer ? 'fi-modal-window-has-footer' : '']"
+                        role="dialog"
+                        aria-modal="true"
                     >
-                        <slot />
+                        <button
+                            type="button"
+                            class="fi-icon-btn fi-modal-close-btn"
+                            :aria-label="till.t('common.close')"
+                            @click="emit('close')"
+                        >
+                            <svg
+                                class="fi-icon fi-size-lg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                aria-hidden="true"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <div v-if="heading || slots.header" class="fi-modal-header" :class="headerClass">
+                            <slot name="header">
+                                <h2 class="fi-modal-heading">{{ heading }}</h2>
+
+                                <p v-if="description" class="fi-modal-description">{{ description }}</p>
+                            </slot>
+                        </div>
+
+                        <div class="fi-modal-content" :class="[(heading || slots.header) ? 'pt-0!' : '', contentClass]">
+                            <slot />
+                        </div>
+
+                        <div v-if="slots.footer" class="fi-modal-footer">
+                            <div class="flex w-full items-center gap-3">
+                                <slot name="footer" />
+                            </div>
+                        </div>
                     </div>
                 </Transition>
             </div>
-        </Transition>
+        </div>
     </Teleport>
 </template>

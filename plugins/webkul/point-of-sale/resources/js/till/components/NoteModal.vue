@@ -24,24 +24,9 @@ function chipStyle(note) {
 </script>
 
 <template>
-    <TillModal :open="state.noteModalOpen" width="max-w-xl" @close="till.closeNotes()">
-        <div class="flex flex-none items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <div class="min-w-0">
-                <p class="text-base font-semibold text-gray-950 dark:text-white">{{ till.noteLabel }}</p>
+    <TillModal :heading="till.noteLabel" :description="productName" :open="state.noteModalOpen" width="max-w-xl" @close="till.closeNotes()">
 
-                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ productName }}</p>
-            </div>
-
-            <button
-                type="button"
-                class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                @click="till.closeNotes()"
-            >
-                {{ till.t('common.close') }}
-            </button>
-        </div>
-
-        <div class="flex min-h-0 flex-auto flex-col gap-3 overflow-y-auto p-4">
+        <div class="flex min-h-0 flex-auto flex-col gap-3">
             <div v-if="presets.length" class="flex flex-wrap gap-2">
                 <button
                     v-for="note in presets"

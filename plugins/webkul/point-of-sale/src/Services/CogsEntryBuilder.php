@@ -14,6 +14,7 @@ use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\Session;
+use Webkul\Product\Enums\ProductType;
 
 class CogsEntryBuilder
 {
@@ -114,6 +115,10 @@ class CogsEntryBuilder
 
         foreach ($orders as $order) {
             foreach ($order->lines as $line) {
+                if (! $this->movesStock($line)) {
+                    continue;
+                }
+
                 $amount = (float) $line->total_cost;
 
                 if (float_is_zero($amount, precisionDigits: 4)) {
@@ -129,6 +134,12 @@ class CogsEntryBuilder
         }
 
         return $buckets;
+    }
+
+    protected function movesStock(OrderLine $line): bool
+    {
+        return $line->product?->type === ProductType::GOODS
+            && $line->product?->is_storable;
     }
 
     protected function expenseAccountFor(Session $session, OrderLine $line)

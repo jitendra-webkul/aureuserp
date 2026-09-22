@@ -3,9 +3,25 @@
 namespace Webkul\PointOfSale\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
+use Webkul\PointOfSale\Support\PosAccess;
 
 class OrderSyncRequest extends FormRequest
 {
+    protected function reachable(string $table): Exists
+    {
+        $companyIds = PosAccess::companyIds();
+
+        return Rule::exists($table, 'id')->where(function ($query) use ($companyIds) {
+            if ($companyIds === []) {
+                return $query;
+            }
+
+            return $query->where(fn ($scope) => $scope->whereIn('company_id', $companyIds)->orWhereNull('company_id'));
+        });
+    }
+
     public function rules(): array
     {
         return [
@@ -13,8 +29,8 @@ class OrderSyncRequest extends FormRequest
             'orders.*.uuid'                         => ['required', 'uuid'],
             'orders.*.reference'                    => ['nullable', 'string', 'max:64'],
             'orders.*.tracking_number'              => ['nullable', 'string', 'max:32'],
-            'orders.*.config_id'                    => ['required', 'integer', 'exists:pos_configs,id'],
-            'orders.*.session_id'                   => ['nullable', 'integer'],
+            'orders.*.config_id'                    => ['required', 'integer', $this->reachable('pos_configs')],
+            'orders.*.session_id'                   => ['nullable', 'integer', $this->reachable('pos_sessions')],
             'orders.*.partner_id'                   => ['nullable', 'integer', 'exists:partners_partners,id'],
             'orders.*.partner'                      => ['nullable', 'array'],
             'orders.*.partner.name'                 => ['required_with:orders.*.partner', 'string', 'max:255'],

@@ -78,6 +78,7 @@ return [
     ],
 
     'closing' => [
+        'copy'            => 'Copiar o valor esperado',
         'heading'         => 'Fechando o caixa',
         'expected'        => 'Esperado na gaveta',
         'counted'         => 'Contado',
@@ -87,7 +88,7 @@ return [
         'method'          => 'Método de pagamento',
         'total'           => 'Total',
         'opening'         => 'Abertura',
-        'payments'        => 'Pagamentos',
+        'payments'        => 'Pagamentos em dinheiro',
         'moves'           => 'Entrada / saída de caixa',
         'cash-in'         => 'Entrada de caixa :number',
         'cash-out'        => 'Saída de caixa :number',
@@ -192,13 +193,14 @@ Deseja continuar mesmo assim?',
     ],
 
     'money-details' => [
-        'label'    => 'Moedas/Cédulas',
-        'heading'  => 'Detalhes de abertura:',
-        'total'    => 'Total: :total',
-        'confirm'  => 'Confirmar',
-        'close'    => 'Fechar',
-        'increase' => 'Adicionar um',
-        'decrease' => 'Remover um',
+        'label'            => 'Moedas/Cédulas',
+        'opening-heading'  => 'Detalhes de abertura:',
+        'closing-heading'  => 'Detalhes de fechamento:',
+        'total'            => 'Total: :total',
+        'confirm'          => 'Confirmar',
+        'close'            => 'Fechar',
+        'increase'         => 'Adicionar um',
+        'decrease'         => 'Remover um',
     ],
 
     'cart' => [
@@ -228,11 +230,13 @@ Deseja continuar mesmo assim?',
     ],
 
     'payment' => [
-        'select-method' => 'Selecione um método de pagamento',
-        'invoice'       => 'Fatura',
-        'change'        => 'troco',
-        'remove'        => 'Remover o pagamento :method',
-        'validate'      => 'Validar',
+        'ship-later'         => 'Enviar depois',
+        'ship-later-heading' => 'Selecione a data de envio',
+        'select-method'      => 'Selecione um método de pagamento',
+        'invoice'            => 'Fatura',
+        'change'             => 'troco',
+        'remove'             => 'Remover o pagamento :method',
+        'validate'           => 'Validar',
     ],
 
     'receipt' => [

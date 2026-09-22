@@ -16,18 +16,7 @@ function proceed() {
 </script>
 
 <template>
-    <TillModal :open="state.lotWarningOpen" width="max-w-lg" @close="till.dismissLotWarning()">
-        <div class="flex flex-none items-center justify-between gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <p class="text-base font-semibold text-gray-950 dark:text-white">{{ till.t('lots.warning.heading') }}</p>
-
-            <button
-                type="button"
-                class="flex-none rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 active:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 dark:active:bg-gray-700"
-                @click="till.dismissLotWarning()"
-            >
-                {{ till.t('common.close') }}
-            </button>
-        </div>
+    <TillModal :heading="till.t('lots.warning.heading')" :open="state.lotWarningOpen" width="max-w-lg" @close="till.dismissLotWarning()">
 
         <div class="flex flex-col gap-3 p-4">
             <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
@@ -45,7 +34,7 @@ function proceed() {
             </ul>
         </div>
 
-        <div class="flex flex-none gap-2 border-t border-gray-100 p-4 dark:border-gray-800">
+        <template #footer>
             <button
                 type="button"
                 class="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700"
@@ -61,6 +50,6 @@ function proceed() {
             >
                 {{ till.t('lots.warning.proceed') }}
             </button>
-        </div>
+        </template>
     </TillModal>
 </template>

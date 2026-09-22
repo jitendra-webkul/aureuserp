@@ -16,16 +16,9 @@ const options = computed(() => (line.value ? till.existingLotsFor(line.value.pro
 </script>
 
 <template>
-    <TillModal :open="state.lotLineUuid !== null" width="max-w-lg" @close="till.closeLots()">
-        <div class="flex flex-none items-baseline gap-2 border-b border-gray-100 p-4 dark:border-gray-800">
-            <p class="flex-none text-base font-semibold text-gray-950 dark:text-white">
-                {{ till.t('lots.heading') }}
-            </p>
+    <TillModal :heading="till.t('lots.heading')" :description="product?.name" :open="state.lotLineUuid !== null" width="max-w-lg" @close="till.closeLots()">
 
-            <p class="min-w-0 truncate text-sm text-gray-500 dark:text-gray-400">{{ product?.name }}</p>
-        </div>
-
-        <div class="flex min-h-0 flex-auto flex-col gap-2 overflow-y-auto p-4">
+        <div class="flex min-h-0 flex-auto flex-col gap-2">
             <p
                 v-if="state.lotError"
                 class="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 dark:bg-danger-500/10 dark:text-danger-300"
@@ -70,7 +63,7 @@ const options = computed(() => (line.value ? till.existingLotsFor(line.value.pro
             </button>
         </div>
 
-        <div class="flex flex-none gap-2 border-t border-gray-100 p-4 dark:border-gray-800">
+        <template #footer>
             <button
                 type="button"
                 class="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700"
@@ -86,6 +79,6 @@ const options = computed(() => (line.value ? till.existingLotsFor(line.value.pro
             >
                 {{ till.t('lots.warning.proceed') }}
             </button>
-        </div>
+        </template>
     </TillModal>
 </template>
