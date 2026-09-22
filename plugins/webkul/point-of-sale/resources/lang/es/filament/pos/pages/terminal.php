@@ -246,6 +246,14 @@ return [
         'new-order' => 'Nuevo pedido',
     ],
 
+    'scanner' => [
+        'unsupported'   => 'Este navegador no puede escanear con la cámara. Usa un lector de códigos de barras conectado.',
+        'hardware-hint' => 'Un lector de códigos de barras conectado funciona en todo el TPV sin abrir esto.',
+        'heading'       => 'Escanear un código de barras',
+        'start'         => 'Escanear con la cámara',
+        'stop'          => 'Detener',
+    ],
+
     'offline' => [
         'banner'              => 'Sin conexión — las ventas continúan y se sincronizan cuando vuelva la conexión',
         'waiting'             => ':count pedido(s) pendientes de sincronizar',

@@ -244,6 +244,14 @@ return [
         'new-order' => 'New order',
     ],
 
+    'scanner' => [
+        'unsupported'   => 'This browser cannot scan with the camera. Use an attached barcode scanner instead.',
+        'hardware-hint' => 'An attached barcode scanner works everywhere in the till without opening this.',
+        'heading'       => 'Scan a barcode',
+        'start'         => 'Scan with the camera',
+        'stop'          => 'Stop',
+    ],
+
     'offline' => [
         'banner'              => 'Offline — sales continue and sync when the connection returns',
         'waiting'             => ':count order(s) waiting to sync',

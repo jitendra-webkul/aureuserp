@@ -246,6 +246,14 @@ Deseja continuar mesmo assim?',
         'new-order' => 'Novo pedido',
     ],
 
+    'scanner' => [
+        'unsupported'   => 'Este navegador não consegue escanear com a câmera. Use um leitor de código de barras conectado.',
+        'hardware-hint' => 'Um leitor de código de barras conectado funciona em todo o PDV sem abrir isto.',
+        'heading'       => 'Escanear um código de barras',
+        'start'         => 'Escanear com a câmera',
+        'stop'          => 'Parar',
+    ],
+
     'offline' => [
         'banner'              => 'Offline — as vendas continuam e serão sincronizadas quando a conexão voltar',
         'waiting'             => ':count pedido(s) aguardando sincronização',

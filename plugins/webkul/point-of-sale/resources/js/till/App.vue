@@ -18,6 +18,7 @@ import VariantModal from './components/VariantModal.vue'
 import LotModal from './components/LotModal.vue'
 import MissingLotsModal from './components/MissingLotsModal.vue'
 import StatusBar from './components/StatusBar.vue'
+import ScannerButton from './components/ScannerButton.vue'
 
 const till = inject('till')
 
@@ -26,6 +27,8 @@ const state = till.state
 
 <template>
     <div class="pos-screen fixed inset-x-0 bottom-0 top-16 flex min-h-0 flex-col">
+        <ScannerButton />
+
         <StatusBar />
 
         <div class="grid h-full min-h-0 flex-auto grid-cols-[1fr] grid-rows-[minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[1fr_minmax(22rem,32%)]">

@@ -60,7 +60,7 @@ class PosPanelProvider extends PanelProvider
                     ->action(fn ($livewire) => $livewire->dispatch('pos-close-register')),
             ])
             ->renderHook(
-                PanelsRenderHook::TOPBAR_END,
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 fn (): View => view('point-of-sale::filament.pos.partials.status-slot'),
             )
             ->spa()

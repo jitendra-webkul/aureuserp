@@ -1,5 +1,5 @@
 <script setup>
-import { inject, computed, onMounted, onBeforeUnmount } from 'vue'
+import { inject, computed } from 'vue'
 
 const till = inject('till')
 
@@ -19,43 +19,6 @@ function selectCategory(id) {
     state.categoryId = state.categoryId === id ? null : id
 }
 
-let scanBuffer = ''
-let scanTimer = null
-
-function onGlobalKey(event) {
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) {
-        return
-    }
-
-    if (event.key === 'Enter') {
-        const product = till.productByBarcode(scanBuffer.trim())
-
-        if (product) {
-            till.pickProduct(product.id)
-        }
-
-        scanBuffer = ''
-
-        return
-    }
-
-    if (event.key.length !== 1) {
-        return
-    }
-
-    scanBuffer += event.key
-
-    window.clearTimeout(scanTimer)
-
-    scanTimer = window.setTimeout(() => { scanBuffer = '' }, 120)
-}
-
-onMounted(() => window.addEventListener('keydown', onGlobalKey))
-
-onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onGlobalKey)
-    window.clearTimeout(scanTimer)
-})
 </script>
 
 <template>

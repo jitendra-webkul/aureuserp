@@ -65,6 +65,8 @@ export class Till {
             lotRows: [],
             lotError: null,
             lotWarningOpen: false,
+            cameraScanning: false,
+            cameraError: null,
             variantSelection: {},
             priceListModalOpen: false,
             productSaving: false,
@@ -143,6 +145,8 @@ export class Till {
         })
 
         this.watchPersistence()
+
+        this.startWedge()
 
         this.state.ready = true
     }
@@ -1504,6 +1508,85 @@ export class Till {
             return [product.name, product.reference, product.barcode]
                 .some((field) => field && String(field).toLowerCase().includes(needle))
         })
+    }
+
+    get cameraScanSupported() {
+        return typeof window !== 'undefined' && 'BarcodeDetector' in window
+    }
+
+    startWedge() {
+        if (this.wedge) {
+            return
+        }
+
+        let buffer = ''
+        let timer = null
+
+        this.wedge = (event) => {
+            const editing = event.target instanceof HTMLInputElement
+                || event.target instanceof HTMLTextAreaElement
+                || event.target instanceof HTMLSelectElement
+                || event.target?.isContentEditable
+
+            if (event.key === 'Enter') {
+                const code = buffer.trim()
+
+                buffer = ''
+
+                if (code.length < 3) {
+                    return
+                }
+
+                if (this.scan(code) && editing) {
+                    event.preventDefault()
+                }
+
+                return
+            }
+
+            if (event.key.length !== 1) {
+                return
+            }
+
+            buffer += event.key
+
+            window.clearTimeout(timer)
+
+            timer = window.setTimeout(() => { buffer = '' }, 120)
+        }
+
+        window.addEventListener('keydown', this.wedge)
+    }
+
+    scan(code) {
+        const product = this.productByBarcode(code)
+
+        if (product) {
+            this.pickProduct(product.id)
+
+            return true
+        }
+
+        const partner = this.master.partners.firstBy('barcode', code)
+
+        if (partner) {
+            this.selectCustomer(partner.id)
+
+            return true
+        }
+
+        const line = this.activeLine
+
+        if (line && this.isTracked(line.product_id) && this.lotsEnabled) {
+            this.state.lotLineUuid = line.uuid
+            this.state.lotRows = [...(line.lots ?? []).map((lot) => lot.lot_name), code]
+
+            this.confirmLots()
+
+            return true
+        }
+
+        return false
     }
 
     productByBarcode(barcode) {

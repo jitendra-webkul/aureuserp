@@ -11,7 +11,7 @@ const pending = computed(() => queue.pending.length)
 
 const failures = computed(() => queue.pending.filter((entry) => entry.lastError))
 
-const badge = 'flex size-8 flex-none items-center justify-center rounded-lg'
+const badge = 'flex size-9 flex-none items-center justify-center rounded-lg'
 
 onMounted(() => {
     slot.value = document.getElementById('pos-status-slot')
@@ -26,8 +26,15 @@ onMounted(() => {
             :title="till.t('offline.banner')"
             :aria-label="till.t('offline.banner')"
         >
-            <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path d="M3.28 2.22a.75.75 0 1 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-2.3-2.3a.75.75 0 0 0-.08-.1L4.4 3.22a.75.75 0 0 0-.1-.08l-1.02-.92ZM10 15.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM1.2 6.79a.75.75 0 0 0 .04 1.06l1.1 1.02a.75.75 0 0 0 1.02-.04 9.2 9.2 0 0 1 2.1-1.55L4.3 6.1A10.8 10.8 0 0 0 2.26 7.5a.75.75 0 0 0-1.06-.71ZM10 4.5c2.2 0 4.24.76 5.85 2.04l1.1-1.02a.75.75 0 0 0-.04-1.06A11.2 11.2 0 0 0 10 3c-.98 0-1.94.12-2.85.36l1.3 1.3c.51-.1 1.03-.16 1.55-.16ZM6.9 10.7l1.28 1.28a3.2 3.2 0 0 1 3.64 0l1.28-1.28a5 5 0 0 0-6.2 0Z" />
+            <svg
+                class="size-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" d="m3 3 8.735 8.735m0 0a.374.374 0 1 1 .53.53m-.53-.53.53.53m0 0L21 21M14.652 9.348a3.75 3.75 0 0 1 0 5.304m2.121-7.425a6.75 6.75 0 0 1 0 9.546m2.121-11.667c3.808 3.807 3.808 9.98 0 13.788m-9.546-4.242a3.733 3.733 0 0 1-1.06-2.122m-1.061 4.243a6.75 6.75 0 0 1-1.625-6.929m-.496 9.05c-3.068-3.067-3.664-7.67-1.79-11.334M12 12h.008v.008H12V12Z" />
             </svg>
         </span>
 
@@ -37,8 +44,15 @@ onMounted(() => {
             :title="till.t('offline.waiting', { count: pending })"
             :aria-label="till.t('offline.waiting', { count: pending })"
         >
-            <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M15.31 5.3a.75.75 0 0 1 .06 1.06l-1.02 1.15a5.5 5.5 0 1 0 1.13 2.1.75.75 0 1 1 1.44-.42A7 7 0 1 1 15.1 5.24a.75.75 0 0 1 .2.06Zm-1.6-1.55a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+            <svg
+                class="size-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
 
             <span class="absolute -end-0.5 -top-0.5 flex min-w-4 justify-center rounded-full bg-info-600 px-1 text-[0.625rem] font-semibold leading-4 text-white">
@@ -52,8 +66,15 @@ onMounted(() => {
             :title="till.t('offline.rejected', { count: failures.length })"
             :aria-label="till.t('offline.rejected', { count: failures.length })"
         >
-            <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+            <svg
+                class="size-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
         </span>
 
@@ -63,8 +84,15 @@ onMounted(() => {
             :title="till.t('offline.storage-unavailable')"
             :aria-label="till.t('offline.storage-unavailable')"
         >
-            <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path d="M10 1c-3.87 0-7 1.12-7 2.5S6.13 6 10 6s7-1.12 7-2.5S13.87 1 10 1ZM3 6.4v2.1C3 9.88 6.13 11 10 11s7-1.12 7-2.5V6.4C15.6 7.4 13 8 10 8S4.4 7.4 3 6.4ZM3 11.4v2.1C3 14.88 6.13 16 10 16s7-1.12 7-2.5v-2.1C15.6 12.4 13 13 10 13s-5.6-.6-7-1.6Z" />
+            <svg
+                class="size-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75" />
             </svg>
         </span>
     </Teleport>
