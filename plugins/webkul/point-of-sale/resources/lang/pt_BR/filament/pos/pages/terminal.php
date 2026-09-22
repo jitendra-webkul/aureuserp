@@ -246,6 +246,12 @@ Deseja continuar mesmo assim?',
         'new-order' => 'Novo pedido',
     ],
 
+    'install' => [
+        'installed'   => 'Este caixa já está instalado como aplicativo neste dispositivo.',
+        'unavailable' => 'Este navegador não consegue instalar o caixa. É necessário Chrome ou Edge com HTTPS.',
+        'label'       => 'Instalar o app',
+    ],
+
     'scanner' => [
         'unsupported'   => 'Este navegador não consegue escanear com a câmera. Use um leitor de código de barras conectado.',
         'hardware-hint' => 'Um leitor de código de barras conectado funciona em todo o PDV sem abrir isto.',

@@ -246,6 +246,12 @@ Souhaitez-vous continuer malgré tout ?',
         'new-order' => 'Nouvelle commande',
     ],
 
+    'install' => [
+        'installed'   => 'Cette caisse est déjà installée comme application sur cet appareil.',
+        'unavailable' => 'Ce navigateur ne peut pas installer la caisse. Chrome ou Edge en HTTPS est requis.',
+        'label'       => 'Installer l\'application',
+    ],
+
     'scanner' => [
         'unsupported'   => 'Ce navigateur ne peut pas scanner avec la caméra. Utilisez plutôt une douchette connectée.',
         'hardware-hint' => 'Une douchette connectée fonctionne partout dans la caisse sans ouvrir ceci.',

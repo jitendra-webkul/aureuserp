@@ -244,6 +244,12 @@ return [
         'new-order' => 'New order',
     ],
 
+    'install' => [
+        'installed'   => 'This register is already installed as an app on this device.',
+        'unavailable' => 'This browser cannot install the register. Chrome or Edge over HTTPS is required.',
+        'label'       => 'Install App',
+    ],
+
     'scanner' => [
         'unsupported'   => 'This browser cannot scan with the camera. Use an attached barcode scanner instead.',
         'hardware-hint' => 'An attached barcode scanner works everywhere in the till without opening this.',

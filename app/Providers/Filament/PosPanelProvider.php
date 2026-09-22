@@ -20,6 +20,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Js;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
 use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
@@ -47,6 +48,18 @@ class PosPanelProvider extends PanelProvider
                     ->visible(fn (): bool => Registers::ownSession() !== null)
                     ->action(fn ($livewire) => $livewire->dispatch('pos-open-cash-movement')),
 
+                'installApp' => Action::make('installApp')
+                    ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.install.label'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->url('#')
+                    ->extraAttributes(fn (): array => [
+                        'x-on:click.prevent' => 'window.pointOfSaleInstall('.Js::from([
+                            'title'       => __('point-of-sale::filament/pos/pages/terminal.install.label'),
+                            'installed'   => __('point-of-sale::filament/pos/pages/terminal.install.installed'),
+                            'unavailable' => __('point-of-sale::filament/pos/pages/terminal.install.unavailable'),
+                        ])->toHtml().')',
+                    ]),
+
                 'backOffice' => Action::make('backOffice')
                     ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.back-office'))
                     ->icon('heroicon-m-arrow-top-right-on-square')
@@ -59,6 +72,12 @@ class PosPanelProvider extends PanelProvider
                     ->visible(fn (): bool => Registers::ownSession() !== null)
                     ->action(fn ($livewire) => $livewire->dispatch('pos-close-register')),
             ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): View => view('point-of-sale::filament.pos.partials.pwa-head', [
+                    'config' => Registers::ownSession()?->config,
+                ]),
+            )
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 fn (): View => view('point-of-sale::filament.pos.partials.status-slot'),

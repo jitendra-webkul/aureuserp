@@ -1,3 +1,48 @@
+window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault()
+
+    window.pointOfSaleInstallPrompt = event
+
+    window.dispatchEvent(new CustomEvent('point-of-sale:installable'))
+})
+
+window.addEventListener('appinstalled', () => {
+    window.pointOfSaleInstallPrompt = null
+
+    window.dispatchEvent(new CustomEvent('point-of-sale:installed'))
+})
+
+const installed = () => window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+
+window.pointOfSaleInstall = async (messages = {}) => {
+    const prompt = window.pointOfSaleInstallPrompt
+
+    if (!prompt) {
+        const body = installed() ? messages.installed : messages.unavailable
+
+        if (window.FilamentNotification) {
+            new window.FilamentNotification().title(messages.title).body(body).info().send()
+        }
+
+        return
+    }
+
+    prompt.prompt()
+
+    await prompt.userChoice
+
+    window.pointOfSaleInstallPrompt = null
+
+    window.dispatchEvent(new CustomEvent('point-of-sale:installed'))
+}
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/pos/service-worker.js', { scope: '/pos/' }).catch(() => {})
+    })
+}
+
 const stylesheetsReady = (frameDocument) => {
     const links = [...frameDocument.querySelectorAll('link[rel="stylesheet"]')]
 

@@ -2,7 +2,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { Till } from './store/till.js'
 
+let mounted = null
+
 async function mountTill(element) {
+    unmountTill()
+
     const boot = JSON.parse(element.dataset.boot)
 
     const till = new Till(boot.data ?? boot, {
@@ -18,7 +22,17 @@ async function mountTill(element) {
 
     app.mount(element)
 
+    mounted = app
+
     window.pointOfSaleTill = till
+}
+
+function unmountTill() {
+    mounted?.unmount()
+
+    mounted = null
+
+    document.getElementById('pos-status-slot')?.replaceChildren()
 }
 
 function boot() {
@@ -34,6 +48,7 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', boot)
+document.addEventListener('livewire:navigating', unmountTill)
 document.addEventListener('livewire:navigated', boot)
 
 if (document.readyState !== 'loading') {

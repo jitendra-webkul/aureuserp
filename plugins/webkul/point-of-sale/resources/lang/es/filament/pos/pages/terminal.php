@@ -246,6 +246,12 @@ return [
         'new-order' => 'Nuevo pedido',
     ],
 
+    'install' => [
+        'installed'   => 'Esta caja ya está instalada como aplicación en este dispositivo.',
+        'unavailable' => 'Este navegador no puede instalar la caja. Se requiere Chrome o Edge con HTTPS.',
+        'label'       => 'Instalar la app',
+    ],
+
     'scanner' => [
         'unsupported'   => 'Este navegador no puede escanear con la cámara. Usa un lector de códigos de barras conectado.',
         'hardware-hint' => 'Un lector de códigos de barras conectado funciona en todo el TPV sin abrir esto.',
