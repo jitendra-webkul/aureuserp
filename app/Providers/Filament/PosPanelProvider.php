@@ -12,6 +12,8 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -57,6 +59,10 @@ class PosPanelProvider extends PanelProvider
                     ->visible(fn (): bool => Registers::ownSession() !== null)
                     ->action(fn ($livewire) => $livewire->dispatch('pos-close-register')),
             ])
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): View => view('point-of-sale::filament.pos.partials.status-slot'),
+            )
             ->spa()
             ->middleware([
                 EncryptCookies::class,
