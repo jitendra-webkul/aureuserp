@@ -4,6 +4,7 @@ namespace Webkul\PointOfSale;
 
 use Filament\Panel;
 use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -29,6 +30,7 @@ use Webkul\Product\Filament\Resources\ProductResource\Support\ProductSchemaRegis
 use Webkul\Product\Models\Product;
 use Webkul\Product\Support\ProductUsageRegistry;
 use Webkul\Support\Services\SequenceService;
+use Webkul\TableViews\Filament\Components\PresetView;
 
 class PointOfSaleServiceProvider extends PackageServiceProvider
 {
@@ -186,6 +188,14 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
         ProductSchemaRegistry::form('left.append', fn () => PosProductSchema::formSection());
 
         ProductSchemaRegistry::infolist('left.append', fn () => PosProductSchema::infolistSection());
+
+        ProductSchemaRegistry::presetView(
+            'pos_products',
+            fn () => PresetView::make(__('point-of-sale::filament/admin/clusters/products/resources/product.tabs.pos'))
+                ->icon('heroicon-s-shopping-bag')
+                ->favorite()
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('available_in_pos', true)),
+        );
 
         ProductSchemaRegistry::eagerLoad(['posCategories']);
 

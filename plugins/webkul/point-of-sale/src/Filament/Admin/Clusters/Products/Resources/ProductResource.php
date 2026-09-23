@@ -4,7 +4,6 @@ namespace Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources;
 
 use BackedEnum;
 use Filament\Resources\Pages\Page;
-use Illuminate\Database\Eloquent\Builder;
 use Webkul\Invoice\Filament\Clusters\Customers\Resources\ProductResource as BaseProductResource;
 use Webkul\PluginManager\Package;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Products;
@@ -35,11 +34,6 @@ class ProductResource extends BaseProductResource
     public static function getNavigationLabel(): string
     {
         return __('point-of-sale::filament/admin/clusters/products/resources/product.navigation.title');
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->where('available_in_pos', true);
     }
 
     public static function getRecordSubNavigation(Page $page): array

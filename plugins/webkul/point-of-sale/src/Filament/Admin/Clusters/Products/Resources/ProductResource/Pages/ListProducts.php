@@ -8,4 +8,15 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources\ProductResourc
 class ListProducts extends BaseListProducts
 {
     protected static string $resource = ProductResource::class;
+
+    public function getPresetTableViews(): array
+    {
+        $presetViews = parent::getPresetTableViews();
+
+        foreach ($presetViews as $key => $presetView) {
+            $presetView->setAsDefault($key === 'pos_products');
+        }
+
+        return $presetViews;
+    }
 }

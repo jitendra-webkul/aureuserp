@@ -7,6 +7,7 @@ use Webkul\PluginManager\Models\Plugin;
 use Webkul\PluginManager\Package;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources\ProductResource\Pages\CreateProduct;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources\ProductResource\Pages\ListProducts;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources\ProductResource\Pages\ViewProduct;
 use Webkul\Product\Enums\ProductType;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
@@ -41,15 +42,31 @@ it('renders the point of sale product list page', function () {
     Livewire::test(ListProducts::class)->assertOk();
 });
 
-it('lists only products available in the point of sale', function () {
+it('defaults to the pos tab listing only products available in the point of sale', function () {
     $available = InventoryHelper::product(['name' => 'Counter Croissant', 'price' => 2.5]);
     $hidden = InventoryHelper::product(['name' => 'Warehouse Pallet', 'price' => 120.0]);
 
     DB::table('products_products')->where('id', $available->id)->update(['available_in_pos' => true]);
 
     Livewire::test(ListProducts::class)
+        ->assertSet('activeTableView', 'pos_products')
         ->assertCanSeeTableRecords([$available])
         ->assertCanNotSeeTableRecords([$hidden]);
+});
+
+it('lists products not available in the point of sale outside the pos tab', function () {
+    $hidden = InventoryHelper::product(['name' => 'Warehouse Pallet', 'price' => 120.0]);
+
+    Livewire::test(ListProducts::class)
+        ->set('activeTableView', 'goods_products')
+        ->assertCanSeeTableRecords([$hidden]);
+});
+
+it('opens a product that is not available in the point of sale', function () {
+    $hidden = InventoryHelper::product(['name' => 'Warehouse Pallet', 'price' => 120.0]);
+
+    Livewire::test(ViewProduct::class, ['record' => $hidden->getRouteKey()])
+        ->assertOk();
 });
 
 it('prefills the product defaults on the point of sale create page', function () {

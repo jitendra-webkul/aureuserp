@@ -5,6 +5,10 @@ return [
         'title' => 'Produtos',
     ],
 
+    'tabs' => [
+        'pos' => 'PDV',
+    ],
+
     'form' => [
         'sections' => [
             'point-of-sale' => [

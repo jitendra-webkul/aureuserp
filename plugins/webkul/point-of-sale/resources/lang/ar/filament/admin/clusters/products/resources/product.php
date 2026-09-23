@@ -5,6 +5,10 @@ return [
         'title' => 'المنتجات',
     ],
 
+    'tabs' => [
+        'pos' => 'نقطة البيع',
+    ],
+
     'form' => [
         'sections' => [
             'point-of-sale' => [
