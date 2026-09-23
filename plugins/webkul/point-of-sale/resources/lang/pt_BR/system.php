@@ -136,6 +136,7 @@ return [
     'session-workflow' => [
         'open' => [
             'already-open' => 'Já existe uma sessão aberta para :config.',
+            'inactive'     => 'O registro :config está inativo e não pode ser aberto.',
         ],
 
         'assert-open' => [

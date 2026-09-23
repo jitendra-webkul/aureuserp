@@ -136,6 +136,7 @@ return [
     'session-workflow' => [
         'open' => [
             'already-open' => 'توجد جلسة مفتوحة بالفعل لـ :config.',
+            'inactive'     => 'السجل :config غير نشط ولا يمكن فتحه.',
         ],
 
         'assert-open' => [

@@ -7,6 +7,7 @@ use Livewire\Livewire;
 use Webkul\PluginManager\Models\Plugin;
 use Webkul\PluginManager\Package;
 use Webkul\PointOfSale\Enums\SessionState;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 
@@ -140,4 +141,19 @@ it('counts the drawer again when closing the register', function () {
         ->call('stepMoneyDetail', (string) PosHelper::bill(100)->id, 2)
         ->call('confirmMoneyDetails')
         ->assertSet('closingCash', 200.0);
+});
+
+it('forbids the terminal once its register is deactivated', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $session->config->update(['is_active' => false]);
+
+    Livewire::test(Home::class, ['session' => $session->refresh()])->assertForbidden();
+});
+
+it('refuses to open a session on an inactive register', function () {
+    $this->config->update(['is_active' => false]);
+
+    expect(fn () => PointOfSale::openSession($this->config))
+        ->toThrow(PosConfigurationException::class);
 });

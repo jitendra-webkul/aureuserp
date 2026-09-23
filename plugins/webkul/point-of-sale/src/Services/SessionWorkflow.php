@@ -12,6 +12,7 @@ use Webkul\PointOfSale\Events\SessionClosing;
 use Webkul\PointOfSale\Events\SessionOpened;
 use Webkul\PointOfSale\Exceptions\InvalidCashMovementException;
 use Webkul\PointOfSale\Exceptions\InvalidSessionStateException;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Exceptions\SessionAlreadyOpenException;
 use Webkul\PointOfSale\Exceptions\SessionNotDiscardableException;
 use Webkul\PointOfSale\Exceptions\SessionNotOpenException;
@@ -29,6 +30,12 @@ class SessionWorkflow
     public function open(Config $config, ?int $userId = null): Session
     {
         return DB::transaction(function () use ($config, $userId): Session {
+            if (! $config->is_active) {
+                throw new PosConfigurationException(
+                    __('point-of-sale::system.session-workflow.open.inactive', ['config' => $config->name])
+                );
+            }
+
             $this->preflight->assertCanOpen($config);
 
             if ($this->liveSessionFor($config)) {

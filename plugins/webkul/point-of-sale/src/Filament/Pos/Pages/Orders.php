@@ -64,7 +64,7 @@ class Orders extends Page
     {
         $this->session = $session ?? static::currentSession();
 
-        abort_unless($this->session === null || PosAccess::reachesSession($this->session), 403);
+        abort_unless($this->session === null || PosAccess::reachesActiveSession($this->session), 403);
     }
 
     public static function getNavigationUrl(array $parameters = []): string

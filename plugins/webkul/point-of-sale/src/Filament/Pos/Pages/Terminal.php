@@ -61,7 +61,7 @@ abstract class Terminal extends Page
 
     public function mount(Session $session): void
     {
-        abort_unless(PosAccess::reachesSession($session), 403);
+        abort_unless(PosAccess::reachesActiveSession($session), 403);
 
         $this->session = $session;
 

@@ -40,6 +40,11 @@ class PosAccess
         return $session !== null && static::reachesCompany($session->company_id);
     }
 
+    public static function reachesActiveSession(?Session $session): bool
+    {
+        return static::reachesSession($session) && (bool) $session->config?->is_active;
+    }
+
     public static function reachesOrder(?Order $order): bool
     {
         return $order !== null && static::reachesCompany($order->company_id);
