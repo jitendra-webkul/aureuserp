@@ -28,9 +28,9 @@ class CreateProduct extends BaseCreateProduct
     {
         $this->callHook('beforeFill');
 
-        $this->form->fill([
-            'available_in_pos' => true,
-        ]);
+        $this->form->fill();
+
+        $this->data['available_in_pos'] = true;
 
         $this->callHook('afterFill');
     }
