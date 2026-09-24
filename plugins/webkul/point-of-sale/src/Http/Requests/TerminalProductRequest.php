@@ -12,7 +12,7 @@ class TerminalProductRequest extends FormRequest
     {
         return [
             'name'        => ['required', 'string', 'max:255'],
-            'barcode'     => ['nullable', 'string', 'max:64'],
+            'barcode'     => ['nullable', 'string', 'max:64', Rule::unique('products_products', 'barcode')],
             'price'       => ['nullable', 'numeric', 'min:0'],
             'category_id' => ['nullable', 'integer', 'exists:pos_categories,id'],
             'is_storable' => ['nullable', 'boolean'],

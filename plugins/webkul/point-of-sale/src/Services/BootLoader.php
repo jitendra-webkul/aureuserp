@@ -16,6 +16,7 @@ use Webkul\Account\Settings\TaxesSettings;
 use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\ProductQuantity;
+use Webkul\Inventory\Settings\TraceabilitySettings;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Category;
@@ -153,11 +154,15 @@ class BootLoader
 
     protected function trackingOptions(): array
     {
+        $isLotsSerialEnabled = settings(TraceabilitySettings::class)->enable_lots_serial_numbers;
+
         return collect(ProductTracking::cases())
+            ->filter(fn (ProductTracking $tracking): bool => $isLotsSerialEnabled || $tracking === ProductTracking::QTY)
             ->map(fn (ProductTracking $tracking): array => [
                 'value' => $tracking->value,
                 'label' => $tracking->getLabel(),
             ])
+            ->values()
             ->all();
     }
 
