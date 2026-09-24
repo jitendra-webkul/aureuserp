@@ -120,6 +120,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('is_restaurant'))
                     ->columnSpanFull(),
@@ -141,6 +142,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->columnSpanFull(),
 
@@ -235,6 +237,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('limit_categories'))
                     ->columnSpanFull(),
@@ -286,6 +289,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_fiscal_position')),
 
@@ -367,6 +371,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->live()
                     ->visible(fn (Get $get): bool => (bool) $get('enable_price_list')),
@@ -427,6 +432,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->columnSpanFull(),
             ])
@@ -448,6 +454,7 @@ class ConfigForm
                     )
                     ->multiple()
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->columnSpanFull(),
             ])
