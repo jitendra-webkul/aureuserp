@@ -11,6 +11,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Account\Enums\JournalType;
+use Webkul\Account\Enums\PaymentType;
 use Webkul\Account\Models\Journal;
 use Webkul\PointOfSale\Enums\PaymentTerminalType;
 
@@ -75,7 +76,8 @@ class PaymentMethodForm
                             ->relationship(
                                 'paymentMethodLine',
                                 'name',
-                                modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('journal_id', $get('journal_id')),
+                                modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('journal_id', $get('journal_id'))
+                                    ->whereHas('paymentMethod', fn (Builder $query) => $query->where('payment_type', PaymentType::RECEIVE)),
                             )
                             ->searchable()
                             ->preload()
