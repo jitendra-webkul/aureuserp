@@ -106,3 +106,26 @@ it('refuses price editing on a restricted register for a cashier who cannot mana
 
     expect($payload['config']['can_edit_price'])->toBeFalse();
 });
+
+it('ships only the products of the picked categories when they are restricted', function () {
+    $drinks = PosHelper::posCategory(['name' => 'Drinks']);
+    $backOffice = PosHelper::posCategory(['name' => 'Back Office Only']);
+
+    $coffee = InventoryHelper::product(['name' => 'Counter Coffee', 'price' => 3.0]);
+
+    $coffee->update(['available_in_pos' => true]);
+
+    $coffee->posCategories()->sync([$drinks->id]);
+    $this->product->posCategories()->sync([$backOffice->id]);
+
+    $this->config->update(['limit_categories' => true]);
+
+    $this->config->categories()->sync([$drinks->id]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    $ids = collect($payload['products'])->pluck('id');
+
+    expect($ids)->toContain($coffee->id)
+        ->and($ids)->not->toContain($this->product->id);
+});

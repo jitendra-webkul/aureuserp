@@ -72,6 +72,13 @@ class CatalogLoader
         $query = Product::query()
             ->where('available_in_pos', true)
             ->whereNull('parent_id')
+            ->when(
+                $config->limit_categories && $config->categories->isNotEmpty(),
+                fn ($builder) => $builder->whereHas(
+                    'posCategories',
+                    fn ($categories) => $categories->whereIn('pos_categories.id', $config->categories->pluck('id')),
+                ),
+            )
             ->when(filled($search), fn ($builder) => $builder->where('name', 'like', "%{$search}%"))
             ->limit($config->limited_products_amount ?: 500);
 

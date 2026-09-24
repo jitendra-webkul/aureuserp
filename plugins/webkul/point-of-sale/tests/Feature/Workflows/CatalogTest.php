@@ -139,3 +139,31 @@ it('caps the catalogue at the configured product limit', function () {
 
     expect($catalog['products'])->toHaveCount(2);
 });
+
+it('offers only the products of the picked categories when they are restricted', function () {
+    $drinks = PosHelper::posCategory(['name' => 'Drinks']);
+    $backOffice = PosHelper::posCategory(['name' => 'Back Office Only']);
+
+    $coffee = InventoryHelper::product(['name' => 'Counter Coffee', 'price' => 3.0]);
+    $stapler = InventoryHelper::product(['name' => 'Office Stapler', 'price' => 9.0]);
+    $uncategorised = InventoryHelper::product(['name' => 'Loose Item', 'price' => 1.0]);
+
+    DB::table('products_products')
+        ->whereIn('id', [$coffee->id, $stapler->id, $uncategorised->id])
+        ->update(['available_in_pos' => true]);
+
+    $coffee->posCategories()->sync([$drinks->id]);
+    $stapler->posCategories()->sync([$backOffice->id]);
+
+    $this->config->update(['limit_categories' => true]);
+
+    $this->config->categories()->sync([$drinks->id]);
+
+    $catalog = app(CatalogLoader::class)->load($this->config->refresh());
+
+    $names = collect($catalog['products'])->pluck('name');
+
+    expect($names)->toContain('Counter Coffee')
+        ->and($names)->not->toContain('Office Stapler')
+        ->and($names)->not->toContain('Loose Item');
+});

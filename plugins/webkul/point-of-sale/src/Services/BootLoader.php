@@ -516,7 +516,14 @@ class BootLoader
             ->where(fn ($query) => $query
                 ->where(fn ($catalogue) => $catalogue
                     ->where('available_in_pos', true)
-                    ->whereNull('parent_id'))
+                    ->whereNull('parent_id')
+                    ->when(
+                        $config->limit_categories && $config->categories->isNotEmpty(),
+                        fn ($restricted) => $restricted->whereHas(
+                            'posCategories',
+                            fn ($categories) => $categories->whereIn('pos_categories.id', $config->categories->pluck('id')),
+                        ),
+                    ))
                 ->when($referenced, fn ($builder) => $builder->orWhereIn('id', $referenced)))
             ->orderBy('name')
             ->limit(($config->limited_products_amount ?: 500) + count($referenced));
