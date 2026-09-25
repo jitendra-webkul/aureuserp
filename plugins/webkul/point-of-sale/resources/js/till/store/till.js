@@ -1967,6 +1967,7 @@ export class Till {
             is_to_invoice: order.to_invoice,
             refunded_order_id: order.refunded_order_id ?? null,
             shipped_at: order.shipped_at,
+            ordered_at: order.validated_at ?? null,
             note: order.note,
             amount_total: totals.total,
             lines: this.sellableLines(order).map((line) => {

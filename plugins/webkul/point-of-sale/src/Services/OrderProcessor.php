@@ -4,6 +4,7 @@ namespace Webkul\PointOfSale\Services;
 
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -219,7 +220,9 @@ class OrderProcessor
                 'uuid'       => $uuid,
                 'config_id'  => $config->id,
                 'session_id' => $session->id,
-                'ordered_at' => $payload['ordered_at'] ?? now(),
+                'ordered_at' => filled($payload['ordered_at'] ?? null)
+                    ? Date::parse($payload['ordered_at'])->setTimezone(config('app.timezone'))
+                    : now(),
             ],
         );
 

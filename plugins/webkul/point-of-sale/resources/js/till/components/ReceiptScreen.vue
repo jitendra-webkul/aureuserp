@@ -20,7 +20,7 @@ const payments = computed(() =>
 )
 
 const orderedAt = computed(() => {
-    const value = order.value?.created_at
+    const value = order.value?.validated_at ?? order.value?.created_at
 
     return value ? new Date(value).toLocaleString() : ''
 })
