@@ -15,4 +15,11 @@
     @include('point-of-sale::filament.pos.partials.modals.closing')
     @include('point-of-sale::filament.pos.partials.modals.cash-movement')
     @include('point-of-sale::filament.pos.partials.modals.money-details')
+
+    @if ($modalOnLoad && ! $this->needsOpeningControl())
+        <div
+            x-data
+            x-init="$nextTick(() => $dispatch('open-modal', { id: @js($modalOnLoad) }))"
+        ></div>
+    @endif
 </x-filament-panels::page>

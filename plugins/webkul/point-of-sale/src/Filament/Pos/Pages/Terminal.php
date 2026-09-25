@@ -13,7 +13,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
-use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Session;
@@ -59,6 +58,8 @@ abstract class Terminal extends Page
 
     public bool $showCashMoves = false;
 
+    public ?string $modalOnLoad = null;
+
     public function mount(Session $session): void
     {
         abort_unless(PosAccess::reachesSession($session), 403);
@@ -71,13 +72,19 @@ abstract class Terminal extends Page
             $live = app(SessionWorkflow::class)->liveSessionFor($this->config);
 
             if (! $live) {
-                redirect()->to(ConfigResource::getUrl(panel: 'admin'));
+                $this->redirect($this->backUrl());
 
                 return;
             }
 
             $this->session = $live;
         }
+
+        $this->modalOnLoad = match (request()->query('open')) {
+            'closing'       => 'pos-closing',
+            'cash-movement' => 'pos-cash-movement',
+            default         => null,
+        };
     }
 
     public function needsOpeningControl(): bool
@@ -92,7 +99,7 @@ abstract class Terminal extends Page
 
     public function backUrl(): string
     {
-        return ConfigResource::getUrl(panel: 'admin');
+        return Registers::getUrl();
     }
 
     public function downloadSalesDetails(): StreamedResponse
