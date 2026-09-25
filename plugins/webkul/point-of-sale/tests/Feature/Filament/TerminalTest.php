@@ -179,3 +179,23 @@ it('ignores an unknown dialog request', function () {
         ->test(Home::class, ['session' => $session])
         ->assertSet('modalOnLoad', null);
 });
+
+it('sends a closed session to the live session of the same register', function () {
+    $closed = PosHelper::openSession($this->warehouse);
+
+    PointOfSale::closeSession($closed, 0.0);
+
+    $live = PointOfSale::openSession($closed->config);
+
+    Livewire::test(Home::class, ['session' => $closed->refresh()])
+        ->assertRedirect(Home::getUrl(['session' => $live->getKey()]));
+});
+
+it('sends a closed session back to the registers when nothing is open', function () {
+    $closed = PosHelper::openSession($this->warehouse);
+
+    PointOfSale::closeSession($closed, 0.0);
+
+    Livewire::test(Home::class, ['session' => $closed->refresh()])
+        ->assertRedirect(Registers::getUrl());
+});

@@ -71,13 +71,11 @@ abstract class Terminal extends Page
         if (! $session->isLive()) {
             $live = app(SessionWorkflow::class)->liveSessionFor($this->config);
 
-            if (! $live) {
-                $this->redirect($this->backUrl());
+            $this->redirect($live && PosAccess::reachesSession($live)
+                ? static::getUrl(array_filter(['session' => $live->getKey(), 'open' => request()->query('open')]))
+                : $this->backUrl());
 
-                return;
-            }
-
-            $this->session = $live;
+            return;
         }
 
         $this->modalOnLoad = match (request()->query('open')) {
