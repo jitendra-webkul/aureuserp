@@ -126,17 +126,11 @@ export class Till {
 
         this.mergeServerOrders()
 
+        this.dropSettledOrders()
+
         const refund = this.openPendingRefund()
 
-        if (!this.state.orders.length) {
-            this.newOrder()
-        } else {
-            const remembered = this.rememberedOrderUuid()
-
-            this.state.activeOrderUuid = this.state.orders.some((order) => order.uuid === remembered)
-                ? remembered
-                : this.state.orders[0].uuid
-        }
+        this.activateDraft(this.rememberedOrderUuid())
 
         if (refund) {
             this.state.activeOrderUuid = refund.uuid
@@ -451,11 +445,37 @@ export class Till {
         this.database.remove('pos.order.line', removedLines)
         this.database.remove('pos.payment', removedPayments)
 
-        if (!this.state.orders.length) {
-            this.newOrder()
-        } else if (!this.activeOrder) {
-            this.state.activeOrderUuid = this.state.orders[0].uuid
+        if (!showingReceipt && this.activeOrder?.state !== 'draft') {
+            this.activateDraft()
         }
+    }
+
+    dropSettledOrders() {
+        const settled = this.state.orders.filter((order) => order.state !== 'draft')
+
+        if (!settled.length) {
+            return
+        }
+
+        this.database.remove('pos.order.line', settled.flatMap((order) => order.lines.map((line) => line.uuid)))
+        this.database.remove('pos.payment', settled.flatMap((order) => order.payments.map((payment) => payment.uuid)))
+        this.database.remove('pos.order', settled.map((order) => order.uuid))
+
+        this.state.orders = this.state.orders.filter((order) => order.state === 'draft')
+    }
+
+    activateDraft(preferredUuid = null) {
+        const drafts = this.drafts
+
+        const draft = drafts.find((order) => order.uuid === preferredUuid) ?? drafts[0]
+
+        if (!draft) {
+            return this.newOrder()
+        }
+
+        this.state.activeOrderUuid = draft.uuid
+
+        return draft
     }
 
     get config() {
@@ -815,8 +835,6 @@ export class Till {
     }
 
     newOrder() {
-        this.flushDeferredEvictions()
-
         this.state.priceListId = this.config.price_list_id ?? null
 
         const order = this.hydrateServerOrder({
@@ -833,6 +851,8 @@ export class Till {
         this.state.activeOrderUuid = order.uuid
         this.state.activeLineUuid = null
         this.state.screen = 'products'
+
+        this.flushDeferredEvictions()
 
         return order
     }
@@ -959,10 +979,8 @@ export class Till {
 
         this.state.orders = this.state.orders.filter((entry) => entry.uuid !== uuid)
 
-        if (!this.state.orders.length) {
-            this.newOrder()
-        } else if (this.state.activeOrderUuid === uuid) {
-            this.state.activeOrderUuid = this.state.orders[0].uuid
+        if (this.state.activeOrderUuid === uuid || !this.drafts.length) {
+            this.activateDraft()
         }
     }
 
@@ -1393,7 +1411,7 @@ export class Till {
     }
 
     addProduct(productId, { qty = 1 } = {}) {
-        const order = this.activeOrder ?? this.newOrder()
+        const order = this.activeOrder?.state === 'draft' ? this.activeOrder : this.newOrder()
 
         const product = this.master.products.get(productId)
 
