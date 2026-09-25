@@ -269,6 +269,7 @@ return [
         'waiting'             => ':count pedido(s) pendientes de sincronizar',
         'rejected'            => ':count pedido(s) rechazados por el servidor',
         'storage-unavailable' => 'Almacenamiento local no disponible — recarga antes de tomar más pedidos',
+        'retry'               => 'Reintentar',
     ],
 
     'actions' => [

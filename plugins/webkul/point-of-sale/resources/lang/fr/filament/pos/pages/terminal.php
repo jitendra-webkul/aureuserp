@@ -269,6 +269,7 @@ Souhaitez-vous continuer malgré tout ?',
         'waiting'             => ':count commande(s) en attente de synchronisation',
         'rejected'            => ':count commande(s) rejetée(s) par le serveur',
         'storage-unavailable' => 'Stockage local indisponible — rechargez la page avant de prendre d\'autres commandes',
+        'retry'               => 'Réessayer',
     ],
 
     'actions' => [

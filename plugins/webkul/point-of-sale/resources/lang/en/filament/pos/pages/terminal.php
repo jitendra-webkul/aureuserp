@@ -267,6 +267,7 @@ return [
         'waiting'             => ':count order(s) waiting to sync',
         'rejected'            => ':count order(s) rejected by the server',
         'storage-unavailable' => 'Local storage unavailable — reload before taking more orders',
+        'retry'               => 'Retry',
     ],
 
     'actions' => [

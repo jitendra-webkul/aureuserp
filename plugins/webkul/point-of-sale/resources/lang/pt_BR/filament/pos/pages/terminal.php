@@ -269,6 +269,7 @@ Deseja continuar mesmo assim?',
         'waiting'             => ':count pedido(s) aguardando sincronização',
         'rejected'            => ':count pedido(s) rejeitados pelo servidor',
         'storage-unavailable' => 'Armazenamento local indisponível — recarregue antes de registrar mais pedidos',
+        'retry'               => 'Tentar novamente',
     ],
 
     'actions' => [

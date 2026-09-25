@@ -106,48 +106,117 @@ export class SyncQueue {
         }
     }
 
+    get sendable() {
+        return this.state.pending.filter((pending) => !pending.rejected)
+    }
+
+    get rejected() {
+        return this.state.pending.filter((pending) => pending.rejected)
+    }
+
+    retryRejected() {
+        for (const pending of this.rejected) {
+            pending.rejected = false
+        }
+
+        this.persist()
+
+        return this.flush()
+    }
+
+    reject(pending, message) {
+        pending.rejected = true
+        pending.attempts += 1
+        pending.lastError = message ?? 'unknown error'
+    }
+
+    invalidEntries(batch, errors) {
+        const messages = new Map()
+
+        for (const [key, value] of Object.entries(errors ?? {})) {
+            const index = Number(key.match(/^orders\.(\d+)\./)?.[1])
+
+            if (Number.isInteger(index) && batch[index] && !messages.has(index)) {
+                messages.set(index, Array.isArray(value) ? value[0] : String(value))
+            }
+        }
+
+        return [...messages].map(([index, message]) => ({ entry: batch[index], message }))
+    }
+
+    post(batch) {
+        return fetch(this.endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+            },
+            body: JSON.stringify({ orders: batch.map((pending) => pending.payload) }),
+        })
+    }
+
     async flush() {
-        if (this.flushing || this.state.pending.length === 0 || !navigator.onLine) {
+        if (this.flushing || this.sendable.length === 0 || !navigator.onLine) {
             return { synced: 0, failed: 0, pending: this.pendingCount }
         }
 
         this.flushing = true
 
         try {
-            const orders = this.state.pending.map((pending) => pending.payload)
+            let batch = this.sendable
 
-            const response = await fetch(this.endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                },
-                body: JSON.stringify({ orders }),
-            })
+            let failed = 0
 
-            if (!response.ok) {
-                this.state.lastError = `sync failed with status ${response.status}`
+            let body = null
 
-                return { synced: 0, failed: 0, pending: this.pendingCount }
+            while (batch.length) {
+                const response = await this.post(batch)
+
+                if (response.status === 422) {
+                    const invalid = this.invalidEntries(batch, (await response.json().catch(() => ({}))).errors)
+
+                    if (!invalid.length) {
+                        this.state.lastError = `sync failed with status ${response.status}`
+
+                        return { synced: 0, failed: 0, pending: this.pendingCount }
+                    }
+
+                    for (const { entry, message } of invalid) {
+                        this.reject(entry, message)
+                    }
+
+                    failed += invalid.length
+
+                    batch = this.sendable
+
+                    continue
+                }
+
+                if (!response.ok) {
+                    this.state.lastError = `sync failed with status ${response.status}`
+
+                    return { synced: 0, failed, pending: this.pendingCount }
+                }
+
+                body = await response.json()
+
+                break
             }
 
-            const body = await response.json()
-
-            const synced = (body.data ?? []).map((entry) => entry.uuid).filter(Boolean)
-
-            const failed = (body.errors ?? []).filter((entry) => entry.uuid)
+            const synced = (body?.data ?? []).map((entry) => entry.uuid).filter(Boolean)
 
             for (const uuid of synced) {
                 this.remove(uuid)
             }
 
-            for (const failure of failed) {
+            for (const failure of (body?.errors ?? []).filter((entry) => entry.uuid)) {
                 const pending = this.state.pending.find((entry) => entry.uuid === failure.uuid)
 
                 if (pending) {
-                    pending.attempts += 1
-                    pending.lastError = failure.message ?? 'unknown error'
+                    this.reject(pending, failure.message)
+
+                    failed += 1
                 }
             }
 
@@ -155,13 +224,13 @@ export class SyncQueue {
 
             this.state.lastSyncedAt = new Date().toISOString()
 
-            this.state.lastError = failed.length ? `${failed.length} order(s) rejected` : null
+            this.state.lastError = failed ? `${failed} order(s) rejected` : null
 
             window.dispatchEvent(new CustomEvent('point-of-sale:queue-flushed', {
-                detail: { synced: synced.length, failed: failed.length, pending: this.pendingCount, uuids: synced },
+                detail: { synced: synced.length, failed, pending: this.pendingCount, uuids: synced },
             }))
 
-            return { synced: synced.length, failed: failed.length, pending: this.pendingCount }
+            return { synced: synced.length, failed, pending: this.pendingCount }
         } catch (error) {
             this.state.offline = !navigator.onLine
 
