@@ -25,11 +25,7 @@ class RefundProcessor
     public function refund(Order $order, array $lineQuantities, ?Session $session = null): Order
     {
         return DB::transaction(function () use ($order, $lineQuantities, $session): Order {
-            if (! $order->state->isSettled()) {
-                throw new OrderNotRefundableException(
-                    __('point-of-sale::system.order-workflow.refund.not-refundable', ['order' => $order->reference])
-                );
-            }
+            $this->assertRefundable($order);
 
             $session = $this->resolveSession($order, $session);
 
@@ -59,13 +55,7 @@ class RefundProcessor
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if (float_compare($quantity, $line->refundableQty(), precisionDigits: 4) > 0) {
-                    throw new RefundExceedsSoldQuantityException(
-                        __('point-of-sale::system.order-workflow.refund.exceeds-sold', [
-                            'product' => $line->full_product_name ?? $line->product?->name,
-                        ])
-                    );
-                }
+                $this->assertWithinSoldQuantity($line, $quantity);
 
                 $this->copyLine($refund, $line, $quantity);
 
@@ -86,6 +76,92 @@ class RefundProcessor
 
             return $refund;
         });
+    }
+
+    /**
+     * @param  array<int, float|int|string>  $lineQuantities
+     * @return array{refunded_order_id: int, partner_id: ?int, price_list_id: ?int, fiscal_position_id: ?int, lines: array<int, array<string, mixed>>, products: array<int, array<string, mixed>>}
+     */
+    public function pendingRefund(Order $order, array $lineQuantities): array
+    {
+        $this->assertRefundable($order);
+
+        $order->loadMissing(['lines.lots', 'lines.taxes', 'lines.product']);
+
+        $lines = [];
+
+        $products = [];
+
+        foreach ($lineQuantities as $lineId => $quantity) {
+            $quantity = abs((float) $quantity);
+
+            if (float_is_zero($quantity, precisionDigits: 4)) {
+                continue;
+            }
+
+            $line = $order->lines->firstWhere('id', (int) $lineId);
+
+            if (! $line) {
+                continue;
+            }
+
+            $this->assertWithinSoldQuantity($line, $quantity);
+
+            $lines[] = [
+                'product_id'             => $line->product_id,
+                'qty'                    => -$quantity,
+                'price_unit'             => (float) $line->price_unit,
+                'discount'               => (float) $line->discount,
+                'note'                   => $line->customer_note,
+                'tax_ids'                => $line->taxes->pluck('id')->all(),
+                'lots'                   => $this->lotsFor($line, $quantity),
+                'refunded_order_line_id' => $line->id,
+            ];
+
+            $products[$line->product_id] = [
+                'id'          => $line->product_id,
+                'name'        => $line->full_product_name ?? $line->product?->name,
+                'price'       => (float) $line->price_unit,
+                'uom_id'      => $line->uom_id,
+                'tax_ids'     => $line->taxes->pluck('id')->all(),
+                'is_storable' => (bool) $line->product?->is_storable,
+            ];
+        }
+
+        if ($lines === []) {
+            throw new OrderNotRefundableException(
+                __('point-of-sale::system.order-workflow.refund.nothing-to-refund')
+            );
+        }
+
+        return [
+            'refunded_order_id'  => $order->id,
+            'partner_id'         => $order->partner_id,
+            'price_list_id'      => $order->price_list_id,
+            'fiscal_position_id' => $order->fiscal_position_id,
+            'lines'              => $lines,
+            'products'           => array_values($products),
+        ];
+    }
+
+    public function assertRefundable(Order $order): void
+    {
+        if ($order->isRefund() || ! $order->state->isSettled()) {
+            throw new OrderNotRefundableException(
+                __('point-of-sale::system.order-workflow.refund.not-refundable', ['order' => $order->reference])
+            );
+        }
+    }
+
+    public function assertWithinSoldQuantity(OrderLine $line, float $quantity): void
+    {
+        if (float_compare($quantity, $line->refundableQty(), precisionDigits: 4) > 0) {
+            throw new RefundExceedsSoldQuantityException(
+                __('point-of-sale::system.order-workflow.refund.exceeds-sold', [
+                    'product' => $line->full_product_name ?? $line->product?->name,
+                ])
+            );
+        }
     }
 
     public function settle(Order $refund, ?int $paymentMethodId = null): Order
@@ -129,6 +205,10 @@ class RefundProcessor
 
     public function refundableLines(Order $order): array
     {
+        if ($order->isRefund()) {
+            return [];
+        }
+
         return $order->lines
             ->filter(fn (OrderLine $line): bool => float_compare($line->refundableQty(), 0, precisionDigits: 4) > 0)
             ->mapWithKeys(fn (OrderLine $line): array => [$line->id => $line->refundableQty()])
@@ -137,6 +217,21 @@ class RefundProcessor
 
     protected function copyLots(OrderLine $refundLine, OrderLine $line, float $quantity): void
     {
+        foreach ($this->lotsFor($line, $quantity) as $lot) {
+            OrderLineLot::create(array_merge($lot, [
+                'order_line_id' => $refundLine->id,
+                'company_id'    => $refundLine->company_id,
+            ]));
+        }
+    }
+
+    /**
+     * @return array<int, array{lot_name: string, lot_id: ?int, qty: float}>
+     */
+    protected function lotsFor(OrderLine $line, float $quantity): array
+    {
+        $lots = [];
+
         $remaining = $quantity;
 
         foreach ($line->lots as $lot) {
@@ -146,16 +241,16 @@ class RefundProcessor
 
             $taken = min((float) $lot->qty, $remaining);
 
-            OrderLineLot::create([
-                'order_line_id' => $refundLine->id,
-                'lot_name'      => $lot->lot_name,
-                'lot_id'        => $lot->lot_id,
-                'qty'           => $taken,
-                'company_id'    => $refundLine->company_id,
-            ]);
+            $lots[] = [
+                'lot_name' => $lot->lot_name,
+                'lot_id'   => $lot->lot_id,
+                'qty'      => $taken,
+            ];
 
             $remaining = float_round($remaining - $taken, precisionDigits: 4);
         }
+
+        return $lots;
     }
 
     protected function resolveSession(Order $order, ?Session $session): Session

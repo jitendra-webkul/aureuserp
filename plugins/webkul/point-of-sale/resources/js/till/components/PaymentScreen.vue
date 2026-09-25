@@ -11,7 +11,7 @@ const totals = computed(() => till.orderTotals())
 
 const hasRemaining = computed(() => totals.value.change <= 0)
 
-const isSettled = computed(() => totals.value.due <= 0)
+const isSettled = computed(() => totals.value.covered)
 
 function methodName(id) {
     return till.master.payment_methods.get(id)?.name ?? ''
@@ -41,7 +41,7 @@ function methodName(id) {
                     <span>{{ hasRemaining ? 'Remaining' : 'Change' }}</span>
 
                     <span class="font-mono tabular-nums">
-                        {{ till.money(hasRemaining ? Math.max(totals.due, 0) : totals.change) }}
+                        {{ till.money(hasRemaining ? (isSettled ? 0 : Math.abs(totals.due)) : totals.change) }}
                     </span>
                 </div>
 

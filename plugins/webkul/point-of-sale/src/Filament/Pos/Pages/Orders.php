@@ -253,37 +253,33 @@ class Orders extends Page
 
     public function refundOrder(array $quantities): void
     {
-        $prefix = 'point-of-sale::filament/pos/pages/orders.actions.refund-notification.';
-
         $order = $this->getSelectedOrder();
 
-        $lines = collect($quantities)
-            ->map(fn ($qty): float => (float) $qty)
-            ->filter(fn (float $qty): bool => $qty > 0)
-            ->all();
-
-        if (! $order || ! $lines) {
+        if (! $order || ! $this->session) {
             return;
         }
 
         try {
-            $refund = PointOfSale::refundOrder($order, $lines, $this->session);
-
-            $this->selectedOrderId = $refund->getKey();
-
-            Notification::make()
-                ->success()
-                ->title(__($prefix.'title'))
-                ->body(__($prefix.'body', ['order' => $refund->reference]))
-                ->send();
+            $pending = app(RefundProcessor::class)->pendingRefund($order, $quantities);
         } catch (Throwable $exception) {
             Notification::make()
                 ->danger()
                 ->body($exception->getMessage())
                 ->send();
+
+            $this->dispatchRefundQuantities();
+
+            return;
         }
 
-        $this->dispatchRefundQuantities();
+        session()->put(Terminal::pendingRefundKey($this->session), $pending);
+
+        $this->redirect(Home::getUrl(['session' => $this->session->getKey()]));
+    }
+
+    public function canRefund(Order $order): bool
+    {
+        return filled(app(RefundProcessor::class)->refundableLines($order));
     }
 
     public function canInvoice(Order $order): bool

@@ -11,6 +11,8 @@ use Webkul\Account\Enums\TypeTaxUse;
 use Webkul\Account\Models\Product as AccountProduct;
 use Webkul\Account\Models\Tax;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
+use Webkul\PointOfSale\Exceptions\RefundExceedsSoldQuantityException;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
@@ -28,6 +30,7 @@ class OrderProcessor
         protected PosInvoicer $invoicer,
         protected PriceResolver $prices,
         protected SessionWorkflow $sessions,
+        protected RefundProcessor $refunds,
     ) {}
 
     public function process(array $payload): Order
@@ -45,12 +48,39 @@ class OrderProcessor
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
+            $this->assertRefundLines($order);
+
             $this->syncPayments($order, $payload['payments'] ?? []);
 
             $order = $this->orders->markPaid($order->refresh());
 
             return $this->invoiceIfRequested($order);
         });
+    }
+
+    protected function assertRefundLines(Order $order): void
+    {
+        $refundLines = $order->lines()->whereNotNull('refunded_order_line_id')->get();
+
+        foreach ($refundLines as $line) {
+            $original = OrderLine::withoutGlobalScopes()->with('order')->find($line->refunded_order_line_id);
+
+            if (! $original?->order || float_compare((float) $line->qty, 0, precisionDigits: 4) >= 0) {
+                throw new OrderNotRefundableException(
+                    __('point-of-sale::system.order-workflow.refund.nothing-to-refund')
+                );
+            }
+
+            $this->refunds->assertRefundable($original->order);
+
+            if (float_compare($original->refundableQty(), 0, precisionDigits: 4) < 0) {
+                throw new RefundExceedsSoldQuantityException(
+                    __('point-of-sale::system.order-workflow.refund.exceeds-sold', [
+                        'product' => $original->full_product_name ?? $original->product?->name,
+                    ])
+                );
+            }
+        }
     }
 
     protected function invoiceIfRequested(Order $order): Order

@@ -116,7 +116,14 @@ abstract class Terminal extends Page
 
     public function bootPayload(): array
     {
-        return app(BootLoader::class)->load($this->config, $this->session);
+        return array_merge(app(BootLoader::class)->load($this->config, $this->session), [
+            'pending_refund' => session()->pull(static::pendingRefundKey($this->session)),
+        ]);
+    }
+
+    public static function pendingRefundKey(Session $session): string
+    {
+        return 'point-of-sale.pending-refund.'.$session->getKey();
     }
 
     public function syncEndpoint(): string

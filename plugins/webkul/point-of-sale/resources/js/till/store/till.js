@@ -128,6 +128,8 @@ export class Till {
             }
         }
 
+        const refund = this.openPendingRefund()
+
         if (!this.state.orders.length) {
             this.newOrder()
         } else {
@@ -136,6 +138,11 @@ export class Till {
             this.state.activeOrderUuid = this.state.orders.some((order) => order.uuid === remembered)
                 ? remembered
                 : this.state.orders[0].uuid
+        }
+
+        if (refund) {
+            this.state.activeOrderUuid = refund.uuid
+            this.state.screen = 'payment'
         }
 
         this.watchActiveOrder()
@@ -201,6 +208,34 @@ export class Till {
         return restored
     }
 
+    openPendingRefund() {
+        const pending = this.boot.pending_refund
+
+        if (!pending?.lines?.length) {
+            return null
+        }
+
+        for (const product of pending.products ?? []) {
+            if (!this.master.products.get(product.id)) {
+                this.master.products.put(product)
+            }
+        }
+
+        const order = this.hydrateServerOrder({
+            uuid: uuidv4(),
+            partner_id: pending.partner_id,
+            price_list_id: pending.price_list_id,
+            fiscal_position_id: pending.fiscal_position_id,
+            refunded_order_id: pending.refunded_order_id,
+            lines: pending.lines.map((line) => ({ ...line, price_overridden: true })),
+            payments: [],
+        })
+
+        this.state.orders.push(order)
+
+        return order
+    }
+
     hydrateServerOrder(order) {
         const trackingNumber = order.tracking_number ?? this.nextTrackingNumber()
 
@@ -217,6 +252,7 @@ export class Till {
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
             fiscal_position_id: order.fiscal_position_id ?? this.state.fiscalPositionId,
+            refunded_order_id: order.refunded_order_id ?? null,
             created_at: order.created_at ?? new Date().toISOString(),
             lines: (order.lines ?? []).map((line) => ({
                 uuid: line.uuid ?? uuidv4(),
@@ -229,6 +265,7 @@ export class Till {
                 note: line.note ?? '',
                 lots: line.lots ?? [],
                 tax_ids: line.tax_ids ?? [],
+                refunded_order_line_id: line.refunded_order_line_id ?? null,
             })),
             payments: (order.payments ?? []).map((payment) => ({
                 uuid: payment.uuid ?? uuidv4(),
@@ -301,6 +338,7 @@ export class Till {
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
                 fiscal_position_id: order.fiscal_position_id,
+                refunded_order_id: order.refunded_order_id ?? null,
                 created_at: order.created_at,
             })
 
@@ -972,7 +1010,11 @@ export class Till {
             .filter((payment) => !payment.is_change)
             .reduce((carry, payment) => carry + payment.amount, 0)
 
-        const change = floatCompare(settled, total, { precisionRounding: this.currency.rounding }) > 0
+        const refund = floatCompare(total, 0, { precisionRounding: this.currency.rounding }) < 0
+
+        const balance = floatCompare(settled, total, { precisionRounding: this.currency.rounding })
+
+        const change = !refund && balance > 0
             ? floatRound(settled - total, { precisionRounding: this.currency.rounding })
             : 0
 
@@ -984,6 +1026,8 @@ export class Till {
             paid: settled,
             due: floatRound(total - settled, { precisionRounding: this.currency.rounding }),
             change,
+            refund,
+            covered: refund ? balance <= 0 : balance >= 0,
             breakdown: [...breakdown.values()],
         }
     }
@@ -1617,7 +1661,7 @@ export class Till {
         const totals = this.orderTotals(order)
 
         if (amount === null) {
-            const outstanding = Math.max(totals.due, 0)
+            const outstanding = this.outstandingFor(totals)
 
             const reusable = order.payments.find((line) => (
                 line.payment_method_id === paymentMethodId
@@ -1648,12 +1692,16 @@ export class Till {
         order.payments.push(payment)
 
         if (amount === null) {
-            payment.amount = Math.max(this.orderTotals(order).due, 0)
+            payment.amount = this.outstandingFor(this.orderTotals(order))
         }
 
         this.selectPayment(payment.uuid)
 
         return payment
+    }
+
+    outstandingFor(totals) {
+        return totals.refund ? Math.min(totals.due, 0) : Math.max(totals.due, 0)
     }
 
     toggleToInvoice() {
@@ -1735,17 +1783,17 @@ export class Till {
             return
         }
 
-        if (key.startsWith('+')) {
-            const bump = Number(key.slice(1))
-
-            payment.amount = floatRound(payment.amount + bump, { precisionRounding: this.currency.rounding })
+        if (key === '+/-') {
+            payment.amount = -payment.amount
             this.state.paymentBuffer = String(payment.amount)
 
             return
         }
 
-        if (key === '+/-') {
-            payment.amount = -payment.amount
+        if (key.startsWith('+')) {
+            const bump = Number(key.slice(1))
+
+            payment.amount = floatRound(payment.amount + bump, { precisionRounding: this.currency.rounding })
             this.state.paymentBuffer = String(payment.amount)
 
             return
@@ -1793,9 +1841,7 @@ export class Till {
             return false
         }
 
-        const totals = this.orderTotals(order)
-
-        return floatCompare(totals.paid, totals.total, { precisionRounding: this.currency.rounding }) >= 0
+        return this.orderTotals(order).covered
     }
 
     orderPayload(order) {
@@ -1823,6 +1869,7 @@ export class Till {
             fiscal_position_id: order.fiscal_position_id,
             is_takeaway: order.is_takeaway,
             is_to_invoice: order.to_invoice,
+            refunded_order_id: order.refunded_order_id ?? null,
             shipped_at: order.shipped_at,
             note: order.note,
             amount_total: totals.total,
@@ -1838,6 +1885,10 @@ export class Till {
 
                 if (line.price_overridden) {
                     payload.price_unit = line.price_unit
+                }
+
+                if (line.refunded_order_line_id) {
+                    payload.refunded_order_line_id = line.refunded_order_line_id
                 }
 
                 if (line.lots?.length) {
