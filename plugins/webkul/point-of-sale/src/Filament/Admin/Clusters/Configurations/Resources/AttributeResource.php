@@ -8,10 +8,13 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\Attribut
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\AttributeResource\Pages\EditAttribute;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\AttributeResource\Pages\ListAttributes;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\AttributeResource\Pages\ViewAttribute;
+use Webkul\PointOfSale\Models\Attribute;
 use Webkul\Product\Filament\Resources\AttributeResource as BaseAttributeResource;
 
 class AttributeResource extends BaseAttributeResource
 {
+    protected static ?string $model = Attribute::class;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-swatch';
 
     protected static bool $shouldRegisterNavigation = true;

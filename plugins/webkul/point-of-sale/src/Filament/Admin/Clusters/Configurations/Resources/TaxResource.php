@@ -4,12 +4,12 @@ namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources;
 
 use BackedEnum;
 use Webkul\Account\Filament\Resources\TaxResource as BaseTaxResource;
-use Webkul\Invoice\Models\Tax;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\TaxResource\Pages\CreateTax;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\TaxResource\Pages\EditTax;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\TaxResource\Pages\ListTaxes;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\TaxResource\Pages\ViewTax;
+use Webkul\PointOfSale\Models\Tax;
 
 class TaxResource extends BaseTaxResource
 {
