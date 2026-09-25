@@ -1,7 +1,9 @@
 <?php
 
+use Webkul\Account\Enums\AccountType;
 use Webkul\Account\Enums\MoveState;
 use Webkul\Account\Enums\MoveType;
+use Webkul\Account\Enums\PaymentState;
 use Webkul\Account\Models\Move;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Enums\OrderState;
@@ -133,4 +135,43 @@ it('keeps invoiced orders out of the closing entry revenue', function () {
 
     expect((float) $move->lines->sum('credit'))->toBe((float) $move->lines->sum('debit'))
         ->and((float) $move->lines->where('account_id', $income->id)->sum('credit'))->toBe(40.0);
+});
+
+it('settles the invoice of an invoiced order when the session closes', function () {
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+        ['partner_id' => $this->partner->id],
+    ));
+
+    $invoice = PointOfSale::invoiceOrder($order);
+
+    PointOfSale::closeSessionWithAccounting($this->session->refresh(), 100.0);
+
+    $receivable = $invoice->refresh()->lines
+        ->first(fn ($line): bool => $line->account?->account_type === AccountType::ASSET_RECEIVABLE);
+
+    expect($invoice->payment_state)->toBeIn([PaymentState::PAID, PaymentState::IN_PAYMENT])
+        ->and((float) $receivable->amount_residual)->toBe(0.0);
+});
+
+it('settles two invoices of the same customer when the session closes', function () {
+    $invoices = collect([100.0, 60.0])->map(function (float $price) {
+        $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+            $this->config->refresh(),
+            $this->session,
+            [PosHelper::line($this->product->id, 1, $price)],
+            [PosHelper::payment($this->cash, $price)],
+            ['partner_id' => $this->partner->id],
+        ));
+
+        return PointOfSale::invoiceOrder($order);
+    });
+
+    PointOfSale::closeSessionWithAccounting($this->session->refresh(), 160.0);
+
+    $invoices->each(fn ($invoice) => expect($invoice->refresh()->payment_state)
+        ->toBeIn([PaymentState::PAID, PaymentState::IN_PAYMENT]));
 });
