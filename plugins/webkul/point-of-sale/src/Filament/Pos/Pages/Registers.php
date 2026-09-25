@@ -71,7 +71,7 @@ class Registers extends Page
             ->modalHeading(__($prefix.'heading'))
             ->modalDescription(__($prefix.'description'))
             ->modalSubmitActionLabel(__($prefix.'confirm'))
-            ->action(function (array $arguments): void {
+            ->action(function (array $arguments) use ($prefix): void {
                 $session = Session::find($arguments['session'] ?? null);
 
                 if (! $session) {
