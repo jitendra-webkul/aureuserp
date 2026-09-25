@@ -5,13 +5,15 @@ namespace Webkul\PointOfSale\Filament\Admin\Widgets;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Filament\Admin\Widgets\Concerns\FiltersDashboardOrders;
 use Webkul\PointOfSale\Models\OrderLine;
 
 class TopProductsWidget extends ChartWidget
 {
-    use HasWidgetShield;
+    use FiltersDashboardOrders, HasWidgetShield;
 
     protected static ?int $sort = 2;
 
@@ -31,11 +33,14 @@ class TopProductsWidget extends ChartWidget
     {
         $lines = OrderLine::query()
             ->select('product_id', DB::raw('SUM(price_subtotal) as revenue'))
-            ->whereHas('order', fn ($query) => $query->whereIn('state', [
-                OrderState::PAID,
-                OrderState::DONE,
-                OrderState::INVOICED,
-            ]))
+            ->whereHas('order', fn (Builder $query) => $this->applyOrderFilters(
+                $query->whereIn('state', [
+                    OrderState::PAID,
+                    OrderState::DONE,
+                    OrderState::INVOICED,
+                ]),
+            ))
+            ->when($this->hasProductFilters(), fn (Builder $query) => $this->applyOrderLineProductFilters($query))
             ->groupBy('product_id')
             ->orderByDesc('revenue')
             ->limit(10)

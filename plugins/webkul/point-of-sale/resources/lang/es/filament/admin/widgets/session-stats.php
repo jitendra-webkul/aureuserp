@@ -7,14 +7,14 @@ return [
             'description' => 'Sesiones todavía en el mostrador',
         ],
 
-        'today-orders' => [
-            'label'       => 'Pedidos de hoy',
-            'description' => 'Pedidos liquidados desde medianoche',
+        'orders' => [
+            'label'       => 'Pedidos',
+            'description' => 'Pedidos liquidados en el período seleccionado',
         ],
 
-        'today-revenue' => [
-            'label'       => 'Ingresos de hoy',
-            'description' => 'Total de pedidos liquidados',
+        'revenue' => [
+            'label'       => 'Ingresos',
+            'description' => 'Total de pedidos liquidados en el período seleccionado',
         ],
 
         'failed-operations' => [

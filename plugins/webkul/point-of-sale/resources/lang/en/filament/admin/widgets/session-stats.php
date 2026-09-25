@@ -7,14 +7,14 @@ return [
             'description' => 'Sessions still on the counter',
         ],
 
-        'today-orders' => [
-            'label'       => 'Orders Today',
-            'description' => 'Settled orders since midnight',
+        'orders' => [
+            'label'       => 'Orders',
+            'description' => 'Settled orders in the selected period',
         ],
 
-        'today-revenue' => [
-            'label'       => 'Revenue Today',
-            'description' => 'Total of settled orders',
+        'revenue' => [
+            'label'       => 'Revenue',
+            'description' => 'Total of settled orders in the selected period',
         ],
 
         'failed-operations' => [

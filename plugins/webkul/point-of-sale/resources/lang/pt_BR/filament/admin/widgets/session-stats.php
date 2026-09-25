@@ -7,14 +7,14 @@ return [
             'description' => 'Sessões ainda no balcão',
         ],
 
-        'today-orders' => [
-            'label'       => 'Pedidos de hoje',
-            'description' => 'Pedidos liquidados desde a meia-noite',
+        'orders' => [
+            'label'       => 'Pedidos',
+            'description' => 'Pedidos liquidados no período selecionado',
         ],
 
-        'today-revenue' => [
-            'label'       => 'Receita de hoje',
-            'description' => 'Total dos pedidos liquidados',
+        'revenue' => [
+            'label'       => 'Receita',
+            'description' => 'Total dos pedidos liquidados no período selecionado',
         ],
 
         'failed-operations' => [

@@ -7,14 +7,14 @@ return [
             'description' => 'Sessions encore au comptoir',
         ],
 
-        'today-orders' => [
-            'label'       => 'Commandes du jour',
-            'description' => 'Commandes réglées depuis minuit',
+        'orders' => [
+            'label'       => 'Commandes',
+            'description' => 'Commandes réglées sur la période sélectionnée',
         ],
 
-        'today-revenue' => [
-            'label'       => 'Chiffre d\'affaires du jour',
-            'description' => 'Total des commandes réglées',
+        'revenue' => [
+            'label'       => 'Chiffre d\'affaires',
+            'description' => 'Total des commandes réglées sur la période sélectionnée',
         ],
 
         'failed-operations' => [

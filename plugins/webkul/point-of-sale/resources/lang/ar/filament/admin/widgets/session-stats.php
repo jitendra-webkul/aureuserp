@@ -7,14 +7,14 @@ return [
             'description' => 'جلسات ما زالت على المنضدة',
         ],
 
-        'today-orders' => [
-            'label'       => 'طلبات اليوم',
-            'description' => 'الطلبات المسوّاة منذ منتصف الليل',
+        'orders' => [
+            'label'       => 'الطلبات',
+            'description' => 'الطلبات المسوّاة في الفترة المحددة',
         ],
 
-        'today-revenue' => [
-            'label'       => 'إيرادات اليوم',
-            'description' => 'إجمالي الطلبات المسوّاة',
+        'revenue' => [
+            'label'       => 'الإيرادات',
+            'description' => 'إجمالي الطلبات المسوّاة في الفترة المحددة',
         ],
 
         'failed-operations' => [
