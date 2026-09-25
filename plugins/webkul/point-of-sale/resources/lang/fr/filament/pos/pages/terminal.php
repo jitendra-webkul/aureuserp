@@ -282,6 +282,8 @@ Souhaitez-vous continuer malgré tout ?',
             'label'   => 'Annuler la commande',
             'confirm' => 'Confirmer',
             'hint'    => 'Ses lignes seront perdues. Cette action est irréversible.',
+            'failed'  => 'Impossible d\'annuler la commande (:status).',
+            'offline' => 'L\'annulation de cette commande nécessite une connexion.',
         ],
     ],
 

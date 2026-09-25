@@ -282,6 +282,8 @@ return [
             'label'   => 'Cancelar pedido',
             'confirm' => 'Confirmar',
             'hint'    => 'Se perderán sus líneas. Esta acción no se puede deshacer.',
+            'failed'  => 'No se pudo cancelar el pedido (:status).',
+            'offline' => 'Cancelar este pedido requiere conexión.',
         ],
     ],
 

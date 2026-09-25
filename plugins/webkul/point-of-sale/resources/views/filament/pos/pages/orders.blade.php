@@ -236,16 +236,28 @@
                             {{ __($prefix.'actions.details') }}
                         </a>
 
-                        <button
-                            type="button"
-                            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
-                            @disabled(! $this->canInvoice($selected))
-                            wire:click="mountAction('invoiceOrder', { order: {{ $selected->getKey() }} })"
-                        >
-                            <x-filament::icon icon="heroicon-o-document-text" class="size-5 flex-none" />
+                        @if ($this->canCancel($selected))
+                            <button
+                                type="button"
+                                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-danger-200 bg-danger-50 text-base font-medium text-danger-700 transition-colors hover:bg-danger-100 active:bg-danger-200 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-300 dark:hover:bg-danger-500/20"
+                                wire:click="mountAction('cancelOrder', { order: {{ $selected->getKey() }} })"
+                            >
+                                <x-filament::icon icon="heroicon-o-x-circle" class="size-5 flex-none" />
 
-                            {{ __($prefix.'actions.invoice.label') }}
-                        </button>
+                                {{ __($prefix.'actions.cancel.label') }}
+                            </button>
+                        @else
+                            <button
+                                type="button"
+                                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
+                                @disabled(! $this->canInvoice($selected))
+                                wire:click="mountAction('invoiceOrder', { order: {{ $selected->getKey() }} })"
+                            >
+                                <x-filament::icon icon="heroicon-o-document-text" class="size-5 flex-none" />
+
+                                {{ __($prefix.'actions.invoice.label') }}
+                            </button>
+                        @endif
 
                         <button type="button" class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600" x-on:click="window.pointOfSaleReceipt.print('#pos-receipt')">
                             <x-filament::icon icon="heroicon-o-printer" class="size-5 flex-none" />

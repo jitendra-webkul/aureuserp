@@ -48,6 +48,17 @@ return [
             'body'  => 'L\'avoir :order est prêt à être réglé.',
         ],
 
+        'cancel' => [
+            'label'       => 'Annuler',
+            'heading'     => 'Annuler cette commande ?',
+            'description' => 'La commande est clôturée sans paiement et ne bloque plus la fermeture de la caisse. Cette action est irréversible.',
+
+            'notification' => [
+                'title' => 'Commande annulée',
+                'body'  => ':order a été annulée.',
+            ],
+        ],
+
         'invoice' => [
             'label'        => 'Facture',
             'heading'      => 'Créer une facture pour cette commande ?',

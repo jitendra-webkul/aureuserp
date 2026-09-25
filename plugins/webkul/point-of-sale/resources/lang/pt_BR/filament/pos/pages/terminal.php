@@ -282,6 +282,8 @@ Deseja continuar mesmo assim?',
             'label'   => 'Cancelar pedido',
             'confirm' => 'Confirmar',
             'hint'    => 'As linhas dele serão perdidas. Esta ação não pode ser desfeita.',
+            'failed'  => 'Não foi possível cancelar o pedido (:status).',
+            'offline' => 'Cancelar este pedido requer conexão.',
         ],
     ],
 

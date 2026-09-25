@@ -60,6 +60,8 @@ export class Till {
             paymentBuffer: '',
             productModalOpen: false,
             actionsModalOpen: false,
+            cancellingOrder: false,
+            cancelError: null,
             variantProductId: null,
             lotLineUuid: null,
             lotRows: [],
@@ -120,13 +122,9 @@ export class Till {
     }
 
     async start() {
-        const restored = await this.restore()
+        await this.restore()
 
-        if (!restored.length) {
-            for (const order of this.boot.orders ?? []) {
-                this.state.orders.push(this.hydrateServerOrder(order))
-            }
-        }
+        this.mergeServerOrders()
 
         const refund = this.openPendingRefund()
 
@@ -179,22 +177,36 @@ export class Till {
 
         const restored = [...byOrder.values()]
 
-        const highest = restored.reduce((carry, order) => {
-            const number = parseInt(order.tracking_number, 10)
+        const prefix = this.nextReference(0).slice(0, -4)
 
-            return Number.isNaN(number) ? carry : Math.max(carry, number % 100)
-        }, this.state.sequenceNumber)
+        for (const order of restored) {
+            if (order.state === 'draft' && !order.serverId && order.pos_reference && !order.pos_reference.startsWith(prefix)) {
+                order.pos_reference = null
+                order.tracking_number = null
+            }
+        }
+
+        const highest = [...restored, ...(this.boot.orders ?? [])]
+            .filter((order) => order.pos_reference?.startsWith(prefix))
+            .reduce((carry, order) => {
+                const number = parseInt(order.pos_reference.slice(prefix.length), 10)
+
+                return Number.isNaN(number) ? carry : Math.max(carry, number)
+            }, this.state.sequenceNumber)
 
         this.state.sequenceNumber = highest
 
-        const seen = new Set()
+        const seen = new Set([
+            ...(this.boot.orders ?? []).map((order) => order.pos_reference),
+            ...restored.filter((order) => order.serverId).map((order) => order.pos_reference),
+        ])
 
         for (const order of restored) {
             order.tracking_number ??= this.nextTrackingNumber()
 
             order.pos_reference ||= this.nextReference(this.state.sequenceNumber)
 
-            if (seen.has(order.pos_reference)) {
+            if (!order.serverId && seen.has(order.pos_reference)) {
                 order.tracking_number = this.nextTrackingNumber()
 
                 order.pos_reference = this.nextReference(this.state.sequenceNumber)
@@ -206,6 +218,32 @@ export class Till {
         }
 
         return restored
+    }
+
+    mergeServerOrders() {
+        const serverOrders = this.boot.orders ?? []
+
+        const serverUuids = new Set(serverOrders.map((order) => order.uuid))
+
+        const stale = this.state.orders.filter((order) => order.serverId && order.state === 'draft' && !serverUuids.has(order.uuid))
+
+        for (const order of stale) {
+            this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
+            this.database.remove('pos.payment', order.payments.map((payment) => payment.uuid))
+            this.database.remove('pos.order', [order.uuid])
+        }
+
+        const staleUuids = new Set(stale.map((order) => order.uuid))
+
+        this.state.orders = this.state.orders.filter((order) => !staleUuids.has(order.uuid))
+
+        const localUuids = new Set(this.state.orders.map((order) => order.uuid))
+
+        for (const order of serverOrders) {
+            if (!localUuids.has(order.uuid)) {
+                this.state.orders.push(this.hydrateServerOrder(order))
+            }
+        }
     }
 
     openPendingRefund() {
@@ -827,6 +865,7 @@ export class Till {
 
     closeActions() {
         this.state.actionsModalOpen = false
+        this.state.cancelError = null
     }
 
     openPriceLists() {
@@ -856,16 +895,55 @@ export class Till {
         this.closePriceLists()
     }
 
-    cancelActiveOrder() {
-        const uuid = this.state.activeOrderUuid
+    async cancelActiveOrder() {
+        const order = this.activeOrder
 
-        if (!uuid) {
+        if (!order || this.state.cancellingOrder) {
+            return
+        }
+
+        if (order.serverId && !(await this.cancelOnServer(order))) {
             return
         }
 
         this.closeActions()
 
-        this.discardOrder(uuid)
+        this.discardOrder(order.uuid)
+    }
+
+    async cancelOnServer(order) {
+        this.state.cancellingOrder = true
+        this.state.cancelError = null
+
+        try {
+            const response = await fetch(this.boot.config.order_cancel_endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({ uuid: order.uuid }),
+            })
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}))
+
+                this.state.cancelError = body.message ?? this.t('actions.cancel-order.failed', { status: response.status })
+
+                return false
+            }
+
+            return true
+        } catch (error) {
+            this.state.cancelError = navigator.onLine
+                ? error.message
+                : this.t('actions.cancel-order.offline')
+
+            return false
+        } finally {
+            this.state.cancellingOrder = false
+        }
     }
 
     discardOrder(uuid) {

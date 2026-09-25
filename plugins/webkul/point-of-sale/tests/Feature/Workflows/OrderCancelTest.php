@@ -7,6 +7,7 @@ use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
+use Webkul\PointOfSale\Services\BootLoader;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -137,4 +138,51 @@ it('counts only live refund lines on the original line', function () {
 
     expect((float) $line->refresh()->refunded_qty)->toBe(2.0)
         ->and(OrderLine::withoutGlobalScopes()->where('refunded_order_line_id', $line->id)->count())->toBe(2);
+});
+
+it('cancels a server draft order from the till', function () {
+    $order = Order::create([
+        'config_id'  => $this->config->id,
+        'session_id' => $this->session->id,
+    ]);
+
+    $this->postJson(route('point-of-sale.till.orders.cancel'), ['uuid' => $order->uuid])
+        ->assertOk()
+        ->assertJsonPath('data.state', OrderState::CANCELED->value);
+
+    expect($order->refresh()->state)->toBe(OrderState::CANCELED);
+});
+
+it('treats cancelling an already cancelled order from the till as done', function () {
+    $order = Order::create([
+        'config_id'  => $this->config->id,
+        'session_id' => $this->session->id,
+    ]);
+
+    PointOfSale::cancelOrder($order);
+
+    $this->postJson(route('point-of-sale.till.orders.cancel'), ['uuid' => $order->uuid])
+        ->assertOk()
+        ->assertJsonPath('data.state', OrderState::CANCELED->value);
+});
+
+it('refuses to cancel a settled order from the till', function () {
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 50.0)],
+        [PosHelper::payment($this->cash, 50.0)],
+    ));
+
+    $this->postJson(route('point-of-sale.till.orders.cancel'), ['uuid' => $order->uuid])
+        ->assertUnprocessable()
+        ->assertJsonPath('message', __('point-of-sale::system.order-workflow.cancel.not-draft', ['order' => $order->reference]));
+
+    expect($order->refresh()->state)->not->toBe(OrderState::CANCELED);
+});
+
+it('ships the cancel endpoint to the till', function () {
+    $payload = app(BootLoader::class)->load($this->config, $this->session);
+
+    expect($payload['config']['order_cancel_endpoint'])->toBe(route('point-of-sale.till.orders.cancel'));
 });

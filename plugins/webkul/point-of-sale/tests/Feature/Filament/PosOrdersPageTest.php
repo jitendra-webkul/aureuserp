@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use Webkul\PluginManager\Models\Plugin;
 use Webkul\PluginManager\Package;
+use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 use Webkul\PointOfSale\Filament\Pos\Pages\Orders;
@@ -46,6 +47,40 @@ beforeEach(function () {
     DB::table('products_products')->where('id', $this->product->id)->update(['available_in_pos' => true]);
 
     InventoryHelper::stockUp($this->product, $this->warehouse->lotStockLocation, 50);
+});
+
+it('cancels a draft order from the orders page', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $order = Order::create([
+        'config_id'  => $session->config_id,
+        'session_id' => $session->id,
+    ]);
+
+    Livewire::test(Orders::class, ['session' => $session])
+        ->set('selectedOrderId', $order->id)
+        ->assertSee(__('point-of-sale::filament/pos/pages/orders.actions.cancel.label'))
+        ->callAction('cancelOrder', arguments: ['order' => $order->id])
+        ->assertNotified(__('point-of-sale::filament/pos/pages/orders.actions.cancel.notification.title'));
+
+    expect($order->refresh()->state)->toBe(OrderState::CANCELED);
+});
+
+it('leaves a paid order alone when cancel is triggered from the orders page', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $session->config,
+        $session,
+        [PosHelper::line($this->product->id, 1, 25.0)],
+        [PosHelper::payment($session->config->paymentMethods->first(), 25.0)],
+    ));
+
+    Livewire::test(Orders::class, ['session' => $session])
+        ->set('selectedOrderId', $order->id)
+        ->callAction('cancelOrder', arguments: ['order' => $order->id]);
+
+    expect($order->refresh()->state)->not->toBe(OrderState::CANCELED);
 });
 
 it('hands a refund to the till instead of saving a draft order', function () {

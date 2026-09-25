@@ -52,6 +52,17 @@ return [
             'body'  => 'Refund :order is ready to settle.',
         ],
 
+        'cancel' => [
+            'label'       => 'Cancel',
+            'heading'     => 'Cancel this order?',
+            'description' => 'The order is closed without payment and no longer blocks closing the register. This cannot be undone.',
+
+            'notification' => [
+                'title' => 'Order cancelled',
+                'body'  => ':order was cancelled.',
+            ],
+        ],
+
         'invoice' => [
             'label'   => 'Invoice',
             'heading' => 'Create an invoice for this order?',

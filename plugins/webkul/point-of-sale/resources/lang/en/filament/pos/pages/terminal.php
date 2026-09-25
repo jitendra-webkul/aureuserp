@@ -280,6 +280,8 @@ return [
             'label'   => 'Cancel order',
             'confirm' => 'Confirm',
             'hint'    => 'Its lines will be lost. This cannot be undone.',
+            'failed'  => 'Could not cancel the order (:status).',
+            'offline' => 'Cancelling this order needs a connection.',
         ],
     ],
 

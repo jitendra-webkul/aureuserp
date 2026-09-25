@@ -211,6 +211,45 @@ class Orders extends Page
             });
     }
 
+    public function cancelOrderAction(): Action
+    {
+        $prefix = 'point-of-sale::filament/pos/pages/orders.actions.cancel.';
+
+        return Action::make('cancelOrder')
+            ->label(__($prefix.'label'))
+            ->icon('heroicon-o-x-circle')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading(__($prefix.'heading'))
+            ->modalDescription(__($prefix.'description'))
+            ->action(function (array $arguments) use ($prefix): void {
+                $order = Order::withoutGlobalScopes()
+                    ->where('session_id', $this->session?->getKey())
+                    ->find($arguments['order'] ?? null);
+
+                if (! $order || ! $this->canCancel($order)) {
+                    return;
+                }
+
+                try {
+                    PointOfSale::cancelOrder($order);
+
+                    Notification::make()
+                        ->success()
+                        ->title(__($prefix.'notification.title'))
+                        ->body(__($prefix.'notification.body', ['order' => $order->reference]))
+                        ->send();
+                } catch (Throwable $exception) {
+                    Notification::make()
+                        ->danger()
+                        ->body($exception->getMessage())
+                        ->send();
+                }
+
+                $this->dispatchRefundQuantities();
+            });
+    }
+
     public function backUrl(): string
     {
         return Home::getUrl(['session' => $this->session?->getKey()]);
@@ -280,6 +319,12 @@ class Orders extends Page
     public function canRefund(Order $order): bool
     {
         return filled(app(RefundProcessor::class)->refundableLines($order));
+    }
+
+    public function canCancel(Order $order): bool
+    {
+        return $order->state === OrderState::DRAFT
+            && $order->session?->state !== SessionState::CLOSED;
     }
 
     public function canInvoice(Order $order): bool
