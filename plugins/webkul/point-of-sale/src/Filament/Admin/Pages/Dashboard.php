@@ -27,6 +27,8 @@ class Dashboard extends BaseDashboard
 
     protected static string $routePath = 'point-of-sale';
 
+    protected static ?string $slug = 'point-of-sale-dashboard';
+
     protected static function getPagePermission(): ?string
     {
         return 'page_point_of_sale_dashboard';
