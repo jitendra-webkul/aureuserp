@@ -214,7 +214,11 @@ abstract class Terminal extends Page
                 ->danger()
                 ->body($exception->getMessage())
                 ->send();
+
+            return;
         }
+
+        $this->redirect(static::getUrl(['session' => $this->session->getKey()]));
     }
 
     #[On('pos-open-cash-movement')]

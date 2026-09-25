@@ -58,7 +58,8 @@ it('shows the opening control until the drawer is counted', function () {
     Livewire::test(Home::class, ['session' => $session])
         ->assertOk()
         ->call('confirmOpening')
-        ->assertOk();
+        ->assertOk()
+        ->assertRedirect();
 
     expect($session->refresh()->state)->toBe(SessionState::OPENED);
 });
