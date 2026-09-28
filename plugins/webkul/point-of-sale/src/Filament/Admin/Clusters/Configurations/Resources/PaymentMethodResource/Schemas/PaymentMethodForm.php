@@ -9,7 +9,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Webkul\Account\Enums\JournalType;
 use Webkul\Account\Models\Journal;
 use Webkul\PointOfSale\Enums\PaymentTerminalType;
@@ -31,7 +30,7 @@ class PaymentMethodForm
                         Select::make('company_id')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.company'))
                             ->relationship('company', 'name')
-                            ->default(fn (): ?int => Auth::user()?->default_company_id)
+                            ->default(fn (): ?int => current_company_id())
                             ->disabled()
                             ->dehydrated()
                             ->native(false),
