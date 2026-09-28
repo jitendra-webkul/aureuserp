@@ -2,11 +2,15 @@
 
 use Webkul\Account\Enums\AccountType;
 use Webkul\Account\Enums\JournalType;
+use Webkul\Account\Models\Account;
+use Webkul\Inventory\Models\OperationType;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Warehouse;
 use Webkul\PointOfSale\Services\SessionPreflight;
+use Webkul\PointOfSale\Settings\AccountSettings;
+use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Scopes\CompanyScope;
 use Webkul\Support\Models\Sequence;
 
@@ -120,6 +124,28 @@ it('defaults the receivable account when none was given', function () {
         ->and((bool) $config->receivableAccount->reconcile)->toBeTrue();
 });
 
+it('ignores a configured receivable account that belongs to another company', function () {
+    $foreignAccount = Account::factory()->create([
+        'account_type' => AccountType::ASSET_RECEIVABLE,
+        'reconcile'    => true,
+    ]);
+
+    $foreignAccount->companies()->sync([Company::factory()->create()->id]);
+
+    $settings = app(AccountSettings::class);
+    $settings->receivable_account_id = $foreignAccount->id;
+    $settings->save();
+
+    $config = Config::create([
+        'name'       => 'Foreign Receivable Shop',
+        'code'       => 'FRS',
+        'company_id' => PosHelper::company()->id,
+    ]);
+
+    expect($config->receivable_account_id)->not->toBeNull()
+        ->not->toBe($foreignAccount->id);
+});
+
 it('defaults the warehouse and its operation types', function () {
     InventoryHelper::warehouse();
 
@@ -190,3 +216,20 @@ it('passes the opening preflight straight after creation', function () {
 
     app(SessionPreflight::class)->assertCanOpen($config->refresh());
 })->throwsNoExceptions();
+
+it('recreates the point of sale operation type when it was deleted from the warehouse', function () {
+    $posWarehouse = PosHelper::warehouse($this->warehouse);
+
+    OperationType::withTrashed()->whereKey($posWarehouse->pos_type_id)->forceDelete();
+
+    $config = PosHelper::config($this->warehouse, [
+        'operation_type_id'        => null,
+        'return_operation_type_id' => null,
+    ]);
+
+    $posWarehouse->refresh();
+
+    expect($posWarehouse->pos_type_id)->not->toBeNull()
+        ->and($config->operation_type_id)->toBe($posWarehouse->pos_type_id)
+        ->and($config->return_operation_type_id)->toBe($posWarehouse->pos_return_type_id);
+});
