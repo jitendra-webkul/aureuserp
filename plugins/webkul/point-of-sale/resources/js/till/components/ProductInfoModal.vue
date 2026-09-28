@@ -32,7 +32,7 @@ const info = computed(() => (state.productInfoId ? till.productInfo() : null))
                         class="font-mono font-semibold tabular-nums"
                         :class="info.available <= 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-950 dark:text-white'"
                     >{{ info.available.toFixed(2) }}</span>
-                    {{ till.t('product-info.on-hand') }}
+                    {{ till.t('product-info.available') }}
                 </p>
 
                 <p v-if="info.available <= 0" class="text-xs text-gray-500 dark:text-gray-400">

@@ -127,7 +127,7 @@ return [
     'product-info' => [
         'heading'          => 'Informações do produto',
         'inventory'        => 'Estoque',
-        'on-hand'          => 'em mãos neste caixa',
+        'available'        => 'disponíveis neste caixa',
         'negative-warning' => 'A venda continua permitida; o estoque ficará negativo e o back office mostrará a falta.',
         'financials'       => 'Financeiro',
         'price'            => 'Preço',
@@ -218,7 +218,7 @@ return [
         'search'          => 'Buscar produtos',
         'create-product'  => 'Criar produto',
         'info'            => 'Informações do produto :product',
-        'info-depleted'   => 'Informações do produto :product, sem estoque',
+        'info-depleted'   => 'Informações do produto :product, nenhum disponível',
     ],
 
     'numpad' => [

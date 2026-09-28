@@ -127,7 +127,7 @@ return [
     'product-info' => [
         'heading'          => 'Product information',
         'inventory'        => 'Inventory',
-        'on-hand'          => 'on hand at this register',
+        'available'        => 'available at this register',
         'negative-warning' => 'Selling is still allowed; stock will go negative and the back office will show the shortfall.',
         'financials'       => 'Financials',
         'price'            => 'Price',
@@ -218,7 +218,7 @@ return [
         'search'          => 'Search products',
         'create-product'  => 'Create product',
         'info'            => 'Product info for :product',
-        'info-depleted'   => 'Product info for :product, none on hand',
+        'info-depleted'   => 'Product info for :product, none available',
     ],
 
     'numpad' => [
