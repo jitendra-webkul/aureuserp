@@ -1676,15 +1676,81 @@ export class Till {
             .slice(0, 50)
     }
 
+    rootCategories() {
+        return this.master.categories.filter((category) => !this.master.categories.get(category.parent_id))
+    }
+
+    childCategories(categoryId) {
+        return this.master.categories.getBy('parent_id', categoryId)
+    }
+
+    categoryPath(categoryId) {
+        const path = []
+
+        let category = this.master.categories.get(categoryId)
+
+        while (category && !path.includes(category)) {
+            path.unshift(category)
+
+            category = this.master.categories.get(category.parent_id)
+        }
+
+        return path
+    }
+
+    visibleCategories(categoryId) {
+        const path = this.categoryPath(categoryId)
+
+        const expand = (categories) => categories.flatMap((category) => (
+            path.includes(category)
+                ? [category, ...expand(this.childCategories(category.id))]
+                : [category]
+        ))
+
+        return expand(this.rootCategories())
+    }
+
+    categoryWithDescendantIds(categoryId) {
+        const ids = new Set([categoryId])
+
+        const pending = [categoryId]
+
+        while (pending.length) {
+            for (const child of this.childCategories(pending.shift())) {
+                if (!ids.has(child.id)) {
+                    ids.add(child.id)
+
+                    pending.push(child.id)
+                }
+            }
+        }
+
+        return ids
+    }
+
+    selectCategory(categoryId) {
+        if (this.state.categoryId !== categoryId) {
+            this.state.categoryId = categoryId
+
+            return
+        }
+
+        const parentId = this.master.categories.get(categoryId)?.parent_id
+
+        this.state.categoryId = this.master.categories.get(parentId) ? parentId : null
+    }
+
     searchProducts(term, categoryId) {
         const needle = term.trim().toLowerCase()
+
+        const categoryIds = categoryId ? this.categoryWithDescendantIds(categoryId) : null
 
         return this.master.products.filter((product) => {
             if (product.parent_id) {
                 return false
             }
 
-            if (categoryId && !(product.category_ids ?? []).includes(categoryId)) {
+            if (categoryIds && !(product.category_ids ?? []).some((id) => categoryIds.has(id))) {
                 return false
             }
 

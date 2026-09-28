@@ -5,7 +5,9 @@ const till = inject('till')
 
 const state = till.state
 
-const categories = computed(() => till.master.categories.all())
+const categories = computed(() => till.visibleCategories(state.categoryId))
+
+const selectedCategoryIds = computed(() => new Set(till.categoryPath(state.categoryId).map((category) => category.id)))
 
 const products = computed(() => till.searchProducts(state.search, state.categoryId))
 
@@ -15,8 +17,52 @@ function isDepleted(product) {
     return Boolean(product.is_storable) && till.freeQty(product.id) <= 0
 }
 
+function isCategorySelected(id) {
+    return selectedCategoryIds.value.has(id)
+}
+
+function isSubCategory(category) {
+    return Boolean(till.master.categories.get(category.parent_id))
+}
+
+function categoryChipClass(category) {
+    if (isCategorySelected(category.id)) {
+        return 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500'
+    }
+
+    if (isSubCategory(category)) {
+        return 'border-dashed border-primary-300 bg-primary-50 text-primary-700 hover:border-primary-500 dark:border-primary-500/50 dark:bg-primary-500/10 dark:text-primary-300'
+    }
+
+    return 'border-gray-200 bg-white text-gray-600 hover:border-primary-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
+}
+
+function categoryCardClass(category) {
+    if (isCategorySelected(category.id)) {
+        return 'border-primary-600 ring-1 ring-primary-600 dark:border-primary-500 dark:ring-primary-500'
+    }
+
+    if (isSubCategory(category)) {
+        return 'border-dashed border-primary-300 hover:border-primary-500 dark:border-primary-500/50'
+    }
+
+    return 'border-gray-200 hover:border-primary-400 dark:border-gray-700'
+}
+
+function categoryCardLabelClass(category) {
+    if (isCategorySelected(category.id)) {
+        return 'bg-primary-600 text-white dark:bg-primary-500'
+    }
+
+    if (isSubCategory(category)) {
+        return 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-300'
+    }
+
+    return 'bg-white text-gray-600 dark:bg-gray-900 dark:text-gray-300'
+}
+
 function selectCategory(id) {
-    state.categoryId = state.categoryId === id ? null : id
+    till.selectCategory(id)
 }
 
 </script>
@@ -44,30 +90,30 @@ function selectCategory(id) {
             </button>
         </div>
 
-        <div v-if="categories.length && !till.config.show_category_images" class="flex flex-none flex-wrap gap-2">
+        <div v-if="categories.length && !till.config.show_category_images" class="flex flex-none flex-wrap items-center gap-2">
             <button
                 v-for="category in categories"
                 :key="category.id"
                 type="button"
-                class="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                :class="state.categoryId === category.id
-                    ? 'border-primary-500 bg-primary-50 text-primary-700 ring-1 ring-primary-500 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-300 dark:ring-primary-400'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
+                class="flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                :class="categoryChipClass(category)"
                 @click="selectCategory(category.id)"
             >
+                <svg v-if="isSubCategory(category)" class="size-3.5 flex-none rtl:rotate-180" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                </svg>
+
                 {{ category.name }}
             </button>
         </div>
 
-        <div v-if="categories.length && till.config.show_category_images" class="flex flex-none gap-2 overflow-x-auto pb-1 ps-0.5 pe-0.5 pt-0.5">
+        <div v-if="categories.length && till.config.show_category_images" class="flex flex-none flex-wrap gap-2 ps-0.5 pe-0.5 pt-0.5">
             <button
                 v-for="category in categories"
                 :key="category.id"
                 type="button"
                 class="flex w-24 flex-none flex-col overflow-hidden rounded-xl border transition-colors"
-                :class="state.categoryId === category.id
-                    ? 'border-primary-500 ring-1 ring-primary-500 dark:border-primary-400 dark:ring-primary-400'
-                    : 'border-gray-200 hover:border-primary-400 dark:border-gray-700'"
+                :class="categoryCardClass(category)"
                 @click="selectCategory(category.id)"
             >
                 <span class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-gray-100 dark:bg-gray-800">
@@ -77,12 +123,14 @@ function selectCategory(id) {
                 </span>
 
                 <span
-                    class="truncate px-2 py-1.5 text-center text-xs font-medium"
-                    :class="state.categoryId === category.id
-                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300'
-                        : 'bg-white text-gray-600 dark:bg-gray-900 dark:text-gray-300'"
+                    class="flex items-center justify-center gap-0.5 px-2 py-1.5 text-xs font-medium"
+                    :class="categoryCardLabelClass(category)"
                 >
-                    {{ category.name }}
+                    <svg v-if="isSubCategory(category)" class="size-3 flex-none rtl:rotate-180" width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+
+                    <span class="truncate">{{ category.name }}</span>
                 </span>
             </button>
         </div>

@@ -8,7 +8,7 @@ export const MASTER_INDEXES = {
     products: ['barcode'],
     partners: ['barcode'],
     taxes: [],
-    categories: [],
+    categories: ['parent_id'],
     payment_methods: [],
     price_lists: [],
     fiscal_positions: [],
