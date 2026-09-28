@@ -48,6 +48,17 @@ return [
             'body'  => 'O reembolso :order está pronto para ser liquidado.',
         ],
 
+        'cancel' => [
+            'label'       => 'Cancelar',
+            'heading'     => 'Cancelar este pedido?',
+            'description' => 'O pedido é encerrado sem pagamento e deixa de bloquear o fechamento do caixa. Esta ação não pode ser desfeita.',
+
+            'notification' => [
+                'title' => 'Pedido cancelado',
+                'body'  => ':order foi cancelado.',
+            ],
+        ],
+
         'invoice' => [
             'label'        => 'Fatura',
             'heading'      => 'Criar uma fatura para este pedido?',

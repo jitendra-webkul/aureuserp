@@ -13,7 +13,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
-use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Session;
@@ -59,6 +58,8 @@ abstract class Terminal extends Page
 
     public bool $showCashMoves = false;
 
+    public ?string $modalOnLoad = null;
+
     public function mount(Session $session): void
     {
         abort_unless(PosAccess::reachesActiveSession($session), 403);
@@ -70,14 +71,18 @@ abstract class Terminal extends Page
         if (! $session->isLive()) {
             $live = app(SessionWorkflow::class)->liveSessionFor($this->config);
 
-            if (! $live) {
-                redirect()->to(ConfigResource::getUrl(panel: 'admin'));
+            $this->redirect($live && PosAccess::reachesSession($live)
+                ? static::getUrl(array_filter(['session' => $live->getKey(), 'open' => request()->query('open')]))
+                : $this->backUrl());
 
-                return;
-            }
-
-            $this->session = $live;
+            return;
         }
+
+        $this->modalOnLoad = match (request()->query('open')) {
+            'closing'       => 'pos-closing',
+            'cash-movement' => 'pos-cash-movement',
+            default         => null,
+        };
     }
 
     public function needsOpeningControl(): bool
@@ -92,7 +97,7 @@ abstract class Terminal extends Page
 
     public function backUrl(): string
     {
-        return ConfigResource::getUrl(panel: 'admin');
+        return Registers::getUrl();
     }
 
     public function downloadSalesDetails(): StreamedResponse
@@ -116,7 +121,14 @@ abstract class Terminal extends Page
 
     public function bootPayload(): array
     {
-        return app(BootLoader::class)->load($this->config, $this->session);
+        return array_merge(app(BootLoader::class)->load($this->config, $this->session), [
+            'pending_refund' => session()->pull(static::pendingRefundKey($this->session)),
+        ]);
+    }
+
+    public static function pendingRefundKey(Session $session): string
+    {
+        return 'point-of-sale.pending-refund.'.$session->getKey();
     }
 
     public function syncEndpoint(): string
@@ -214,7 +226,11 @@ abstract class Terminal extends Page
                 ->danger()
                 ->body($exception->getMessage())
                 ->send();
+
+            return;
         }
+
+        $this->redirect(static::getUrl(['session' => $this->session->getKey()]));
     }
 
     #[On('pos-open-cash-movement')]

@@ -3,9 +3,11 @@
 namespace Webkul\PointOfSale\Services;
 
 use Illuminate\Support\Collection;
+use Webkul\Account\Enums\AccountType;
 use Webkul\Account\Enums\DisplayType;
 use Webkul\Account\Facades\Tax;
 use Webkul\Account\Models\Account;
+use Webkul\Account\Models\MoveLine;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Models\Order;
@@ -31,7 +33,7 @@ class ClosingEntryBuilder
         $orders = Order::withoutGlobalScopes()
             ->where('session_id', $session->id)
             ->whereIn('state', [OrderState::PAID, OrderState::DONE, OrderState::INVOICED])
-            ->with(['lines.product', 'lines.taxes', 'payments.paymentMethod', 'partner', 'fiscalPosition'])
+            ->with(['lines.product', 'lines.taxes', 'payments.paymentMethod', 'partner', 'fiscalPosition', 'accountMove.lines.account'])
             ->get();
 
         $baseLines = $this->buildBaseLines($session, $orders, $currency, $company);
@@ -285,28 +287,44 @@ class ClosingEntryBuilder
 
     protected function invoiceReceivableLines(Session $session, Collection $orders, $currency, $company): Collection
     {
-        $account = $this->accounts->receivableAccountFor($session->config);
+        $fallback = $this->accounts->receivableAccountFor($session->config);
 
-        if (! $account) {
-            return collect();
-        }
-
-        $total = $orders
+        return $orders
             ->filter(fn (Order $order): bool => (bool) $order->is_invoiced)
-            ->sum(fn (Order $order): float => (float) $order->payments->sum('amount'));
+            ->map(function (Order $order) use ($fallback, $currency, $company): ?array {
+                $total = (float) $order->payments->sum('amount');
 
-        if (float_is_zero($total, precisionDigits: 4)) {
-            return collect();
-        }
+                if (float_is_zero($total, precisionDigits: 4)) {
+                    return null;
+                }
 
-        return collect([$this->line(
-            $account->id,
-            $total < 0 ? abs($total) : 0.0,
-            $total > 0 ? $total : 0.0,
-            __('point-of-sale::system.session-closer.invoice-receivable-line'),
-            $currency,
-            $company,
-        )]);
+                $invoiceLine = $this->invoiceReceivableLine($order);
+
+                $accountId = $invoiceLine?->account_id ?? $fallback?->id;
+
+                if (! $accountId) {
+                    return null;
+                }
+
+                return array_merge($this->line(
+                    $accountId,
+                    $total < 0 ? abs($total) : 0.0,
+                    $total > 0 ? $total : 0.0,
+                    __('point-of-sale::system.session-closer.invoice-receivable-line'),
+                    $currency,
+                    $company,
+                ), [
+                    'partner_id' => $invoiceLine?->partner_id ?? $order->partner_id,
+                ]);
+            })
+            ->filter()
+            ->values();
+    }
+
+    protected function invoiceReceivableLine(Order $order): ?MoveLine
+    {
+        return $order->accountMove?->lines
+            ->first(fn (MoveLine $line): bool => $line->account?->account_type === AccountType::ASSET_RECEIVABLE);
     }
 
     protected function cashLines(Session $session, Collection $orders, $currency, $company): Collection

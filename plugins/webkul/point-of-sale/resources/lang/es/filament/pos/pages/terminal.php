@@ -269,6 +269,7 @@ return [
         'waiting'             => ':count pedido(s) pendientes de sincronizar',
         'rejected'            => ':count pedido(s) rechazados por el servidor',
         'storage-unavailable' => 'Almacenamiento local no disponible — recarga antes de tomar más pedidos',
+        'retry'               => 'Reintentar',
     ],
 
     'actions' => [
@@ -282,6 +283,8 @@ return [
             'label'   => 'Cancelar pedido',
             'confirm' => 'Confirmar',
             'hint'    => 'Se perderán sus líneas. Esta acción no se puede deshacer.',
+            'failed'  => 'No se pudo cancelar el pedido (:status).',
+            'offline' => 'Cancelar este pedido requiere conexión.',
         ],
     ],
 

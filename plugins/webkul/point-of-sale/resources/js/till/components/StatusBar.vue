@@ -7,9 +7,17 @@ const queue = till.queue.state
 
 const slot = ref(null)
 
-const pending = computed(() => queue.pending.length)
+const pending = computed(() => queue.pending.filter((entry) => !entry.rejected).length)
 
-const failures = computed(() => queue.pending.filter((entry) => entry.lastError))
+const failures = computed(() => queue.pending.filter((entry) => entry.rejected))
+
+const showFailures = ref(false)
+
+async function retryFailures() {
+    showFailures.value = false
+
+    await till.queue.retryRejected()
+}
 
 const badge = 'flex size-9 flex-none items-center justify-center rounded-lg'
 
@@ -60,23 +68,64 @@ onMounted(() => {
             </span>
         </span>
 
-        <span
-            v-if="failures.length"
-            :class="`${badge} text-danger-600 dark:text-danger-400`"
-            :title="till.t('offline.rejected', { count: failures.length })"
-            :aria-label="till.t('offline.rejected', { count: failures.length })"
-        >
-            <svg
-                class="size-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                aria-hidden="true"
+        <div v-if="failures.length" class="relative">
+            <button
+                type="button"
+                :class="`${badge} relative text-danger-600 hover:bg-danger-50 dark:text-danger-400 dark:hover:bg-danger-500/10`"
+                :title="till.t('offline.rejected', { count: failures.length })"
+                :aria-label="till.t('offline.rejected', { count: failures.length })"
+                :aria-expanded="showFailures"
+                @click="showFailures = !showFailures"
             >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-            </svg>
-        </span>
+                <svg
+                    class="size-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    aria-hidden="true"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+
+                <span class="absolute -end-0.5 -top-0.5 flex min-w-4 justify-center rounded-full bg-danger-600 px-1 text-[0.625rem] font-semibold leading-4 text-white">
+                    {{ failures.length }}
+                </span>
+            </button>
+
+            <div
+                v-if="showFailures"
+                class="absolute end-0 top-full z-50 mt-2 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+            >
+                <p class="text-sm font-semibold text-danger-600 dark:text-danger-400">
+                    {{ till.t('offline.rejected', { count: failures.length }) }}
+                </p>
+
+                <ul class="flex max-h-64 flex-col gap-2 overflow-y-auto">
+                    <li
+                        v-for="failure in failures"
+                        :key="failure.uuid"
+                        class="rounded-lg bg-gray-50 px-2.5 py-2 text-xs dark:bg-white/5"
+                    >
+                        <span class="block font-mono font-semibold text-gray-950 dark:text-white">
+                            {{ failure.payload?.reference ?? failure.uuid }}
+                        </span>
+
+                        <span class="block text-gray-600 dark:text-gray-300">
+                            {{ failure.lastError }}
+                        </span>
+                    </li>
+                </ul>
+
+                <button
+                    type="button"
+                    class="flex min-h-9 items-center justify-center rounded-lg bg-primary-600 px-3 text-sm font-semibold text-white hover:bg-primary-700"
+                    @click="retryFailures"
+                >
+                    {{ till.t('offline.retry') }}
+                </button>
+            </div>
+        </div>
 
         <span
             v-if="till.state.databaseUnavailable"

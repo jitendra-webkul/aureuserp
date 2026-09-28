@@ -8,6 +8,8 @@ use Webkul\PointOfSale\Events\OrderRefunded;
 use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
 use Webkul\PointOfSale\Exceptions\RefundExceedsSoldQuantityException;
 use Webkul\PointOfSale\Facades\PointOfSale;
+use Webkul\PointOfSale\Models\Order;
+use Webkul\PointOfSale\Services\RefundProcessor;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -162,4 +164,98 @@ it('dispatches the refunded event', function () {
     PointOfSale::refundOrder($this->order, [$line->id => 1]);
 
     Event::assertDispatched(OrderRefunded::class);
+});
+
+it('prepares a pending refund for the till without creating an order', function () {
+    $line = $this->order->lines()->first();
+
+    $before = Order::withoutGlobalScopes()->count();
+
+    $pending = app(RefundProcessor::class)->pendingRefund($this->order, [$line->id => 2]);
+
+    expect(Order::withoutGlobalScopes()->count())->toBe($before)
+        ->and($pending['refunded_order_id'])->toBe($this->order->id)
+        ->and($pending['lines'])->toHaveCount(1)
+        ->and($pending['lines'][0]['qty'])->toBe(-2.0)
+        ->and($pending['lines'][0]['price_unit'])->toBe(50.0)
+        ->and($pending['lines'][0]['refunded_order_line_id'])->toBe($line->id)
+        ->and((float) $line->refresh()->refunded_qty)->toBe(0.0);
+});
+
+it('refuses to prepare a pending refund above the sold quantity', function () {
+    $line = $this->order->lines()->first();
+
+    expect(fn () => app(RefundProcessor::class)->pendingRefund($this->order, [$line->id => 5]))
+        ->toThrow(RefundExceedsSoldQuantityException::class);
+});
+
+it('settles a refund synced from the till in one step', function () {
+    $line = $this->order->lines()->first();
+
+    $refund = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line($this->product->id, -2, 50.0, ['refunded_order_line_id' => $line->id])],
+        [PosHelper::payment($this->cash, -100.0)],
+        ['refunded_order_id' => $this->order->id],
+    ));
+
+    expect($refund->state)->toBe(OrderState::PAID)
+        ->and($refund->refunded_order_id)->toBe($this->order->id)
+        ->and((float) $refund->amount_total)->toBe(-100.0)
+        ->and((float) $line->refresh()->refunded_qty)->toBe(2.0);
+});
+
+it('rejects a till refund above the sold quantity and leaves the original untouched', function () {
+    $line = $this->order->lines()->first();
+
+    $result = PointOfSale::syncOrders([PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line($this->product->id, -5, 50.0, ['refunded_order_line_id' => $line->id])],
+        [PosHelper::payment($this->cash, -250.0)],
+        ['refunded_order_id' => $this->order->id],
+    )]);
+
+    expect($result['data'])->toBeEmpty()
+        ->and($result['errors'])->toHaveCount(1)
+        ->and((float) $line->refresh()->refunded_qty)->toBe(0.0);
+});
+
+it('refuses to refund a refund order', function () {
+    $refund = app(RefundProcessor::class)->settle(PointOfSale::refundOrder($this->order, [$this->order->lines()->first()->id => 1]));
+
+    expect(fn () => PointOfSale::refundOrder($refund, [$refund->lines()->first()->id => 1]))
+        ->toThrow(OrderNotRefundableException::class);
+});
+
+it('refuses to prepare a pending refund for a refund order', function () {
+    $refund = app(RefundProcessor::class)->settle(PointOfSale::refundOrder($this->order, [$this->order->lines()->first()->id => 1]));
+
+    expect(fn () => app(RefundProcessor::class)->pendingRefund($refund, [$refund->lines()->first()->id => 1]))
+        ->toThrow(OrderNotRefundableException::class);
+});
+
+it('reports no refundable lines on a refund order', function () {
+    $refund = app(RefundProcessor::class)->settle(PointOfSale::refundOrder($this->order, [$this->order->lines()->first()->id => 1]));
+
+    expect(app(RefundProcessor::class)->refundableLines($refund->refresh()))->toBe([]);
+});
+
+it('rejects a till refund of a refund line', function () {
+    $refund = app(RefundProcessor::class)->settle(PointOfSale::refundOrder($this->order, [$this->order->lines()->first()->id => 1]));
+
+    $refundLine = $refund->lines()->first();
+
+    $result = PointOfSale::syncOrders([PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line($this->product->id, -1, 50.0, ['refunded_order_line_id' => $refundLine->id])],
+        [PosHelper::payment($this->cash, -50.0)],
+        ['refunded_order_id' => $refund->id],
+    )]);
+
+    expect($result['data'])->toBeEmpty()
+        ->and($result['errors'])->toHaveCount(1)
+        ->and((float) $refundLine->refresh()->refunded_qty)->toBe(0.0);
 });

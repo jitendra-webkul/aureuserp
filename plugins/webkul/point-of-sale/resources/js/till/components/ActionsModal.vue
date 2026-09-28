@@ -56,7 +56,8 @@ const danger = 'flex min-h-20 flex-col items-center justify-center gap-2 rounded
             <button
                 v-else
                 type="button"
-                class="flex min-h-20 flex-col items-center justify-center gap-1 rounded-lg bg-danger-600 px-3 py-4 text-sm font-semibold text-white transition-colors hover:bg-danger-700 active:bg-danger-800"
+                class="flex min-h-20 flex-col items-center justify-center gap-1 rounded-lg bg-danger-600 px-3 py-4 text-sm font-semibold text-white transition-colors hover:bg-danger-700 active:bg-danger-800 disabled:opacity-60"
+                :disabled="state.cancellingOrder"
                 @click="till.cancelActiveOrder()"
             >
                 <span>{{ till.t('actions.cancel-order.confirm') }}</span>
@@ -66,5 +67,9 @@ const danger = 'flex min-h-20 flex-col items-center justify-center gap-2 rounded
                 </span>
             </button>
         </div>
+
+        <p v-if="state.cancelError" class="px-4 pb-4 text-sm text-danger-600 dark:text-danger-400">
+            {{ state.cancelError }}
+        </p>
     </TillModal>
 </template>

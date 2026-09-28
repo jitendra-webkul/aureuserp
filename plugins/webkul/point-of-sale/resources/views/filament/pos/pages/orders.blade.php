@@ -109,6 +109,8 @@
 
         <aside class="flex min-h-0 min-w-0 flex-col">
             @if ($selected)
+                @php($canRefund = $this->canRefund($selected))
+
                 <div
                     wire:key="refund-panel-{{ $selected->getKey() }}"
                     class="flex min-h-0 flex-auto flex-col gap-2"
@@ -152,9 +154,11 @@
                     }"
                     x-on:pos-refund-lines.window="quantities = $event.detail.quantities ?? {}; active = null; buffer = ''"
                 >
-                    <p class="flex-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm text-danger-600 dark:border-gray-700 dark:bg-gray-900 dark:text-danger-400">
-                        {{ __($prefix.'refund.prompt') }}
-                    </p>
+                    @if ($canRefund)
+                        <p class="flex-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm text-danger-600 dark:border-gray-700 dark:bg-gray-900 dark:text-danger-400">
+                            {{ __($prefix.'refund.prompt') }}
+                        </p>
+                    @endif
 
                     <div class="flex min-h-0 flex-auto flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                         <div class="min-h-0 flex-auto overflow-y-auto">
@@ -164,11 +168,12 @@
                                 <button
                                     type="button"
                                     wire:key="line-{{ $line->getKey() }}"
-                                    class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-start transition-colors dark:border-gray-800"
+                                    class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-start transition-colors disabled:cursor-default dark:border-gray-800"
                                     :class="active === {{ $line->getKey() }}
                                         ? 'bg-primary-50 dark:bg-primary-500/10'
                                         : (quantities[{{ $line->getKey() }}] ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : 'opacity-50')"
                                     x-on:click="select({{ $line->getKey() }})"
+                                    @disabled(! $canRefund || float_compare($line->refundableQty(), 0, precisionDigits: 4) <= 0)
                                 >
                                     <span class="flex size-10 flex-none items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                                         @if ($image)
@@ -231,16 +236,28 @@
                             {{ __($prefix.'actions.details') }}
                         </a>
 
-                        <button
-                            type="button"
-                            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
-                            @disabled(! $this->canInvoice($selected))
-                            wire:click="mountAction('invoiceOrder', { order: {{ $selected->getKey() }} })"
-                        >
-                            <x-filament::icon icon="heroicon-o-document-text" class="size-5 flex-none" />
+                        @if ($this->canCancel($selected))
+                            <button
+                                type="button"
+                                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-danger-200 bg-danger-50 text-base font-medium text-danger-700 transition-colors hover:bg-danger-100 active:bg-danger-200 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-300 dark:hover:bg-danger-500/20"
+                                wire:click="mountAction('cancelOrder', { order: {{ $selected->getKey() }} })"
+                            >
+                                <x-filament::icon icon="heroicon-o-x-circle" class="size-5 flex-none" />
 
-                            {{ __($prefix.'actions.invoice.label') }}
-                        </button>
+                                {{ __($prefix.'actions.cancel.label') }}
+                            </button>
+                        @else
+                            <button
+                                type="button"
+                                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600"
+                                @disabled(! $this->canInvoice($selected))
+                                wire:click="mountAction('invoiceOrder', { order: {{ $selected->getKey() }} })"
+                            >
+                                <x-filament::icon icon="heroicon-o-document-text" class="size-5 flex-none" />
+
+                                {{ __($prefix.'actions.invoice.label') }}
+                            </button>
+                        @endif
 
                         <button type="button" class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-base font-medium text-gray-600 transition-colors hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:disabled:text-gray-600" x-on:click="window.pointOfSaleReceipt.print('#pos-receipt')">
                             <x-filament::icon icon="heroicon-o-printer" class="size-5 flex-none" />
@@ -249,16 +266,18 @@
                         </button>
                     </div>
 
-                    @include('point-of-sale::filament.pos.partials.refund-numpad')
+                    @if ($canRefund)
+                        @include('point-of-sale::filament.pos.partials.refund-numpad')
 
-                    <button
-                        type="button"
-                        class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] flex-none items-center justify-center rounded-lg bg-primary-600 text-base font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-800"
-                        x-bind:disabled="total <= 0"
-                        x-on:click="$wire.refundOrder(payload())"
-                    >
-                        {{ __($prefix.'actions.refund') }}
-                    </button>
+                        <button
+                            type="button"
+                            class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] flex-none items-center justify-center rounded-lg bg-primary-600 text-base font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-800"
+                            x-bind:disabled="total <= 0"
+                            x-on:click="$wire.refundOrder(payload())"
+                        >
+                            {{ __($prefix.'actions.refund') }}
+                        </button>
+                    @endif
                 </div>
             @else
                 <div class="flex min-h-0 flex-auto items-center justify-center rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">

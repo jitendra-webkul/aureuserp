@@ -269,6 +269,7 @@ Souhaitez-vous continuer malgré tout ?',
         'waiting'             => ':count commande(s) en attente de synchronisation',
         'rejected'            => ':count commande(s) rejetée(s) par le serveur',
         'storage-unavailable' => 'Stockage local indisponible — rechargez la page avant de prendre d\'autres commandes',
+        'retry'               => 'Réessayer',
     ],
 
     'actions' => [
@@ -282,6 +283,8 @@ Souhaitez-vous continuer malgré tout ?',
             'label'   => 'Annuler la commande',
             'confirm' => 'Confirmer',
             'hint'    => 'Ses lignes seront perdues. Cette action est irréversible.',
+            'failed'  => 'Impossible d\'annuler la commande (:status).',
+            'offline' => 'L\'annulation de cette commande nécessite une connexion.',
         ],
     ],
 

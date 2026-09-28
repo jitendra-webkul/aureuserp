@@ -267,6 +267,7 @@ return [
         'waiting'             => ':count order(s) waiting to sync',
         'rejected'            => ':count order(s) rejected by the server',
         'storage-unavailable' => 'Local storage unavailable — reload before taking more orders',
+        'retry'               => 'Retry',
     ],
 
     'actions' => [
@@ -280,6 +281,8 @@ return [
             'label'   => 'Cancel order',
             'confirm' => 'Confirm',
             'hint'    => 'Its lines will be lost. This cannot be undone.',
+            'failed'  => 'Could not cancel the order (:status).',
+            'offline' => 'Cancelling this order needs a connection.',
         ],
     ],
 

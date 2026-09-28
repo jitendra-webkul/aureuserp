@@ -146,6 +146,7 @@ class BootLoader
             'cash_rounding'                 => $this->cashRounding($config),
             'can_edit_price'                => $this->canEditPrice($config),
             'product_endpoint'              => route('point-of-sale.till.configs.products.store', ['config' => $config->id]),
+            'order_cancel_endpoint'         => route('point-of-sale.till.orders.cancel'),
             'tracking_options'              => $this->trackingOptions(),
             'use_create_lots'               => (bool) $config->operationType?->use_create_lots,
             'use_existing_lots'             => (bool) $config->operationType?->use_existing_lots,
@@ -203,7 +204,7 @@ class BootLoader
             'user_name'                   => $session->user?->name,
             'opened_at'                   => $session->started_at?->toIso8601String(),
             'cash_register_balance_start' => (float) $session->cash_balance_start,
-            'sequence_number'             => (int) ($session->order_count ?? 0),
+            'sequence_number'             => max((int) ($session->order_count ?? 0), (int) Order::withoutGlobalScopes()->where('session_id', $session->id)->max('sequence_number')),
             'login_number'                => (int) ($session->login_number ?? 0),
         ];
     }

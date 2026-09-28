@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Events\OrderPaid;
@@ -241,4 +242,16 @@ it('splits the tender across two payment methods', function () {
         ->and((float) $order->amount_return)->toBe(50.0)
         ->and($order->payments)->toHaveCount(3)
         ->and((float) $order->payments->where('is_change', false)->sum('amount'))->toBe(500.0);
+});
+
+it('keeps the time the till took the payment as the order date', function () {
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+        ['ordered_at' => '2026-09-20T04:30:00.000Z'],
+    ));
+
+    expect($order->refresh()->ordered_at->equalTo(Date::parse('2026-09-20T04:30:00Z')))->toBeTrue();
 });

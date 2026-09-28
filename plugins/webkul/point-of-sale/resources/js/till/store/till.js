@@ -60,6 +60,8 @@ export class Till {
             paymentBuffer: '',
             productModalOpen: false,
             actionsModalOpen: false,
+            cancellingOrder: false,
+            cancelError: null,
             variantProductId: null,
             lotLineUuid: null,
             lotRows: [],
@@ -120,22 +122,19 @@ export class Till {
     }
 
     async start() {
-        const restored = await this.restore()
+        await this.restore()
 
-        if (!restored.length) {
-            for (const order of this.boot.orders ?? []) {
-                this.state.orders.push(this.hydrateServerOrder(order))
-            }
-        }
+        this.mergeServerOrders()
 
-        if (!this.state.orders.length) {
-            this.newOrder()
-        } else {
-            const remembered = this.rememberedOrderUuid()
+        this.dropSettledOrders()
 
-            this.state.activeOrderUuid = this.state.orders.some((order) => order.uuid === remembered)
-                ? remembered
-                : this.state.orders[0].uuid
+        const refund = this.openPendingRefund()
+
+        this.activateDraft(this.rememberedOrderUuid())
+
+        if (refund) {
+            this.state.activeOrderUuid = refund.uuid
+            this.state.screen = 'payment'
         }
 
         this.watchActiveOrder()
@@ -172,22 +171,36 @@ export class Till {
 
         const restored = [...byOrder.values()]
 
-        const highest = restored.reduce((carry, order) => {
-            const number = parseInt(order.tracking_number, 10)
+        const prefix = this.nextReference(0).slice(0, -4)
 
-            return Number.isNaN(number) ? carry : Math.max(carry, number % 100)
-        }, this.state.sequenceNumber)
+        for (const order of restored) {
+            if (order.state === 'draft' && !order.serverId && order.pos_reference && !order.pos_reference.startsWith(prefix)) {
+                order.pos_reference = null
+                order.tracking_number = null
+            }
+        }
+
+        const highest = [...restored, ...(this.boot.orders ?? [])]
+            .filter((order) => order.pos_reference?.startsWith(prefix))
+            .reduce((carry, order) => {
+                const number = parseInt(order.pos_reference.slice(prefix.length), 10)
+
+                return Number.isNaN(number) ? carry : Math.max(carry, number)
+            }, this.state.sequenceNumber)
 
         this.state.sequenceNumber = highest
 
-        const seen = new Set()
+        const seen = new Set([
+            ...(this.boot.orders ?? []).map((order) => order.pos_reference),
+            ...restored.filter((order) => order.serverId).map((order) => order.pos_reference),
+        ])
 
         for (const order of restored) {
             order.tracking_number ??= this.nextTrackingNumber()
 
             order.pos_reference ||= this.nextReference(this.state.sequenceNumber)
 
-            if (seen.has(order.pos_reference)) {
+            if (!order.serverId && seen.has(order.pos_reference)) {
                 order.tracking_number = this.nextTrackingNumber()
 
                 order.pos_reference = this.nextReference(this.state.sequenceNumber)
@@ -199,6 +212,60 @@ export class Till {
         }
 
         return restored
+    }
+
+    mergeServerOrders() {
+        const serverOrders = this.boot.orders ?? []
+
+        const serverUuids = new Set(serverOrders.map((order) => order.uuid))
+
+        const stale = this.state.orders.filter((order) => order.serverId && order.state === 'draft' && !serverUuids.has(order.uuid))
+
+        for (const order of stale) {
+            this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
+            this.database.remove('pos.payment', order.payments.map((payment) => payment.uuid))
+            this.database.remove('pos.order', [order.uuid])
+        }
+
+        const staleUuids = new Set(stale.map((order) => order.uuid))
+
+        this.state.orders = this.state.orders.filter((order) => !staleUuids.has(order.uuid))
+
+        const localUuids = new Set(this.state.orders.map((order) => order.uuid))
+
+        for (const order of serverOrders) {
+            if (!localUuids.has(order.uuid)) {
+                this.state.orders.push(this.hydrateServerOrder(order))
+            }
+        }
+    }
+
+    openPendingRefund() {
+        const pending = this.boot.pending_refund
+
+        if (!pending?.lines?.length) {
+            return null
+        }
+
+        for (const product of pending.products ?? []) {
+            if (!this.master.products.get(product.id)) {
+                this.master.products.put(product)
+            }
+        }
+
+        const order = this.hydrateServerOrder({
+            uuid: uuidv4(),
+            partner_id: pending.partner_id,
+            price_list_id: pending.price_list_id,
+            fiscal_position_id: pending.fiscal_position_id,
+            refunded_order_id: pending.refunded_order_id,
+            lines: pending.lines.map((line) => ({ ...line, price_overridden: true })),
+            payments: [],
+        })
+
+        this.state.orders.push(order)
+
+        return order
     }
 
     hydrateServerOrder(order) {
@@ -217,6 +284,7 @@ export class Till {
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
             fiscal_position_id: order.fiscal_position_id ?? this.state.fiscalPositionId,
+            refunded_order_id: order.refunded_order_id ?? null,
             created_at: order.created_at ?? new Date().toISOString(),
             lines: (order.lines ?? []).map((line) => ({
                 uuid: line.uuid ?? uuidv4(),
@@ -229,6 +297,7 @@ export class Till {
                 note: line.note ?? '',
                 lots: line.lots ?? [],
                 tax_ids: line.tax_ids ?? [],
+                refunded_order_line_id: line.refunded_order_line_id ?? null,
             })),
             payments: (order.payments ?? []).map((payment) => ({
                 uuid: payment.uuid ?? uuidv4(),
@@ -301,6 +370,7 @@ export class Till {
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
                 fiscal_position_id: order.fiscal_position_id,
+                refunded_order_id: order.refunded_order_id ?? null,
                 created_at: order.created_at,
             })
 
@@ -375,11 +445,37 @@ export class Till {
         this.database.remove('pos.order.line', removedLines)
         this.database.remove('pos.payment', removedPayments)
 
-        if (!this.state.orders.length) {
-            this.newOrder()
-        } else if (!this.activeOrder) {
-            this.state.activeOrderUuid = this.state.orders[0].uuid
+        if (!showingReceipt && this.activeOrder?.state !== 'draft') {
+            this.activateDraft()
         }
+    }
+
+    dropSettledOrders() {
+        const settled = this.state.orders.filter((order) => order.state !== 'draft')
+
+        if (!settled.length) {
+            return
+        }
+
+        this.database.remove('pos.order.line', settled.flatMap((order) => order.lines.map((line) => line.uuid)))
+        this.database.remove('pos.payment', settled.flatMap((order) => order.payments.map((payment) => payment.uuid)))
+        this.database.remove('pos.order', settled.map((order) => order.uuid))
+
+        this.state.orders = this.state.orders.filter((order) => order.state === 'draft')
+    }
+
+    activateDraft(preferredUuid = null) {
+        const drafts = this.drafts
+
+        const draft = drafts.find((order) => order.uuid === preferredUuid) ?? drafts[0]
+
+        if (!draft) {
+            return this.newOrder()
+        }
+
+        this.state.activeOrderUuid = draft.uuid
+
+        return draft
     }
 
     get config() {
@@ -512,6 +608,12 @@ export class Till {
 
         for (const line of this.activeOrder?.lines ?? []) {
             quantities.set(line.product_id, (quantities.get(line.product_id) ?? 0) + line.qty)
+
+            const parentId = this.master.products.get(line.product_id)?.parent_id
+
+            if (parentId) {
+                quantities.set(parentId, (quantities.get(parentId) ?? 0) + line.qty)
+            }
         }
 
         return quantities
@@ -739,8 +841,6 @@ export class Till {
     }
 
     newOrder() {
-        this.flushDeferredEvictions()
-
         this.state.priceListId = this.config.price_list_id ?? null
 
         const order = this.hydrateServerOrder({
@@ -757,6 +857,8 @@ export class Till {
         this.state.activeOrderUuid = order.uuid
         this.state.activeLineUuid = null
         this.state.screen = 'products'
+
+        this.flushDeferredEvictions()
 
         return order
     }
@@ -789,6 +891,7 @@ export class Till {
 
     closeActions() {
         this.state.actionsModalOpen = false
+        this.state.cancelError = null
     }
 
     openPriceLists() {
@@ -818,16 +921,55 @@ export class Till {
         this.closePriceLists()
     }
 
-    cancelActiveOrder() {
-        const uuid = this.state.activeOrderUuid
+    async cancelActiveOrder() {
+        const order = this.activeOrder
 
-        if (!uuid) {
+        if (!order || this.state.cancellingOrder) {
+            return
+        }
+
+        if (order.serverId && !(await this.cancelOnServer(order))) {
             return
         }
 
         this.closeActions()
 
-        this.discardOrder(uuid)
+        this.discardOrder(order.uuid)
+    }
+
+    async cancelOnServer(order) {
+        this.state.cancellingOrder = true
+        this.state.cancelError = null
+
+        try {
+            const response = await fetch(this.boot.config.order_cancel_endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({ uuid: order.uuid }),
+            })
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}))
+
+                this.state.cancelError = body.message ?? this.t('actions.cancel-order.failed', { status: response.status })
+
+                return false
+            }
+
+            return true
+        } catch (error) {
+            this.state.cancelError = navigator.onLine
+                ? error.message
+                : this.t('actions.cancel-order.offline')
+
+            return false
+        } finally {
+            this.state.cancellingOrder = false
+        }
     }
 
     discardOrder(uuid) {
@@ -843,10 +985,8 @@ export class Till {
 
         this.state.orders = this.state.orders.filter((entry) => entry.uuid !== uuid)
 
-        if (!this.state.orders.length) {
-            this.newOrder()
-        } else if (this.state.activeOrderUuid === uuid) {
-            this.state.activeOrderUuid = this.state.orders[0].uuid
+        if (this.state.activeOrderUuid === uuid || !this.drafts.length) {
+            this.activateDraft()
         }
     }
 
@@ -972,7 +1112,11 @@ export class Till {
             .filter((payment) => !payment.is_change)
             .reduce((carry, payment) => carry + payment.amount, 0)
 
-        const change = floatCompare(settled, total, { precisionRounding: this.currency.rounding }) > 0
+        const refund = floatCompare(total, 0, { precisionRounding: this.currency.rounding }) < 0
+
+        const balance = floatCompare(settled, total, { precisionRounding: this.currency.rounding })
+
+        const change = !refund && balance > 0
             ? floatRound(settled - total, { precisionRounding: this.currency.rounding })
             : 0
 
@@ -984,6 +1128,8 @@ export class Till {
             paid: settled,
             due: floatRound(total - settled, { precisionRounding: this.currency.rounding }),
             change,
+            refund,
+            covered: refund ? balance <= 0 : balance >= 0,
             breakdown: [...breakdown.values()],
         }
     }
@@ -1271,7 +1417,7 @@ export class Till {
     }
 
     addProduct(productId, { qty = 1 } = {}) {
-        const order = this.activeOrder ?? this.newOrder()
+        const order = this.activeOrder?.state === 'draft' ? this.activeOrder : this.newOrder()
 
         const product = this.master.products.get(productId)
 
@@ -1617,7 +1763,7 @@ export class Till {
         const totals = this.orderTotals(order)
 
         if (amount === null) {
-            const outstanding = Math.max(totals.due, 0)
+            const outstanding = this.outstandingFor(totals)
 
             const reusable = order.payments.find((line) => (
                 line.payment_method_id === paymentMethodId
@@ -1648,12 +1794,16 @@ export class Till {
         order.payments.push(payment)
 
         if (amount === null) {
-            payment.amount = Math.max(this.orderTotals(order).due, 0)
+            payment.amount = this.outstandingFor(this.orderTotals(order))
         }
 
         this.selectPayment(payment.uuid)
 
         return payment
+    }
+
+    outstandingFor(totals) {
+        return totals.refund ? Math.min(totals.due, 0) : Math.max(totals.due, 0)
     }
 
     toggleToInvoice() {
@@ -1735,17 +1885,17 @@ export class Till {
             return
         }
 
-        if (key.startsWith('+')) {
-            const bump = Number(key.slice(1))
-
-            payment.amount = floatRound(payment.amount + bump, { precisionRounding: this.currency.rounding })
+        if (key === '+/-') {
+            payment.amount = -payment.amount
             this.state.paymentBuffer = String(payment.amount)
 
             return
         }
 
-        if (key === '+/-') {
-            payment.amount = -payment.amount
+        if (key.startsWith('+')) {
+            const bump = Number(key.slice(1))
+
+            payment.amount = floatRound(payment.amount + bump, { precisionRounding: this.currency.rounding })
             this.state.paymentBuffer = String(payment.amount)
 
             return
@@ -1793,9 +1943,7 @@ export class Till {
             return false
         }
 
-        const totals = this.orderTotals(order)
-
-        return floatCompare(totals.paid, totals.total, { precisionRounding: this.currency.rounding }) >= 0
+        return this.orderTotals(order).covered
     }
 
     orderPayload(order) {
@@ -1823,7 +1971,9 @@ export class Till {
             fiscal_position_id: order.fiscal_position_id,
             is_takeaway: order.is_takeaway,
             is_to_invoice: order.to_invoice,
+            refunded_order_id: order.refunded_order_id ?? null,
             shipped_at: order.shipped_at,
+            ordered_at: order.validated_at ?? null,
             note: order.note,
             amount_total: totals.total,
             lines: this.sellableLines(order).map((line) => {
@@ -1838,6 +1988,10 @@ export class Till {
 
                 if (line.price_overridden) {
                     payload.price_unit = line.price_unit
+                }
+
+                if (line.refunded_order_line_id) {
+                    payload.refunded_order_line_id = line.refunded_order_line_id
                 }
 
                 if (line.lots?.length) {
