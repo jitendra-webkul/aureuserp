@@ -487,9 +487,10 @@ class ConfigForm
                 Select::make('warehouse_id')
                     ->label(static::label('sections.configurations.tabs.inventory.fields.warehouse'))
                     ->options(fn (?Config $record): array => static::scoped(Warehouse::query(), $record)->pluck('name', 'id')->all())
+                    ->default(fn (): ?int => static::scoped(Warehouse::query(), null)->orderBy('id')->value('id'))
                     ->searchable()
                     ->native(false)
-                    ->required(fn (string $operation): bool => $operation !== 'create'),
+                    ->required(),
 
                 Select::make('operation_type_id')
                     ->label(static::label('sections.configurations.tabs.inventory.fields.operation-type'))

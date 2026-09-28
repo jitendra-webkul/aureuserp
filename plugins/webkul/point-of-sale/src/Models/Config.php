@@ -30,6 +30,7 @@ use Webkul\PointOfSale\Database\Factories\ConfigFactory;
 use Webkul\PointOfSale\Enums\PickingPolicy;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Enums\TaxDisplay;
+use Webkul\PointOfSale\Models\Warehouse as PointOfSaleWarehouse;
 use Webkul\PointOfSale\Services\PaymentMethodProvisioner;
 use Webkul\PointOfSale\Settings\AccountSettings;
 use Webkul\Product\Models\PriceList;
@@ -444,8 +445,14 @@ class Config extends Model implements Sortable
     public function computeOperationTypeIds(): void
     {
         $warehouse = $this->warehouse_id
-            ? Warehouse::withoutGlobalScopes()->find($this->warehouse_id)
+            ? PointOfSaleWarehouse::withoutGlobalScopes()->find($this->warehouse_id)
             : null;
+
+        if ($warehouse && (! $warehouse->pos_type_id || ! $warehouse->pos_return_type_id)) {
+            $warehouse->handlePosWarehouseCreation();
+
+            $warehouse->finalizePosWarehouseCreation();
+        }
 
         $this->operation_type_id ??= $warehouse?->pos_type_id;
 
@@ -463,14 +470,16 @@ class Config extends Model implements Sortable
             return;
         }
 
-        $this->receivable_account_id = $this->settingReceivableAccountId()
-            ?? Account::query()
-                ->where('account_type', AccountType::ASSET_RECEIVABLE)
-                ->where('reconcile', true)
-                ->where(fn (Builder $query) => $query->whereNull('deprecated')->orWhere('deprecated', false))
-                ->where(owned_by_company($this->company_id))
-                ->orderBy('id')
-                ->value('id');
+        $accounts = fn (): Builder => Account::query()
+            ->where('account_type', AccountType::ASSET_RECEIVABLE)
+            ->where('reconcile', true)
+            ->where(fn (Builder $query) => $query->whereNull('deprecated')->orWhere('deprecated', false))
+            ->where(owned_by_company($this->company_id));
+
+        $settingAccountId = $this->settingReceivableAccountId();
+
+        $this->receivable_account_id = ($settingAccountId ? $accounts()->whereKey($settingAccountId)->value('id') : null)
+            ?? $accounts()->orderBy('id')->value('id');
     }
 
     protected function settingReceivableAccountId(): ?int

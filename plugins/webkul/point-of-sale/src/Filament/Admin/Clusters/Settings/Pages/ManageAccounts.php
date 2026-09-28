@@ -51,6 +51,19 @@ class ManageAccounts extends SettingsPage
         return __('point-of-sale::filament/admin/clusters/settings/pages/manage-accounts.title');
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        foreach (['receivable_account_id', 'stock_output_account_id', 'balancing_account_id'] as $field) {
+            $data[$field] = Account::resolveForCompany($data[$field] ?? null, current_company_id());
+        }
+
+        return $data;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
