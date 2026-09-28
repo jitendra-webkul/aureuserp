@@ -3,9 +3,6 @@
 namespace Webkul\PointOfSale\Filament\Pos\Pages;
 
 use BackedEnum;
-use Illuminate\Support\Facades\Auth;
-use Webkul\PointOfSale\Enums\SessionState;
-use Webkul\PointOfSale\Models\Session;
 
 class Home extends Terminal
 {
@@ -24,7 +21,7 @@ class Home extends Terminal
 
     public static function getNavigationUrl(array $parameters = []): string
     {
-        $session = static::navigationSession();
+        $session = Registers::currentSession();
 
         return $session
             ? static::getUrl(['session' => $session->getKey()])
@@ -33,18 +30,6 @@ class Home extends Terminal
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) static::navigationSession();
-    }
-
-    protected static function navigationSession(): ?Session
-    {
-        $sessions = Session::query()
-            ->whereIn('state', [SessionState::OPENING_CONTROL, SessionState::OPENED])
-            ->where('user_id', Auth::id())
-            ->latest('id')
-            ->limit(2)
-            ->get();
-
-        return $sessions->count() === 1 ? $sessions->first() : null;
+        return (bool) Registers::currentSession();
     }
 }

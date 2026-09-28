@@ -35,6 +35,12 @@ function unmountTill() {
     document.getElementById('pos-status-slot')?.replaceChildren()
 }
 
+function leaveTill() {
+    unmountTill()
+
+    document.getElementById('pos-till')?.removeAttribute('data-mounted')
+}
+
 function boot() {
     const element = document.getElementById('pos-till')
 
@@ -48,7 +54,7 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', boot)
-document.addEventListener('livewire:navigating', unmountTill)
+document.addEventListener('livewire:navigating', leaveTill)
 document.addEventListener('livewire:navigated', boot)
 
 if (document.readyState !== 'loading') {

@@ -7,8 +7,11 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Facades\FilamentView;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Livewire\Livewire;
 use Throwable;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
@@ -115,6 +118,20 @@ class Registers extends Page
         }
 
         $this->redirect(Home::getUrl(['session' => $session->getKey()]), navigate: FilamentView::hasSpaMode());
+    }
+
+    public static function currentSession(): ?Session
+    {
+        return once(function (): ?Session {
+            $sessionId = rescue(
+                fn () => Route::getRoutes()->match(Request::create(Livewire::originalUrl()))->parameter('session'),
+                report: false,
+            );
+
+            $session = filled($sessionId) ? Session::find($sessionId) : null;
+
+            return $session?->isLive() ? $session : static::ownSession();
+        });
     }
 
     /**

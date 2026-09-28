@@ -9,7 +9,6 @@ use Filament\Pages\Page;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
@@ -56,21 +55,21 @@ class Orders extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::currentSession()?->orders()->count() ?? 0;
+        $count = Registers::currentSession()?->orders()->count() ?? 0;
 
         return $count > 0 ? (string) $count : null;
     }
 
     public function mount(?Session $session = null): void
     {
-        $this->session = $session ?? static::currentSession();
+        $this->session = $session ?? Registers::currentSession();
 
         abort_unless($this->session === null || PosAccess::reachesActiveSession($this->session), 403);
     }
 
     public static function getNavigationUrl(array $parameters = []): string
     {
-        $session = static::currentSession();
+        $session = Registers::currentSession();
 
         return $session
             ? static::getUrl(['session' => $session->getKey()])
@@ -79,7 +78,7 @@ class Orders extends Page
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) static::currentSession();
+        return (bool) Registers::currentSession();
     }
 
     public function getTitle(): string
@@ -333,14 +332,5 @@ class Orders extends Page
         return $order->state->isSettled()
             && ! $order->is_invoiced
             && $order->session?->state !== SessionState::CLOSED;
-    }
-
-    protected static function currentSession(): ?Session
-    {
-        return Session::query()
-            ->whereIn('state', [SessionState::OPENED, SessionState::OPENING_CONTROL])
-            ->where('user_id', Auth::id())
-            ->latest('id')
-            ->first();
     }
 }

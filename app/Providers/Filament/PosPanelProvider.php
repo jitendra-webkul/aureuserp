@@ -45,7 +45,7 @@ class PosPanelProvider extends PanelProvider
                 'cashMovement' => Action::make('cashMovement')
                     ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.cash-in-out'))
                     ->icon('heroicon-m-banknotes')
-                    ->visible(fn (): bool => Registers::ownSession() !== null)
+                    ->visible(fn (): bool => Registers::currentSession() !== null)
                     ->action(fn ($livewire) => $livewire->dispatch('pos-open-cash-movement')),
 
                 'installApp' => Action::make('installApp')
@@ -69,13 +69,13 @@ class PosPanelProvider extends PanelProvider
                     ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.close-register'))
                     ->icon('heroicon-m-lock-closed')
                     ->color('danger')
-                    ->visible(fn (): bool => Registers::ownSession() !== null)
+                    ->visible(fn (): bool => Registers::currentSession() !== null)
                     ->action(fn ($livewire) => $livewire->dispatch('pos-close-register')),
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): View => view('point-of-sale::filament.pos.partials.pwa-head', [
-                    'config' => Registers::ownSession()?->config,
+                    'config' => Registers::currentSession()?->config,
                 ]),
             )
             ->renderHook(
