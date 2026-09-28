@@ -576,14 +576,22 @@ export class Till {
     money(amount) {
         const currency = this.currency
 
+        const decimalPlaces = currency.decimal_places ?? 2
+
+        const value = Number(amount ?? 0)
+
         const formatted = new Intl.NumberFormat(this.locale.code || document.documentElement.lang || 'en', {
-            minimumFractionDigits: currency.decimal_places ?? 2,
-            maximumFractionDigits: currency.decimal_places ?? 2,
-        }).format(amount ?? 0)
+            minimumFractionDigits: decimalPlaces,
+            maximumFractionDigits: decimalPlaces,
+        }).format(Math.abs(value))
+
+        const sign = Number(value.toFixed(decimalPlaces)) < 0 ? '-' : ''
 
         const symbol = currency.symbol ?? ''
 
-        return currency.position === 'after' ? `${formatted} ${symbol}`.trim() : `${symbol}${formatted}`.trim()
+        return currency.position === 'after'
+            ? `${sign}${formatted} ${symbol}`.trim()
+            : `${sign}${symbol}${formatted}`.trim()
     }
 
     openOrders() {

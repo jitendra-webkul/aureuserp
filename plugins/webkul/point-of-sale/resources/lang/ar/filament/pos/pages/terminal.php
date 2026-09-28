@@ -127,7 +127,7 @@ return [
     'product-info' => [
         'heading'          => 'معلومات المنتج',
         'inventory'        => 'المخزون',
-        'on-hand'          => 'متوفر في هذا السجل النقدي',
+        'available'        => 'متاح في هذا السجل النقدي',
         'negative-warning' => 'البيع ما زال مسموحاً؛ سيصبح المخزون سالباً وسيظهر العجز في المكتب الخلفي.',
         'financials'       => 'البيانات المالية',
         'price'            => 'السعر',
@@ -218,7 +218,7 @@ return [
         'search'          => 'ابحث عن المنتجات',
         'create-product'  => 'إنشاء منتج',
         'info'            => 'معلومات المنتج :product',
-        'info-depleted'   => 'معلومات المنتج :product، غير متوفر',
+        'info-depleted'   => 'معلومات المنتج :product، غير متاح',
     ],
 
     'numpad' => [
