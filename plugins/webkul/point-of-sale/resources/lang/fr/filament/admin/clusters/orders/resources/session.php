@@ -1,6 +1,7 @@
 <?php
 
 return [
+
     'navigation' => [
         'title' => 'Sessions',
         'group' => 'Point de vente',
@@ -10,7 +11,6 @@ return [
         'section' => [
             'general' => [
                 'title'   => 'Session',
-
                 'entries' => [
                     'session'          => 'Session',
                     'opened-by'        => 'Ouverte par',

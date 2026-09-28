@@ -1,14 +1,16 @@
 <?php
 
 return [
-    'title'           => 'Panel',
+    'title' => 'Panel',
 
     'navigation' => [
         'label' => 'Panel',
     ],
 
-    'closing'         => 'Cierre',
-    'balance'         => 'Saldo',
+    'closing' => 'Cierre',
+
+    'balance' => 'Saldo',
+
     'rescue-sessions' => '{1} :count sesión de rescate pendiente|[2,*] :count sesiones de rescate pendientes',
 
     'badges' => [

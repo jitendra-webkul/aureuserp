@@ -1,17 +1,21 @@
 <?php
 
 return [
-    'title'        => 'Pedidos',
+    'title' => 'Pedidos',
 
     'navigation' => [
         'label' => 'Pedidos',
     ],
 
-    'walk-in'      => 'Cliente ocasional',
-    'search'       => 'Buscar por pedido, recibo o cliente',
+    'walk-in' => 'Cliente ocasional',
+
+    'search' => 'Buscar por pedido, recibo o cliente',
+
     'select-order' => 'Selecciona un pedido para ver sus líneas.',
-    'taxes'        => 'Impuestos',
-    'total'        => 'Total',
+
+    'taxes' => 'Impuestos',
+
+    'total' => 'Total',
 
     'status' => [
         'active' => 'Todos los pedidos activos',
@@ -36,12 +40,12 @@ return [
     ],
 
     'actions' => [
-        'print'               => 'Imprimir recibo',
-        'back'                => 'Atrás',
-        'details'             => 'Detalles',
-        'refund'              => 'Reembolso',
-        'previous'            => 'Página anterior',
-        'next'                => 'Página siguiente',
+        'print'    => 'Imprimir recibo',
+        'back'     => 'Atrás',
+        'details'  => 'Detalles',
+        'refund'   => 'Reembolso',
+        'previous' => 'Página anterior',
+        'next'     => 'Página siguiente',
 
         'refund-notification' => [
             'title' => 'Reembolso creado',
@@ -60,8 +64,8 @@ return [
         ],
 
         'invoice' => [
-            'label'        => 'Factura',
-            'heading'      => '¿Crear una factura para este pedido?',
+            'label'   => 'Factura',
+            'heading' => '¿Crear una factura para este pedido?',
 
             'notification' => [
                 'title' => 'Factura creada',

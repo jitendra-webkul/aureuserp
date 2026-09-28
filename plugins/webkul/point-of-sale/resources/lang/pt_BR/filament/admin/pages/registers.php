@@ -1,14 +1,16 @@
 <?php
 
 return [
-    'title'           => 'Painel',
+    'title' => 'Painel',
 
     'navigation' => [
         'label' => 'Painel',
     ],
 
-    'closing'         => 'Fechamento',
-    'balance'         => 'Saldo',
+    'closing' => 'Fechamento',
+
+    'balance' => 'Saldo',
+
     'rescue-sessions' => '{1} :count sessão de resgate pendente|[2,*] :count sessões de resgate pendentes',
 
     'badges' => [

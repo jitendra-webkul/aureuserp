@@ -28,7 +28,6 @@ return [
         'no-match'        => 'Nenhum pedido corresponde a essa busca.',
         'parked-ago'      => 'em espera :time',
         'discard'         => 'Descartar pedido',
-
         'discard-confirm' => [
             'heading'     => 'Descartar o pedido em espera?',
             'description' => 'As linhas dele serão perdidas. Esta ação não pode ser desfeita.',
@@ -64,13 +63,13 @@ return [
     ],
 
     'cash-movement' => [
-        'heading'      => 'Entrada / saída de caixa',
-        'in'           => 'Entrada de caixa',
-        'out'          => 'Saída de caixa',
-        'amount'       => 'Valor',
-        'reason'       => 'Motivo',
-        'confirm'      => 'Registrar movimento',
-        'close'        => 'Fechar',
+        'heading' => 'Entrada / saída de caixa',
+        'in'      => 'Entrada de caixa',
+        'out'     => 'Saída de caixa',
+        'amount'  => 'Valor',
+        'reason'  => 'Motivo',
+        'confirm' => 'Registrar movimento',
+        'close'   => 'Fechar',
 
         'notification' => [
             'title' => 'Movimento de caixa registrado',
@@ -142,11 +141,11 @@ return [
     ],
 
     'customers' => [
-        'heading'   => 'Selecionar um cliente',
-        'search'    => 'Buscar clientes',
-        'no-match'  => 'Nenhum cliente corresponde a essa busca. Somente os clientes carregados no início da sessão podem ser buscados offline.',
-        'clear'     => 'Remover cliente',
-        'badge-new' => 'novo',
+        'heading'      => 'Selecionar um cliente',
+        'search'       => 'Buscar clientes',
+        'no-match'     => 'Nenhum cliente corresponde a essa busca. Somente os clientes carregados no início da sessão podem ser buscados offline.',
+        'clear'        => 'Remover cliente',
+        'badge-new'    => 'novo',
 
         'create' => [
             'label'   => 'Novo cliente',
@@ -177,8 +176,7 @@ return [
 
         'warning' => [
             'heading' => 'Faltam alguns números de série/lote',
-            'body'    => 'Você está tentando vender produtos com números de série/lote, mas alguns deles não foram informados.
-Deseja continuar mesmo assim?',
+            'body'    => "Você está tentando vender produtos com números de série/lote, mas alguns deles não foram informados.\nDeseja continuar mesmo assim?",
             'proceed' => 'Ok',
         ],
     ],
@@ -217,10 +215,10 @@ Deseja continuar mesmo assim?',
     ],
 
     'catalogue' => [
-        'search'         => 'Buscar produtos',
-        'create-product' => 'Criar produto',
-        'info'           => 'Informações do produto :product',
-        'info-depleted'  => 'Informações do produto :product, sem estoque',
+        'search'          => 'Buscar produtos',
+        'create-product'  => 'Criar produto',
+        'info'            => 'Informações do produto :product',
+        'info-depleted'   => 'Informações do produto :product, sem estoque',
     ],
 
     'numpad' => [
@@ -273,11 +271,11 @@ Deseja continuar mesmo assim?',
     ],
 
     'actions' => [
-        'customer'     => 'Cliente',
-        'note'         => 'Observação',
-        'payment'      => 'Pagamento',
-        'heading'      => 'Ações',
-        'label'        => 'Ações',
+        'customer' => 'Cliente',
+        'note'     => 'Observação',
+        'payment'  => 'Pagamento',
+        'heading'  => 'Ações',
+        'label'    => 'Ações',
 
         'cancel-order' => [
             'label'   => 'Cancelar pedido',

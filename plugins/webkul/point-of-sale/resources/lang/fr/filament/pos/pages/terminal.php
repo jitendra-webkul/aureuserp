@@ -28,7 +28,6 @@ return [
         'no-match'        => 'Aucune commande ne correspond à cette recherche.',
         'parked-ago'      => 'mise en attente :time',
         'discard'         => 'Abandonner la commande',
-
         'discard-confirm' => [
             'heading'     => 'Abandonner la commande en attente ?',
             'description' => 'Ses lignes seront perdues. Cette action est irréversible.',
@@ -64,13 +63,13 @@ return [
     ],
 
     'cash-movement' => [
-        'heading'      => 'Entrée / sortie d\'espèces',
-        'in'           => 'Entrée d\'espèces',
-        'out'          => 'Sortie d\'espèces',
-        'amount'       => 'Montant',
-        'reason'       => 'Motif',
-        'confirm'      => 'Enregistrer le mouvement',
-        'close'        => 'Fermer',
+        'heading' => 'Entrée / sortie d\'espèces',
+        'in'      => 'Entrée d\'espèces',
+        'out'     => 'Sortie d\'espèces',
+        'amount'  => 'Montant',
+        'reason'  => 'Motif',
+        'confirm' => 'Enregistrer le mouvement',
+        'close'   => 'Fermer',
 
         'notification' => [
             'title' => 'Mouvement d\'espèces enregistré',
@@ -142,11 +141,11 @@ return [
     ],
 
     'customers' => [
-        'heading'   => 'Sélectionner un client',
-        'search'    => 'Rechercher des clients',
-        'no-match'  => 'Aucun client ne correspond à cette recherche. Seuls les clients chargés au démarrage de la session sont consultables hors ligne.',
-        'clear'     => 'Retirer le client',
-        'badge-new' => 'nouveau',
+        'heading'      => 'Sélectionner un client',
+        'search'       => 'Rechercher des clients',
+        'no-match'     => 'Aucun client ne correspond à cette recherche. Seuls les clients chargés au démarrage de la session sont consultables hors ligne.',
+        'clear'        => 'Retirer le client',
+        'badge-new'    => 'nouveau',
 
         'create' => [
             'label'   => 'Nouveau client',
@@ -177,8 +176,7 @@ return [
 
         'warning' => [
             'heading' => 'Certains numéros de série/lot sont manquants',
-            'body'    => 'Vous essayez de vendre des produits avec des numéros de série/lot, mais certains ne sont pas renseignés.
-Souhaitez-vous continuer malgré tout ?',
+            'body'    => "Vous essayez de vendre des produits avec des numéros de série/lot, mais certains ne sont pas renseignés.\nSouhaitez-vous continuer malgré tout ?",
             'proceed' => 'OK',
         ],
     ],
@@ -217,10 +215,10 @@ Souhaitez-vous continuer malgré tout ?',
     ],
 
     'catalogue' => [
-        'search'         => 'Rechercher des produits',
-        'create-product' => 'Créer un produit',
-        'info'           => 'Informations sur le produit :product',
-        'info-depleted'  => 'Informations sur le produit :product, aucun en stock',
+        'search'          => 'Rechercher des produits',
+        'create-product'  => 'Créer un produit',
+        'info'            => 'Informations sur le produit :product',
+        'info-depleted'   => 'Informations sur le produit :product, aucun en stock',
     ],
 
     'numpad' => [
@@ -273,11 +271,11 @@ Souhaitez-vous continuer malgré tout ?',
     ],
 
     'actions' => [
-        'customer'     => 'Client',
-        'note'         => 'Note',
-        'payment'      => 'Paiement',
-        'heading'      => 'Actions',
-        'label'        => 'Actions',
+        'customer' => 'Client',
+        'note'     => 'Note',
+        'payment'  => 'Paiement',
+        'heading'  => 'Actions',
+        'label'    => 'Actions',
 
         'cancel-order' => [
             'label'   => 'Annuler la commande',
