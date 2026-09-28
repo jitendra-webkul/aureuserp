@@ -136,7 +136,7 @@ it('splits the sales lines by product when the terminal asks for it', function (
 
     expect($salesLines)->toHaveCount(2)
         ->and($salesLines->pluck('name')->sort()->values()->all())
-        ->toBe([$other->name, $this->product->name])
+        ->toBe(collect([$other->name, $this->product->name])->sort()->values()->all())
         ->and((float) $salesLines->firstWhere('name', $this->product->name)->credit)->toBe(200.0)
         ->and((float) $salesLines->firstWhere('name', $this->product->name)->quantity)->toBe(2.0)
         ->and((float) $salesLines->firstWhere('name', $other->name)->credit)->toBe(120.0)

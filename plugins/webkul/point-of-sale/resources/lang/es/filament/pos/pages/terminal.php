@@ -28,7 +28,6 @@ return [
         'no-match'        => 'Ningún pedido coincide con esa búsqueda.',
         'parked-ago'      => 'aparcado :time',
         'discard'         => 'Descartar pedido',
-
         'discard-confirm' => [
             'heading'     => '¿Descartar el pedido aparcado?',
             'description' => 'Se perderán sus líneas. Esta acción no se puede deshacer.',
@@ -64,13 +63,13 @@ return [
     ],
 
     'cash-movement' => [
-        'heading'      => 'Entrada / salida de efectivo',
-        'in'           => 'Entrada de efectivo',
-        'out'          => 'Salida de efectivo',
-        'amount'       => 'Importe',
-        'reason'       => 'Motivo',
-        'confirm'      => 'Registrar movimiento',
-        'close'        => 'Cerrar',
+        'heading' => 'Entrada / salida de efectivo',
+        'in'      => 'Entrada de efectivo',
+        'out'     => 'Salida de efectivo',
+        'amount'  => 'Importe',
+        'reason'  => 'Motivo',
+        'confirm' => 'Registrar movimiento',
+        'close'   => 'Cerrar',
 
         'notification' => [
             'title' => 'Movimiento de efectivo registrado',
@@ -142,11 +141,11 @@ return [
     ],
 
     'customers' => [
-        'heading'   => 'Seleccionar un cliente',
-        'search'    => 'Buscar clientes',
-        'no-match'  => 'Ningún cliente coincide con esa búsqueda. Solo se pueden buscar sin conexión los clientes cargados al iniciar la sesión.',
-        'clear'     => 'Quitar cliente',
-        'badge-new' => 'nuevo',
+        'heading'      => 'Seleccionar un cliente',
+        'search'       => 'Buscar clientes',
+        'no-match'     => 'Ningún cliente coincide con esa búsqueda. Solo se pueden buscar sin conexión los clientes cargados al iniciar la sesión.',
+        'clear'        => 'Quitar cliente',
+        'badge-new'    => 'nuevo',
 
         'create' => [
             'label'   => 'Nuevo cliente',
@@ -177,8 +176,7 @@ return [
 
         'warning' => [
             'heading' => 'Faltan algunos números de serie/lote',
-            'body'    => 'Está intentando vender productos con números de serie/lote, pero algunos no están definidos.
-¿Desea continuar de todas formas?',
+            'body'    => "Está intentando vender productos con números de serie/lote, pero algunos no están definidos.\n¿Desea continuar de todas formas?",
             'proceed' => 'Aceptar',
         ],
     ],
@@ -217,10 +215,10 @@ return [
     ],
 
     'catalogue' => [
-        'search'         => 'Buscar productos',
-        'create-product' => 'Crear producto',
-        'info'           => 'Información del producto :product',
-        'info-depleted'  => 'Información del producto :product, sin existencias',
+        'search'          => 'Buscar productos',
+        'create-product'  => 'Crear producto',
+        'info'            => 'Información del producto :product',
+        'info-depleted'   => 'Información del producto :product, sin existencias',
     ],
 
     'numpad' => [
@@ -273,11 +271,11 @@ return [
     ],
 
     'actions' => [
-        'customer'     => 'Cliente',
-        'note'         => 'Nota',
-        'payment'      => 'Pago',
-        'heading'      => 'Acciones',
-        'label'        => 'Acciones',
+        'customer' => 'Cliente',
+        'note'     => 'Nota',
+        'payment'  => 'Pago',
+        'heading'  => 'Acciones',
+        'label'    => 'Acciones',
 
         'cancel-order' => [
             'label'   => 'Cancelar pedido',

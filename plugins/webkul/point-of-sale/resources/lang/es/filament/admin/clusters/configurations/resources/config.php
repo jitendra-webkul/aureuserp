@@ -76,6 +76,7 @@ return [
                         'fields' => [
                             'limit-categories'             => 'Restringir categorías',
                             'limit-categories-helper-text' => 'Elige qué categorías de productos del TPV están disponibles.',
+                            'locked-by-session'            => 'Bloqueado mientras haya una sesión abierta',
                             'categories'                   => 'Categorías de productos del TPV disponibles',
                         ],
                     ],

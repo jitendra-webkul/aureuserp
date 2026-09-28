@@ -13,7 +13,6 @@ use Spatie\EloquentSortable\SortableTrait;
 use Webkul\Account\Enums\JournalType;
 use Webkul\Account\Models\Account;
 use Webkul\Account\Models\Journal;
-use Webkul\Account\Models\PaymentMethodLine;
 use Webkul\PointOfSale\Database\Factories\PaymentMethodFactory;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Enums\PaymentTerminalType;
@@ -37,7 +36,6 @@ class PaymentMethod extends Model implements Sortable
         'is_split_transaction',
         'is_active',
         'journal_id',
-        'payment_method_line_id',
         'receivable_account_id',
         'outstanding_account_id',
         'company_id',
@@ -68,11 +66,6 @@ class PaymentMethod extends Model implements Sortable
     public function journal(): BelongsTo
     {
         return $this->belongsTo(Journal::class);
-    }
-
-    public function paymentMethodLine(): BelongsTo
-    {
-        return $this->belongsTo(PaymentMethodLine::class);
     }
 
     public function receivableAccount(): BelongsTo

@@ -312,6 +312,42 @@ class Config extends Model implements Sortable
         return $this->belongsToMany(Category::class, 'pos_config_categories', 'config_id', 'category_id');
     }
 
+    /**
+     * @return array<int, int>
+     */
+    public function availableCategoryIds(): array
+    {
+        if (! $this->limit_categories) {
+            return [];
+        }
+
+        $ids = $this->categories->pluck('id')->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $pending = $ids;
+
+        while ($pending !== []) {
+            $children = Category::query()
+                ->whereIn('parent_id', $pending)
+                ->whereNotIn('id', $ids)
+                ->pluck('id')
+                ->all();
+
+            if ($children === []) {
+                break;
+            }
+
+            $ids = array_merge($ids, $children);
+
+            $pending = $children;
+        }
+
+        return $ids;
+    }
+
     public function bills(): BelongsToMany
     {
         return $this->belongsToMany(Bill::class, 'pos_config_bills', 'config_id', 'bill_id');

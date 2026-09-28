@@ -76,6 +76,7 @@ return [
                         'fields' => [
                             'limit-categories'             => 'Restrict Categories',
                             'limit-categories-helper-text' => 'Pick which product PoS categories are available.',
+                            'locked-by-session'            => 'Locked while a session is open',
                             'categories'                   => 'Available PoS Product Categories',
                         ],
                     ],

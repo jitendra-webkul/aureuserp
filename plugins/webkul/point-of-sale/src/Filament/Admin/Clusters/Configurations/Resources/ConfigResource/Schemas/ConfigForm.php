@@ -23,6 +23,7 @@ use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\Route;
 use Webkul\Inventory\Models\Warehouse;
 use Webkul\PointOfSale\Enums\PickingPolicy;
+use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\Product\Enums\ProductType;
@@ -225,6 +226,8 @@ class ConfigForm
                 Toggle::make('limit_categories')
                     ->label(static::label('sections.configurations.tabs.products.fields.limit-categories'))
                     ->helperText(static::label('sections.configurations.tabs.products.fields.limit-categories-helper-text'))
+                    ->disabled(fn (?Config $record): bool => static::lockedByOpenSession($record))
+                    ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->live()
                     ->columnSpanFull(),
 
@@ -239,10 +242,25 @@ class ConfigForm
                     ->searchable()
                     ->preload()
                     ->native(false)
+                    ->disabled(fn (?Config $record): bool => static::lockedByOpenSession($record))
+                    ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->visible(fn (Get $get): bool => (bool) $get('limit_categories'))
                     ->columnSpanFull(),
             ])
             ->columns(2);
+    }
+
+    protected static function lockedByOpenSession(?Config $record): bool
+    {
+        return $record !== null
+            && $record->sessions()->whereNot('state', SessionState::CLOSED)->exists();
+    }
+
+    protected static function lockedByOpenSessionHint(?Config $record): ?string
+    {
+        return static::lockedByOpenSession($record)
+            ? static::label('sections.configurations.tabs.products.fields.locked-by-session')
+            : null;
     }
 
     protected static function accountingTab(): Tab

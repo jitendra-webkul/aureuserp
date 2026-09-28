@@ -76,6 +76,7 @@ return [
                         'fields' => [
                             'limit-categories'             => 'تقييد الفئات',
                             'limit-categories-helper-text' => 'اختر فئات منتجات نقطة البيع المتاحة.',
+                            'locked-by-session'            => 'مقفل أثناء وجود جلسة مفتوحة',
                             'categories'                   => 'فئات منتجات نقطة البيع المتاحة',
                         ],
                     ],

@@ -1,11 +1,11 @@
 <?php
 
 return [
+
     'form' => [
         'section' => [
             'general' => [
                 'title'  => 'Geral',
-
                 'fields' => [
                     'order'      => 'Pedido do ponto de venda',
                     'ordered-at' => 'Data',
@@ -18,23 +18,22 @@ return [
         'tabs' => [
             'products' => [
                 'title'   => 'Produtos',
-
                 'columns' => [
-                    'product'           => 'Produto',
-                    'lot'               => 'Número de lote/série',
-                    'quantity'          => 'Quantidade',
-                    'uom'               => 'UdM',
-                    'unit-price'        => 'Preço unitário',
-                    'discount'          => 'Desc.%',
-                    'taxes'             => 'Impostos',
-                    'tax-excluded'      => 'Sem impostos',
-                    'tax-included'      => 'Com impostos',
-                    'full-product-name' => 'Nome completo do produto',
-                    'customer-note'     => 'Observação do cliente',
-                    'total-cost'        => 'Custo total',
-                    'margin'            => 'Margem',
-                    'margin-percent'    => 'Margem (%)',
-                    'refunded-quantity' => 'Quantidade reembolsada',
+                    'product'            => 'Produto',
+                    'lot'                => 'Número de lote/série',
+                    'quantity'           => 'Quantidade',
+                    'uom'                => 'UdM',
+                    'unit-price'         => 'Preço unitário',
+                    'discount'           => 'Desc.%',
+                    'taxes'              => 'Impostos',
+                    'tax-excluded'       => 'Sem impostos',
+                    'tax-included'       => 'Com impostos',
+                    'full-product-name'  => 'Nome completo do produto',
+                    'customer-note'      => 'Observação do cliente',
+                    'total-cost'         => 'Custo total',
+                    'margin'             => 'Margem',
+                    'margin-percent'     => 'Margem (%)',
+                    'refunded-quantity'  => 'Quantidade reembolsada',
                 ],
 
                 'actions' => [
@@ -54,7 +53,6 @@ return [
             'payments' => [
                 'title'  => 'Pagamentos',
                 'add'    => 'Adicionar uma linha',
-
                 'fields' => [
                     'paid-at'         => 'Data',
                     'method'          => 'Método de pagamento',
@@ -67,7 +65,6 @@ return [
 
             'extra-info' => [
                 'title'  => 'Informações extras',
-
                 'fields' => [
                     'receipt-number'  => 'Número do recibo',
                     'tracking-number' => 'Número de rastreio',
@@ -86,7 +83,6 @@ return [
         'section' => [
             'general' => [
                 'title'   => 'Geral',
-
                 'entries' => [
                     'order'         => 'Pedido do ponto de venda',
                     'customer'      => 'Cliente',
@@ -100,7 +96,6 @@ return [
         'tabs' => [
             'order-line' => [
                 'title'   => 'Linha do pedido',
-
                 'entries' => [
                     'product'    => 'Produto',
                     'quantity'   => 'Quantidade',
@@ -109,7 +104,6 @@ return [
                     'discount'   => 'Desconto (%)',
                     'amount'     => 'Valor',
                 ],
-
                 'totals' => [
                     'untaxed' => 'Valor sem impostos',
                     'taxes'   => 'Impostos',
@@ -120,7 +114,6 @@ return [
 
             'payments' => [
                 'title'   => 'Pagamentos',
-
                 'entries' => [
                     'method'  => 'Método de pagamento',
                     'amount'  => 'Valor',
@@ -130,7 +123,6 @@ return [
 
             'other-information' => [
                 'title'   => 'Outras informações',
-
                 'entries' => [
                     'reference'      => 'Referência',
                     'receipt-number' => 'Número do recibo',
@@ -142,7 +134,6 @@ return [
             ],
         ],
     ],
-
     'navigation' => [
         'title' => 'Pedidos',
         'group' => 'Ponto de venda',

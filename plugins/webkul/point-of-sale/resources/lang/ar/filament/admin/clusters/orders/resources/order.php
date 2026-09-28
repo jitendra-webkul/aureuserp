@@ -1,11 +1,11 @@
 <?php
 
 return [
+
     'form' => [
         'section' => [
             'general' => [
                 'title'  => 'عام',
-
                 'fields' => [
                     'order'      => 'طلب نقطة البيع',
                     'ordered-at' => 'التاريخ',
@@ -18,23 +18,22 @@ return [
         'tabs' => [
             'products' => [
                 'title'   => 'المنتجات',
-
                 'columns' => [
-                    'product'           => 'المنتج',
-                    'lot'               => 'رقم الدفعة/التسلسل',
-                    'quantity'          => 'الكمية',
-                    'uom'               => 'وحدة القياس',
-                    'unit-price'        => 'سعر الوحدة',
-                    'discount'          => 'خصم %',
-                    'taxes'             => 'الضرائب',
-                    'tax-excluded'      => 'غير شامل الضريبة',
-                    'tax-included'      => 'شامل الضريبة',
-                    'full-product-name' => 'اسم المنتج الكامل',
-                    'customer-note'     => 'ملاحظة العميل',
-                    'total-cost'        => 'إجمالي التكلفة',
-                    'margin'            => 'هامش الربح',
-                    'margin-percent'    => 'هامش الربح (%)',
-                    'refunded-quantity' => 'الكمية المستردة',
+                    'product'            => 'المنتج',
+                    'lot'                => 'رقم الدفعة/التسلسل',
+                    'quantity'           => 'الكمية',
+                    'uom'                => 'وحدة القياس',
+                    'unit-price'         => 'سعر الوحدة',
+                    'discount'           => 'خصم %',
+                    'taxes'              => 'الضرائب',
+                    'tax-excluded'       => 'غير شامل الضريبة',
+                    'tax-included'       => 'شامل الضريبة',
+                    'full-product-name'  => 'اسم المنتج الكامل',
+                    'customer-note'      => 'ملاحظة العميل',
+                    'total-cost'         => 'إجمالي التكلفة',
+                    'margin'             => 'هامش الربح',
+                    'margin-percent'     => 'هامش الربح (%)',
+                    'refunded-quantity'  => 'الكمية المستردة',
                 ],
 
                 'actions' => [
@@ -54,7 +53,6 @@ return [
             'payments' => [
                 'title'  => 'الدفعات',
                 'add'    => 'إضافة بند',
-
                 'fields' => [
                     'paid-at'         => 'التاريخ',
                     'method'          => 'طريقة الدفع',
@@ -67,7 +65,6 @@ return [
 
             'extra-info' => [
                 'title'  => 'معلومات إضافية',
-
                 'fields' => [
                     'receipt-number'  => 'رقم الإيصال',
                     'tracking-number' => 'رقم التتبع',
@@ -86,7 +83,6 @@ return [
         'section' => [
             'general' => [
                 'title'   => 'عام',
-
                 'entries' => [
                     'order'         => 'طلب نقطة البيع',
                     'customer'      => 'العميل',
@@ -100,7 +96,6 @@ return [
         'tabs' => [
             'order-line' => [
                 'title'   => 'بند الطلب',
-
                 'entries' => [
                     'product'    => 'المنتج',
                     'quantity'   => 'الكمية',
@@ -109,7 +104,6 @@ return [
                     'discount'   => 'الخصم (%)',
                     'amount'     => 'المبلغ',
                 ],
-
                 'totals' => [
                     'untaxed' => 'المبلغ غير الخاضع للضريبة',
                     'taxes'   => 'الضرائب',
@@ -120,7 +114,6 @@ return [
 
             'payments' => [
                 'title'   => 'الدفعات',
-
                 'entries' => [
                     'method'  => 'طريقة الدفع',
                     'amount'  => 'المبلغ',
@@ -130,7 +123,6 @@ return [
 
             'other-information' => [
                 'title'   => 'معلومات أخرى',
-
                 'entries' => [
                     'reference'      => 'المرجع',
                     'receipt-number' => 'رقم الإيصال',
@@ -142,7 +134,6 @@ return [
             ],
         ],
     ],
-
     'navigation' => [
         'title' => 'الطلبات',
         'group' => 'نقطة البيع',

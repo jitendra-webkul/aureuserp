@@ -76,6 +76,7 @@ return [
                         'fields' => [
                             'limit-categories'             => 'Restreindre les catégories',
                             'limit-categories-helper-text' => 'Choisissez les catégories de produits PdV disponibles.',
+                            'locked-by-session'            => 'Verrouillé tant qu\'une session est ouverte',
                             'categories'                   => 'Catégories de produits PdV disponibles',
                         ],
                     ],

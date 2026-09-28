@@ -1,6 +1,7 @@
 <?php
 
 return [
+
     'navigation' => [
         'title' => 'الجلسات',
         'group' => 'نقطة البيع',
@@ -10,7 +11,6 @@ return [
         'section' => [
             'general' => [
                 'title'   => 'جلسة',
-
                 'entries' => [
                     'session'          => 'جلسة',
                     'opened-by'        => 'فتحها',

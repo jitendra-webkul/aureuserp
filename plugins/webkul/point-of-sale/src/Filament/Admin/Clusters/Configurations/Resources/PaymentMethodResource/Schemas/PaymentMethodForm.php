@@ -11,7 +11,6 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Account\Enums\JournalType;
-use Webkul\Account\Enums\PaymentType;
 use Webkul\Account\Models\Journal;
 use Webkul\PointOfSale\Enums\PaymentTerminalType;
 
@@ -70,19 +69,6 @@ class PaymentMethodForm
                             ->required(fn (Get $get): bool => ! $get('is_split_transaction'))
                             ->placeholder(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.journal-placeholder'))
                             ->live(),
-
-                        Select::make('payment_method_line_id')
-                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.payment-method-line'))
-                            ->relationship(
-                                'paymentMethodLine',
-                                'name',
-                                modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('journal_id', $get('journal_id'))
-                                    ->whereHas('paymentMethod', fn (Builder $query) => $query->where('payment_type', PaymentType::RECEIVE)),
-                            )
-                            ->searchable()
-                            ->preload()
-                            ->native(false)
-                            ->visible(fn (Get $get): bool => filled($get('journal_id'))),
 
                         Select::make('receivable_account_id')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.accounting.fields.receivable-account'))

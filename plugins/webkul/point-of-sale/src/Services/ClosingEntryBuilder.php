@@ -287,44 +287,59 @@ class ClosingEntryBuilder
 
     protected function invoiceReceivableLines(Session $session, Collection $orders, $currency, $company): Collection
     {
-        $fallback = $this->accounts->receivableAccountFor($session->config);
+        $posReceivable = $this->accounts->receivableAccountFor($session->config);
 
-        return $orders
-            ->filter(fn (Order $order): bool => (bool) $order->is_invoiced)
-            ->map(function (Order $order) use ($fallback, $currency, $company): ?array {
-                $total = (float) $order->payments->sum('amount');
+        $lines = collect();
 
-                if (float_is_zero($total, precisionDigits: 4)) {
-                    return null;
-                }
+        $cleared = 0.0;
 
-                $invoiceLine = $this->invoiceReceivableLine($order);
+        foreach ($orders->filter(fn (Order $order): bool => (bool) $order->is_invoiced) as $order) {
+            [$paid, $open] = $order->payments->partition(
+                fn (Payment $payment): bool => $payment->account_move_id !== null,
+            );
 
-                $accountId = $invoiceLine?->account_id ?? $fallback?->id;
+            $cleared += (float) $paid->sum('amount');
 
-                if (! $accountId) {
-                    return null;
-                }
+            $lines = $lines->merge($this->openInvoiceReceivableLine($order, (float) $open->sum('amount'), $currency, $company));
+        }
 
-                return array_merge($this->line(
-                    $accountId,
-                    $total < 0 ? abs($total) : 0.0,
-                    $total > 0 ? $total : 0.0,
-                    __('point-of-sale::system.session-closer.invoice-receivable-line'),
-                    $currency,
-                    $company,
-                ), [
-                    'partner_id' => $invoiceLine?->partner_id ?? $order->partner_id,
-                ]);
-            })
-            ->filter()
-            ->values();
+        if ($posReceivable && ! float_is_zero($cleared, precisionDigits: 4)) {
+            $lines->push($this->line(
+                $posReceivable->id,
+                $cleared < 0 ? abs($cleared) : 0.0,
+                $cleared > 0 ? $cleared : 0.0,
+                __('point-of-sale::system.session-closer.invoice-receivable-line'),
+                $currency,
+                $company,
+            ));
+        }
+
+        return $lines->values();
     }
 
-    protected function invoiceReceivableLine(Order $order): ?MoveLine
+    protected function openInvoiceReceivableLine(Order $order, float $amount, $currency, $company): Collection
     {
-        return $order->accountMove?->lines
+        if (float_is_zero($amount, precisionDigits: 4)) {
+            return collect();
+        }
+
+        $invoiceLine = $order->accountMove?->lines
             ->first(fn (MoveLine $line): bool => $line->account?->account_type === AccountType::ASSET_RECEIVABLE);
+
+        if (! $invoiceLine) {
+            return collect();
+        }
+
+        return collect([array_merge($this->line(
+            $invoiceLine->account_id,
+            $amount < 0 ? abs($amount) : 0.0,
+            $amount > 0 ? $amount : 0.0,
+            __('point-of-sale::system.session-closer.invoice-receivable-line'),
+            $currency,
+            $company,
+        ), [
+            'partner_id' => $invoiceLine->partner_id ?? $order->partner_id,
+        ])]);
     }
 
     protected function cashLines(Session $session, Collection $orders, $currency, $company): Collection

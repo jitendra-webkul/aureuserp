@@ -1,14 +1,16 @@
 <?php
 
 return [
-    'title'           => 'Tableau de bord',
+    'title' => 'Tableau de bord',
 
     'navigation' => [
         'label' => 'Tableau de bord',
     ],
 
-    'closing'         => 'Clôture',
-    'balance'         => 'Solde',
+    'closing' => 'Clôture',
+
+    'balance' => 'Solde',
+
     'rescue-sessions' => '{1} :count session de secours en attente|[2,*] :count sessions de secours en attente',
 
     'badges' => [

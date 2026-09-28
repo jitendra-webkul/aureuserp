@@ -134,7 +134,7 @@ export class Till {
 
         if (refund) {
             this.state.activeOrderUuid = refund.uuid
-            this.state.screen = 'payment'
+            this.state.screen = 'products'
         }
 
         this.watchActiveOrder()
@@ -253,19 +253,38 @@ export class Till {
             }
         }
 
-        const order = this.hydrateServerOrder({
-            uuid: uuidv4(),
-            partner_id: pending.partner_id,
-            price_list_id: pending.price_list_id,
-            fiscal_position_id: pending.fiscal_position_id,
-            refunded_order_id: pending.refunded_order_id,
-            lines: pending.lines.map((line) => ({ ...line, price_overridden: true })),
-            payments: [],
-        })
+        const destination = this.emptyOrderFor(pending.partner_id) ?? this.newOrder()
 
-        this.state.orders.push(order)
+        destination.partner_id = pending.partner_id ?? destination.partner_id
+        destination.price_list_id = pending.price_list_id ?? destination.price_list_id
+        destination.fiscal_position_id = pending.fiscal_position_id ?? destination.fiscal_position_id
+        destination.refunded_order_id = pending.refunded_order_id
 
-        return order
+        for (const line of pending.lines) {
+            destination.lines.push(this.hydrateLine({ ...line, price_overridden: true }, destination.uuid))
+        }
+
+        return destination
+    }
+
+    emptyOrderFor(partnerId) {
+        let fallback = null
+
+        for (const order of this.drafts) {
+            if (order.lines.length || order.payments.length) {
+                continue
+            }
+
+            if ((order.partner_id ?? null) === (partnerId ?? null)) {
+                return order
+            }
+
+            if (!order.partner_id && fallback === null) {
+                fallback = order
+            }
+        }
+
+        return fallback
     }
 
     hydrateServerOrder(order) {
@@ -286,19 +305,7 @@ export class Till {
             fiscal_position_id: order.fiscal_position_id ?? this.state.fiscalPositionId,
             refunded_order_id: order.refunded_order_id ?? null,
             created_at: order.created_at ?? new Date().toISOString(),
-            lines: (order.lines ?? []).map((line) => ({
-                uuid: line.uuid ?? uuidv4(),
-                order_uuid: order.uuid,
-                product_id: line.product_id,
-                qty: Number(line.qty ?? 1),
-                price_unit: Number(line.price_unit ?? 0),
-                price_overridden: Boolean(line.price_overridden),
-                discount: Number(line.discount ?? 0),
-                note: line.note ?? '',
-                lots: line.lots ?? [],
-                tax_ids: line.tax_ids ?? [],
-                refunded_order_line_id: line.refunded_order_line_id ?? null,
-            })),
+            lines: (order.lines ?? []).map((line) => this.hydrateLine(line, order.uuid)),
             payments: (order.payments ?? []).map((payment) => ({
                 uuid: payment.uuid ?? uuidv4(),
                 order_uuid: order.uuid,
@@ -307,6 +314,22 @@ export class Till {
                 is_change: Boolean(payment.is_change),
             })),
         })
+    }
+
+    hydrateLine(line, orderUuid) {
+        return {
+            uuid: line.uuid ?? uuidv4(),
+            order_uuid: orderUuid,
+            product_id: line.product_id,
+            qty: Number(line.qty ?? 1),
+            price_unit: Number(line.price_unit ?? 0),
+            price_overridden: Boolean(line.price_overridden),
+            discount: Number(line.discount ?? 0),
+            note: line.note ?? '',
+            lots: line.lots ?? [],
+            tax_ids: line.tax_ids ?? [],
+            refunded_order_line_id: line.refunded_order_line_id ?? null,
+        }
     }
 
     get activeOrderStorageKey() {

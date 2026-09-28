@@ -73,10 +73,10 @@ class CatalogLoader
             ->where('available_in_pos', true)
             ->whereNull('parent_id')
             ->when(
-                $config->limit_categories && $config->categories->isNotEmpty(),
-                fn ($builder) => $builder->whereHas(
+                $config->availableCategoryIds(),
+                fn ($builder, array $categoryIds) => $builder->whereHas(
                     'posCategories',
-                    fn ($categories) => $categories->whereIn('pos_categories.id', $config->categories->pluck('id')),
+                    fn ($categories) => $categories->whereIn('pos_categories.id', $categoryIds),
                 ),
             )
             ->when(filled($search), fn ($builder) => $builder->where('name', 'like', "%{$search}%"))

@@ -145,8 +145,18 @@ it('counts the drawer again when closing the register', function () {
         ->assertSet('closingCash', 200.0);
 });
 
-it('forbids the terminal once its register is deactivated', function () {
+it('keeps a live session reachable once its register is deactivated', function () {
     $session = PosHelper::openSession($this->warehouse);
+
+    $session->config->update(['is_active' => false]);
+
+    Livewire::test(Home::class, ['session' => $session->refresh()])->assertSuccessful();
+});
+
+it('forbids a closed session on a deactivated register', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $session->forceFill(['state' => SessionState::CLOSED])->save();
 
     $session->config->update(['is_active' => false]);
 

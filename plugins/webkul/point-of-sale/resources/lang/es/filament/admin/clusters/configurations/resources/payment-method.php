@@ -28,7 +28,6 @@ return [
                     'journal'             => 'Diario',
                     'journal-placeholder' => 'Déjalo vacío para usar la cuenta a cobrar del cliente',
                     'account-placeholder' => 'Déjalo vacío para usar la cuenta predeterminada de la configuración de la empresa',
-                    'payment-method-line' => 'Línea de método de pago',
                     'receivable-account'  => 'Cuenta intermedia',
                     'outstanding-account' => 'Cuenta pendiente',
                 ],

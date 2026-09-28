@@ -103,6 +103,10 @@ return [
         ],
     ],
 
+    'invoice-payer' => [
+        'entry-reference' => 'Pagamento de fatura para :order (:invoice) usando :method',
+    ],
+
     'session-closer' => [
         'entry-reference'                 => 'Sessão do ponto de venda :session',
         'payment-difference-reference'    => 'Diferença em :method para :session',

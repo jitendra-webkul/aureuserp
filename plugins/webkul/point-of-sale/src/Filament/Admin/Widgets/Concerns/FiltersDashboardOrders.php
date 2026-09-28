@@ -7,9 +7,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 
-/**
- * Applies the Point of Sale dashboard filters to order based widget queries.
- */
 trait FiltersDashboardOrders
 {
     use InteractsWithPageFilters;

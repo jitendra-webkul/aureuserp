@@ -28,7 +28,6 @@ return [
                     'journal'             => 'دفتر اليومية',
                     'journal-placeholder' => 'اتركه فارغاً لاستخدام حساب الذمم المدينة الخاص بالعميل',
                     'account-placeholder' => 'اتركه فارغاً لاستخدام الحساب الافتراضي من إعدادات الشركة',
-                    'payment-method-line' => 'بند طريقة الدفع',
                     'receivable-account'  => 'الحساب الوسيط',
                     'outstanding-account' => 'الحساب المعلّق',
                 ],

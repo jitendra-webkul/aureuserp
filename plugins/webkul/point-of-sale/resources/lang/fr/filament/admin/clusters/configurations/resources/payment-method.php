@@ -28,7 +28,6 @@ return [
                     'journal'             => 'Journal',
                     'journal-placeholder' => 'Laissez vide pour utiliser le compte client du client',
                     'account-placeholder' => 'Laissez vide pour utiliser le compte par défaut des paramètres de la société',
-                    'payment-method-line' => 'Ligne de mode de paiement',
                     'receivable-account'  => 'Compte intermédiaire',
                     'outstanding-account' => 'Compte d\'attente',
                 ],

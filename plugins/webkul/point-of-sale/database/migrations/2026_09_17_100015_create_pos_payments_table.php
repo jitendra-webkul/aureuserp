@@ -47,11 +47,6 @@ return new class extends Migration
                 ->constrained('accounts_account_moves')
                 ->nullOnDelete();
 
-            $table->foreignId('payment_id')
-                ->nullable()
-                ->constrained('accounts_account_payments')
-                ->nullOnDelete();
-
             $table->foreignId('user_id')
                 ->nullable()
                 ->constrained('users')

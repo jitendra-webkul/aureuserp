@@ -1,17 +1,21 @@
 <?php
 
 return [
-    'title'        => 'Commandes',
+    'title' => 'Commandes',
 
     'navigation' => [
         'label' => 'Commandes',
     ],
 
-    'walk-in'      => 'Client de passage',
-    'search'       => 'Rechercher par commande, reçu ou client',
+    'walk-in' => 'Client de passage',
+
+    'search' => 'Rechercher par commande, reçu ou client',
+
     'select-order' => 'Sélectionnez une commande pour voir ses lignes.',
-    'taxes'        => 'Taxes',
-    'total'        => 'Total',
+
+    'taxes' => 'Taxes',
+
+    'total' => 'Total',
 
     'status' => [
         'active' => 'Toutes les commandes actives',
@@ -36,12 +40,12 @@ return [
     ],
 
     'actions' => [
-        'print'               => 'Imprimer le reçu',
-        'back'                => 'Retour',
-        'details'             => 'Détails',
-        'refund'              => 'Avoir',
-        'previous'            => 'Page précédente',
-        'next'                => 'Page suivante',
+        'print'    => 'Imprimer le reçu',
+        'back'     => 'Retour',
+        'details'  => 'Détails',
+        'refund'   => 'Avoir',
+        'previous' => 'Page précédente',
+        'next'     => 'Page suivante',
 
         'refund-notification' => [
             'title' => 'Avoir créé',
@@ -60,8 +64,8 @@ return [
         ],
 
         'invoice' => [
-            'label'        => 'Facture',
-            'heading'      => 'Créer une facture pour cette commande ?',
+            'label'   => 'Facture',
+            'heading' => 'Créer une facture pour cette commande ?',
 
             'notification' => [
                 'title' => 'Facture créée',

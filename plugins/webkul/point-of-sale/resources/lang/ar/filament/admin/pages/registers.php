@@ -1,14 +1,16 @@
 <?php
 
 return [
-    'title'           => 'لوحة المعلومات',
+    'title' => 'لوحة المعلومات',
 
     'navigation' => [
         'label' => 'لوحة المعلومات',
     ],
 
-    'closing'         => 'الإغلاق',
-    'balance'         => 'الرصيد',
+    'closing' => 'الإغلاق',
+
+    'balance' => 'الرصيد',
+
     'rescue-sessions' => '{1} :count جلسة إنقاذ معلّقة|[2,*] :count جلسات إنقاذ معلّقة',
 
     'badges' => [

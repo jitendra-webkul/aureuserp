@@ -42,7 +42,11 @@ class PosAccess
 
     public static function reachesActiveSession(?Session $session): bool
     {
-        return static::reachesSession($session) && (bool) $session->config?->is_active;
+        if (! static::reachesSession($session)) {
+            return false;
+        }
+
+        return (bool) $session->config?->is_active || $session->isLive();
     }
 
     public static function reachesOrder(?Order $order): bool

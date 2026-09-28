@@ -29,11 +29,6 @@ return new class extends Migration
                 ->constrained('accounts_journals')
                 ->restrictOnDelete();
 
-            $table->foreignId('payment_method_line_id')
-                ->nullable()
-                ->constrained('accounts_payment_method_lines')
-                ->nullOnDelete();
-
             $table->foreignId('receivable_account_id')
                 ->nullable()
                 ->constrained('accounts_accounts')

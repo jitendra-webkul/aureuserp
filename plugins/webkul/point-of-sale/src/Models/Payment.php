@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Webkul\Account\Models\Move;
-use Webkul\Account\Models\Payment as AccountPayment;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Database\Factories\PaymentFactory;
 use Webkul\PointOfSale\Enums\TerminalPaymentStatus;
@@ -39,7 +38,6 @@ class Payment extends Model
         'payment_method_id',
         'partner_id',
         'account_move_id',
-        'payment_id',
         'user_id',
         'company_id',
         'creator_id',
@@ -82,11 +80,6 @@ class Payment extends Model
     public function accountMove(): BelongsTo
     {
         return $this->belongsTo(Move::class, 'account_move_id');
-    }
-
-    public function accountPayment(): BelongsTo
-    {
-        return $this->belongsTo(AccountPayment::class, 'payment_id');
     }
 
     public function user(): BelongsTo

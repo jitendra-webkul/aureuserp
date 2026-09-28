@@ -524,10 +524,10 @@ class BootLoader
                     ->where('available_in_pos', true)
                     ->whereNull('parent_id')
                     ->when(
-                        $config->limit_categories && $config->categories->isNotEmpty(),
-                        fn ($restricted) => $restricted->whereHas(
+                        $config->availableCategoryIds(),
+                        fn ($restricted, array $categoryIds) => $restricted->whereHas(
                             'posCategories',
-                            fn ($categories) => $categories->whereIn('pos_categories.id', $config->categories->pluck('id')),
+                            fn ($categories) => $categories->whereIn('pos_categories.id', $categoryIds),
                         ),
                     ))
                 ->when($referenced, fn ($builder) => $builder->orWhereIn('id', $referenced)))

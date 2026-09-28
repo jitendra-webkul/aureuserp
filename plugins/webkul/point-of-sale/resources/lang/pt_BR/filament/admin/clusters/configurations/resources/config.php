@@ -76,6 +76,7 @@ return [
                         'fields' => [
                             'limit-categories'             => 'Restringir categorias',
                             'limit-categories-helper-text' => 'Escolha quais categorias de produtos do PDV ficam disponíveis.',
+                            'locked-by-session'            => 'Bloqueado enquanto houver uma sessão aberta',
                             'categories'                   => 'Categorias de produtos do PDV disponíveis',
                         ],
                     ],
