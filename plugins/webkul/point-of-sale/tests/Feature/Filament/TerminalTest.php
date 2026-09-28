@@ -158,6 +158,8 @@ it('refuses to open a session on an inactive register', function () {
 
     expect(fn () => PointOfSale::openSession($this->config))
         ->toThrow(PosConfigurationException::class);
+});
+
 it('returns the cashier to the registers page after closing the register', function () {
     $session = PosHelper::openSession($this->warehouse);
 
