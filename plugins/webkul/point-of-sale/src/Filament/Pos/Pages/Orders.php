@@ -6,6 +6,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -313,7 +314,7 @@ class Orders extends Page
 
         session()->put(Terminal::pendingRefundKey($this->session), $pending);
 
-        $this->redirect(Home::getUrl(['session' => $this->session->getKey()]));
+        $this->redirect(Home::getUrl(['session' => $this->session->getKey()]), navigate: FilamentView::hasSpaMode());
     }
 
     public function canRefund(Order $order): bool

@@ -1,25 +1,13 @@
 <x-filament-panels::page>
-    @unless ($this->needsOpeningControl())
-        @vite('plugins/webkul/point-of-sale/resources/js/till/main.js')
+    @vite('plugins/webkul/point-of-sale/resources/js/till/main.js')
 
-        <div
-            id="pos-till"
-            wire:ignore
-            data-boot="{{ json_encode($this->bootPayload()) }}"
-            data-sync-endpoint="{{ $this->syncEndpoint() }}"
-            data-access-token="{{ $this->config->access_token }}"
-        ></div>
-    @endunless
+    <div
+        id="pos-till"
+        wire:ignore
+        data-boot="{{ json_encode($this->bootPayload()) }}"
+        data-sync-endpoint="{{ $this->syncEndpoint() }}"
+        data-access-token="{{ $this->config->access_token }}"
+    ></div>
 
-    @include('point-of-sale::filament.pos.partials.modals.opening-control')
-    @include('point-of-sale::filament.pos.partials.modals.closing')
-    @include('point-of-sale::filament.pos.partials.modals.cash-movement')
-    @include('point-of-sale::filament.pos.partials.modals.money-details')
-
-    @if ($modalOnLoad && ! $this->needsOpeningControl())
-        <div
-            x-data
-            x-init="$nextTick(() => $dispatch('open-modal', { id: @js($modalOnLoad) }))"
-        ></div>
-    @endif
+    <livewire:point-of-sale-register-controls :session="$session" />
 </x-filament-panels::page>

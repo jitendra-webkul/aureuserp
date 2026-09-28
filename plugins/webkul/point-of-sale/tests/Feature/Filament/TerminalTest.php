@@ -11,6 +11,7 @@ use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
+use Webkul\PointOfSale\Livewire\RegisterControls;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../support/tests/Helpers/FilamentHelper.php';
@@ -57,11 +58,12 @@ it('renders the terminal for a live session', function () {
 it('shows the opening control until the drawer is counted', function () {
     $session = PointOfSale::openSession($this->config);
 
-    Livewire::test(Home::class, ['session' => $session])
+    Livewire::test(RegisterControls::class, ['session' => $session])
         ->assertOk()
         ->call('confirmOpening')
         ->assertOk()
-        ->assertRedirect();
+        ->assertNoRedirect()
+        ->assertDispatched('close-modal', id: 'pos-opening-control');
 
     expect($session->refresh()->state)->toBe(SessionState::OPENED);
 });
@@ -69,7 +71,7 @@ it('shows the opening control until the drawer is counted', function () {
 it('counts the drawer through the coins and notes dialog', function () {
     $session = PointOfSale::openSession($this->config);
 
-    Livewire::test(Home::class, ['session' => $session])
+    Livewire::test(RegisterControls::class, ['session' => $session])
         ->call('openMoneyDetails')
         ->assertDispatched('open-modal', id: 'pos-money-details')
         ->call('stepMoneyDetail', (string) PosHelper::bill(50)->id, 1)
@@ -82,7 +84,7 @@ it('counts the drawer through the coins and notes dialog', function () {
 it('records the counted drawer as the opening balance', function () {
     $session = PointOfSale::openSession($this->config);
 
-    Livewire::test(Home::class, ['session' => $session])
+    Livewire::test(RegisterControls::class, ['session' => $session])
         ->call('openMoneyDetails')
         ->call('stepMoneyDetail', (string) PosHelper::bill(100)->id, 1)
         ->call('confirmMoneyDetails')
@@ -122,7 +124,7 @@ it('ships the locale and translations the client renders with', function () {
 it('records a cash movement from the terminal', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    Livewire::test(Home::class, ['session' => $session])
+    Livewire::test(RegisterControls::class, ['session' => $session])
         ->call('openCashMovement', 'in')
         ->assertDispatched('open-modal', id: 'pos-cash-movement')
         ->set('cashMovementAmount', 40.0)
@@ -136,13 +138,23 @@ it('records a cash movement from the terminal', function () {
 it('counts the drawer again when closing the register', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    Livewire::test(Home::class, ['session' => $session])
+    Livewire::test(RegisterControls::class, ['session' => $session])
         ->call('goToClosing')
         ->assertDispatched('open-modal', id: 'pos-closing')
         ->call('openMoneyDetails', 'closing')
         ->call('stepMoneyDetail', (string) PosHelper::bill(100)->id, 2)
         ->call('confirmMoneyDetails')
         ->assertSet('closingCash', 200.0);
+});
+
+it('opens the register dialogs from the user menu events', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    Livewire::test(RegisterControls::class, ['session' => $session])
+        ->dispatch('pos-open-cash-movement')
+        ->assertDispatched('open-modal', id: 'pos-cash-movement')
+        ->dispatch('pos-close-register')
+        ->assertDispatched('open-modal', id: 'pos-closing');
 });
 
 it('keeps a live session reachable once its register is deactivated', function () {
@@ -173,37 +185,12 @@ it('refuses to open a session on an inactive register', function () {
 it('returns the cashier to the registers page after closing the register', function () {
     $session = PosHelper::openSession($this->warehouse);
 
-    Livewire::test(Home::class, ['session' => $session])
+    Livewire::test(RegisterControls::class, ['session' => $session])
         ->set('closingCash', 0.0)
         ->call('closeRegister')
         ->assertRedirect(Registers::getUrl());
 
     expect($session->refresh()->state)->toBe(SessionState::CLOSED);
-});
-
-it('opens the closing dialog when the terminal is reached from another page', function () {
-    $session = PosHelper::openSession($this->warehouse);
-
-    Livewire::withQueryParams(['open' => 'closing'])
-        ->test(Home::class, ['session' => $session])
-        ->assertSet('modalOnLoad', 'pos-closing')
-        ->assertSeeHtml("open-modal', { id: 'pos-closing' }");
-});
-
-it('opens the cash movement dialog when the terminal is reached from another page', function () {
-    $session = PosHelper::openSession($this->warehouse);
-
-    Livewire::withQueryParams(['open' => 'cash-movement'])
-        ->test(Home::class, ['session' => $session])
-        ->assertSet('modalOnLoad', 'pos-cash-movement');
-});
-
-it('ignores an unknown dialog request', function () {
-    $session = PosHelper::openSession($this->warehouse);
-
-    Livewire::withQueryParams(['open' => 'anything'])
-        ->test(Home::class, ['session' => $session])
-        ->assertSet('modalOnLoad', null);
 });
 
 it('sends a closed session to the live session of the same register', function () {

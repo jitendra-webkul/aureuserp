@@ -290,4 +290,8 @@
     @if ($selected)
         @include('point-of-sale::filament.pos.partials.receipt', ['receipt' => $this->receipt($selected)])
     @endif
+
+    @if ($session)
+        <livewire:point-of-sale-register-controls :session="$session" />
+    @endif
 </x-filament-panels::page>

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
 use Webkul\Chatter\Services\ChatterCleanupService;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\Inventory\Models\Warehouse as InventoryWarehouse;
@@ -17,6 +18,7 @@ use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
 use Webkul\PointOfSale\Facades\PointOfSale as PointOfSaleFacade;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Products\Resources\ProductResource\Schemas\PosProductSchema;
+use Webkul\PointOfSale\Livewire\RegisterControls;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Order;
@@ -158,6 +160,8 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        Livewire::component('point-of-sale-register-controls', RegisterControls::class);
+
         $this->registerCustomAssets();
 
         $this->registerModelObservers();

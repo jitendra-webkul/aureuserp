@@ -6,6 +6,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
@@ -113,7 +114,7 @@ class Registers extends Page
             return;
         }
 
-        $this->redirect(Home::getUrl(['session' => $session->getKey()]));
+        $this->redirect(Home::getUrl(['session' => $session->getKey()]), navigate: FilamentView::hasSpaMode());
     }
 
     /**

@@ -23,9 +23,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Js;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
-use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
-use Webkul\PointOfSale\Filament\Pos\Pages\Terminal;
 
 class PosPanelProvider extends PanelProvider
 {
@@ -48,7 +46,7 @@ class PosPanelProvider extends PanelProvider
                     ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.menu.cash-in-out'))
                     ->icon('heroicon-m-banknotes')
                     ->visible(fn (): bool => Registers::ownSession() !== null)
-                    ->action(fn ($livewire) => static::openTerminalModal($livewire, 'pos-open-cash-movement', 'cash-movement')),
+                    ->action(fn ($livewire) => $livewire->dispatch('pos-open-cash-movement')),
 
                 'installApp' => Action::make('installApp')
                     ->label(fn (): string => __('point-of-sale::filament/pos/pages/terminal.install.label'))
@@ -72,7 +70,7 @@ class PosPanelProvider extends PanelProvider
                     ->icon('heroicon-m-lock-closed')
                     ->color('danger')
                     ->visible(fn (): bool => Registers::ownSession() !== null)
-                    ->action(fn ($livewire) => static::openTerminalModal($livewire, 'pos-close-register', 'closing')),
+                    ->action(fn ($livewire) => $livewire->dispatch('pos-close-register')),
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
@@ -101,22 +99,5 @@ class PosPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
-    }
-
-    protected static function openTerminalModal(mixed $livewire, string $event, string $modal): void
-    {
-        if ($livewire instanceof Terminal) {
-            $livewire->dispatch($event);
-
-            return;
-        }
-
-        $session = Registers::ownSession();
-
-        if (! $session) {
-            return;
-        }
-
-        $livewire->redirect(Home::getUrl(['session' => $session->getKey(), 'open' => $modal]));
     }
 }
