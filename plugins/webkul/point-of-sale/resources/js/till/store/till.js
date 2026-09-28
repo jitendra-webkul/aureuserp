@@ -608,6 +608,12 @@ export class Till {
 
         for (const line of this.activeOrder?.lines ?? []) {
             quantities.set(line.product_id, (quantities.get(line.product_id) ?? 0) + line.qty)
+
+            const parentId = this.master.products.get(line.product_id)?.parent_id
+
+            if (parentId) {
+                quantities.set(parentId, (quantities.get(parentId) ?? 0) + line.qty)
+            }
         }
 
         return quantities
