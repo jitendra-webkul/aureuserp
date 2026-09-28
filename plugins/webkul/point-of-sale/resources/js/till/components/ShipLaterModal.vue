@@ -12,7 +12,7 @@ const state = till.state
         :heading="till.t('payment.ship-later-heading')"
         :open="state.shipLaterModalOpen"
         width="max-w-md"
-        content-class="pb-0!"
+        content-class="pt-0! pb-0!"
         header-class="pb-0!"
         @close="till.closeShipLater()"
     >

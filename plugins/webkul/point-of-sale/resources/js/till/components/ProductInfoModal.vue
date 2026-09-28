@@ -7,21 +7,28 @@ const till = inject('till')
 const state = till.state
 
 const info = computed(() => (state.productInfoId ? till.productInfo() : null))
+
+const reference = computed(() => [info.value?.reference, info.value?.barcode].filter(Boolean).join(' · ') || null)
 </script>
 
 <template>
     <TillModal
         :open="Boolean(info)"
         width="max-w-2xl"
-        :heading="info?.name"
-        :description="[info?.reference, info?.barcode].filter(Boolean).join(' · ') || null"
+        header-class="pb-0!"
         @close="till.closeProductInfo()"
     >
-        <div v-if="info" class="flex flex-none items-center gap-3">
-            <span class="flex size-14 flex-none items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                <img v-if="info.image" :src="info.image" :alt="info.name" class="h-full w-full object-cover">
+        <template #header>
+            <span class="me-4 flex size-14 flex-none items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                <img v-if="info?.image" :src="info.image" :alt="info.name" class="h-full w-full object-cover">
             </span>
-        </div>
+
+            <div>
+                <h2 class="fi-modal-heading">{{ info?.name }}</h2>
+
+                <p v-if="reference" class="fi-modal-description">{{ reference }}</p>
+            </div>
+        </template>
 
         <div v-if="info" class="flex min-h-0 flex-auto flex-col gap-5">
             <div v-if="info.is_storable" class="flex flex-col gap-1">

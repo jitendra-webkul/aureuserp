@@ -85,13 +85,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
                         <div v-if="heading || slots.header" class="fi-modal-header" :class="headerClass">
                             <slot name="header">
-                                <h2 class="fi-modal-heading">{{ heading }}</h2>
+                                <div>
+                                    <h2 class="fi-modal-heading">{{ heading }}</h2>
 
-                                <p v-if="description" class="fi-modal-description">{{ description }}</p>
+                                    <p v-if="description" class="fi-modal-description">{{ description }}</p>
+                                </div>
                             </slot>
                         </div>
 
-                        <div class="fi-modal-content" :class="[(heading || slots.header) ? 'pt-0!' : '', contentClass]">
+                        <div class="fi-modal-content" :class="contentClass">
                             <slot />
                         </div>
 
