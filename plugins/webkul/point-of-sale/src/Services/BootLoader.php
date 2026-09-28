@@ -243,8 +243,8 @@ class BootLoader
     {
         $query = Category::query()->orderBy('sort');
 
-        if ($config->limit_categories && $config->categories->isNotEmpty()) {
-            $query->whereIn('id', $config->categories->pluck('id'));
+        if ($categoryIds = $config->availableCategoryIds()) {
+            $query->whereIn('id', $categoryIds);
         }
 
         return $query->get()->map(fn (Category $category): array => [
