@@ -122,6 +122,11 @@ class Registers extends Page
 
     public static function currentSession(): ?Session
     {
+        return once(fn (): ?Session => static::routeSession() ?? static::ownSession());
+    }
+
+    public static function routeSession(): ?Session
+    {
         return once(function (): ?Session {
             $sessionId = rescue(
                 fn () => Route::getRoutes()->match(Request::create(Livewire::originalUrl()))->parameter('session'),
@@ -130,7 +135,7 @@ class Registers extends Page
 
             $session = filled($sessionId) ? Session::find($sessionId) : null;
 
-            return $session?->isLive() ? $session : static::ownSession();
+            return $session?->isLive() ? $session : null;
         });
     }
 

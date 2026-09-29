@@ -109,3 +109,17 @@ window.pointOfSaleReceipt = {
         window.setTimeout(() => frame.remove(), 1000)
     },
 }
+
+let navigatedWithinPanel = false
+
+document.addEventListener('livewire:navigating', () => {
+    navigatedWithinPanel = true
+})
+
+document.addEventListener('livewire:navigated', () => {
+    if (! navigatedWithinPanel || ! document.getElementById('pos-status-slot')) {
+        return
+    }
+
+    window.Livewire?.dispatch('refresh-topbar')
+})
