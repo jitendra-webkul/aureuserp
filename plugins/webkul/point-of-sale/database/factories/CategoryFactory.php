@@ -5,15 +5,12 @@ namespace Webkul\PointOfSale\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\Security\Models\User;
-use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
 
 /**
  * @extends Factory<Category>
  */
 class CategoryFactory extends Factory
 {
-    use HasCompanyDefault;
-
     protected $model = Category::class;
 
     public function definition(): array

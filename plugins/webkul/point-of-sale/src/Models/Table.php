@@ -12,12 +12,10 @@ use Webkul\PointOfSale\Database\Factories\TableFactory;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\TableShape;
 use Webkul\Security\Models\User;
-use Webkul\Support\Models\Company;
-use Webkul\Support\Traits\BelongsToCompany;
 
 class Table extends Model
 {
-    use BelongsToCompany, HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'pos_tables';
 
@@ -32,7 +30,6 @@ class Table extends Model
         'color',
         'floor_id',
         'parent_id',
-        'company_id',
         'creator_id',
     ];
 
@@ -73,11 +70,6 @@ class Table extends Model
         return $this->hasMany(Order::class, 'table_id');
     }
 
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
-    }
-
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -103,19 +95,12 @@ class Table extends Model
         $this->creator_id ??= Auth::id();
     }
 
-    public function inheritFromFloor(): void
-    {
-        $this->company_id ??= $this->floor?->company_id;
-    }
-
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function (Table $table) {
             $table->computeCreatorId();
-
-            $table->inheritFromFloor();
         });
     }
 

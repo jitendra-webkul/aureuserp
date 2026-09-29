@@ -36,10 +36,6 @@ class CategoriesTable
                     ->searchable(),
                 ColorColumn::make('color')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/category.table.columns.color')),
-                TextColumn::make('company.name')
-                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/category.table.columns.company'))
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->groups([
                 TableGroup::make('parent.name')

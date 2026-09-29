@@ -26,8 +26,7 @@ it('seeds the default coin and bill denominations', function () {
 
     expect($bills)->toHaveCount(13)
         ->and($bills->pluck('name')->all())->toBe(['0.05', '0.10', '0.20', '0.25', '0.50', '1.00', '2.00', '5.00', '10.00', '20.00', '50.00', '100.00', '200.00'])
-        ->and($bills->pluck('is_for_all_configs')->unique()->all())->toBe([1])
-        ->and($bills->pluck('company_id')->unique()->all())->toBe([null]);
+        ->and($bills->pluck('is_for_all_configs')->unique()->all())->toBe([1]);
 });
 
 it('seeds the default note models', function () {

@@ -26,10 +26,6 @@ class CategoryInfolist
                         ColorEntry::make('color')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/category.infolist.sections.general.entries.color'))
                             ->placeholder('—'),
-
-                        TextEntry::make('company.name')
-                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/category.infolist.sections.general.entries.company-name'))
-                            ->placeholder('—'),
                     ])
                     ->columns(2),
             ]);

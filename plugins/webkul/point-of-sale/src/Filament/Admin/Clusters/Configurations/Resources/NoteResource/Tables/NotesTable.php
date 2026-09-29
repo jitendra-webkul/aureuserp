@@ -25,10 +25,6 @@ class NotesTable
                     ->sortable(),
                 ColorColumn::make('color')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/note.table.columns.color')),
-                TextColumn::make('company.name')
-                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/note.table.columns.company'))
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordTitleAttribute('name')
             ->recordActions([

@@ -4,7 +4,6 @@ namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\Fl
 
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -22,14 +21,6 @@ class FloorForm
                             ->required()
                             ->maxLength(255)
                             ->autofocus(),
-
-                        Select::make('company_id')
-                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.form.sections.general.fields.company'))
-                            ->relationship('company', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->native(false)
-                            ->required(),
 
                         ColorPicker::make('background_color')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.form.sections.general.fields.background-color'))

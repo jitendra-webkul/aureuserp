@@ -5,15 +5,12 @@ namespace Webkul\PointOfSale\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\PointOfSale\Models\Note;
 use Webkul\Security\Models\User;
-use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
 
 /**
  * @extends Factory<Note>
  */
 class NoteFactory extends Factory
 {
-    use HasCompanyDefault;
-
     protected $model = Note::class;
 
     public function definition(): array
@@ -24,12 +21,5 @@ class NoteFactory extends Factory
             'sort'       => fake()->numberBetween(1, 20),
             'creator_id' => User::query()->value('id') ?? User::factory(),
         ];
-    }
-
-    public function shared(): static
-    {
-        return $this->afterMaking(function ($model): void {
-            $model->company_id = null;
-        });
     }
 }

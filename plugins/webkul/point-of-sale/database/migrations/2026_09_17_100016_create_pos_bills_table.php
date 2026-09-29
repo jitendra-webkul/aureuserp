@@ -18,11 +18,6 @@ return new class extends Migration
             $table->integer('sort')->nullable();
             $table->boolean('is_for_all_configs')->default(1);
 
-            $table->foreignId('company_id')
-                ->nullable()
-                ->constrained('companies')
-                ->restrictOnDelete();
-
             $table->foreignId('creator_id')
                 ->nullable()
                 ->constrained('users')

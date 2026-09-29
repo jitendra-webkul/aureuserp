@@ -5,15 +5,12 @@ namespace Webkul\PointOfSale\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\Security\Models\User;
-use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
 
 /**
  * @extends Factory<Bill>
  */
 class BillFactory extends Factory
 {
-    use HasCompanyDefault;
-
     protected $model = Bill::class;
 
     public function definition(): array
@@ -32,12 +29,5 @@ class BillFactory extends Factory
     public function forAllConfigs(bool $condition = true): static
     {
         return $this->state(fn () => ['is_for_all_configs' => $condition]);
-    }
-
-    public function shared(): static
-    {
-        return $this->afterMaking(function ($model): void {
-            $model->company_id = null;
-        });
     }
 }

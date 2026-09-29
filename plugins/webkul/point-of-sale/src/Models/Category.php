@@ -14,12 +14,10 @@ use Spatie\EloquentSortable\SortableTrait;
 use Webkul\PointOfSale\Database\Factories\CategoryFactory;
 use Webkul\Product\Models\Product;
 use Webkul\Security\Models\User;
-use Webkul\Support\Models\Company;
-use Webkul\Support\Traits\BelongsToCompany;
 
 class Category extends Model implements Sortable
 {
-    use BelongsToCompany, HasFactory, SoftDeletes, SortableTrait;
+    use HasFactory, SoftDeletes, SortableTrait;
 
     protected $table = 'pos_categories';
 
@@ -29,7 +27,6 @@ class Category extends Model implements Sortable
         'color',
         'image',
         'parent_id',
-        'company_id',
         'creator_id',
     ];
 
@@ -56,11 +53,6 @@ class Category extends Model implements Sortable
     public function configs(): BelongsToMany
     {
         return $this->belongsToMany(Config::class, 'pos_config_categories', 'category_id', 'config_id');
-    }
-
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
     }
 
     public function creator(): BelongsTo

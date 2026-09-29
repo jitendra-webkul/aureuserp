@@ -5,15 +5,12 @@ namespace Webkul\PointOfSale\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Webkul\PointOfSale\Models\Floor;
 use Webkul\Security\Models\User;
-use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
 
 /**
  * @extends Factory<Floor>
  */
 class FloorFactory extends Factory
 {
-    use HasCompanyDefault;
-
     protected $model = Floor::class;
 
     public function definition(): array

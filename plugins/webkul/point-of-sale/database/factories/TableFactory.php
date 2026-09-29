@@ -7,15 +7,12 @@ use Webkul\PointOfSale\Enums\TableShape;
 use Webkul\PointOfSale\Models\Floor;
 use Webkul\PointOfSale\Models\Table;
 use Webkul\Security\Models\User;
-use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
 
 /**
  * @extends Factory<Table>
  */
 class TableFactory extends Factory
 {
-    use HasCompanyDefault;
-
     protected $model = Table::class;
 
     public function definition(): array

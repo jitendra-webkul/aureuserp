@@ -11,12 +11,10 @@ use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Webkul\PointOfSale\Database\Factories\BillFactory;
 use Webkul\Security\Models\User;
-use Webkul\Support\Models\Company;
-use Webkul\Support\Traits\BelongsToCompany;
 
 class Bill extends Model implements Sortable
 {
-    use BelongsToCompany, HasFactory, SortableTrait;
+    use HasFactory, SortableTrait;
 
     protected $table = 'pos_bills';
 
@@ -25,7 +23,6 @@ class Bill extends Model implements Sortable
         'value',
         'sort',
         'is_for_all_configs',
-        'company_id',
         'creator_id',
     ];
 
@@ -47,11 +44,6 @@ class Bill extends Model implements Sortable
     public function configs(): BelongsToMany
     {
         return $this->belongsToMany(Config::class, 'pos_config_bills', 'bill_id', 'config_id');
-    }
-
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
     }
 
     public function creator(): BelongsTo

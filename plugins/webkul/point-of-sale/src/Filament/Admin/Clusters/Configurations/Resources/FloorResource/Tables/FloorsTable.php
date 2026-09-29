@@ -31,10 +31,6 @@ class FloorsTable
                     ->counts('tables'),
                 ColorColumn::make('background_color')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.table.columns.background-color')),
-                TextColumn::make('company.name')
-                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.table.columns.company'))
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 TrashedFilter::make(),

@@ -33,10 +33,6 @@ class BillsTable
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/bill.table.columns.configs'))
                     ->badge()
                     ->placeholder('—'),
-                TextColumn::make('company.name')
-                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/bill.table.columns.company'))
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordTitleAttribute('name')
             ->recordActions([

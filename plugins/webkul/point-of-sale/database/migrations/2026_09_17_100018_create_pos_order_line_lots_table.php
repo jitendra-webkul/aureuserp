@@ -25,10 +25,6 @@ return new class extends Migration
                 ->constrained('inventories_lots')
                 ->nullOnDelete();
 
-            $table->foreignId('company_id')
-                ->constrained('companies')
-                ->restrictOnDelete();
-
             $table->foreignId('creator_id')
                 ->nullable()
                 ->constrained('users')

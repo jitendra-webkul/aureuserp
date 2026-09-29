@@ -7,15 +7,12 @@ use Webkul\Inventory\Models\Lot;
 use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\OrderLineLot;
 use Webkul\Security\Models\User;
-use Webkul\Support\Database\Factories\Concerns\HasCompanyDefault;
 
 /**
  * @extends Factory<OrderLineLot>
  */
 class OrderLineLotFactory extends Factory
 {
-    use HasCompanyDefault;
-
     protected $model = OrderLineLot::class;
 
     public function definition(): array

@@ -29,7 +29,6 @@ class NoteSeeder extends Seeder
                 [
                     'sort'       => ++$sort,
                     'color'      => $color,
-                    'company_id' => null,
                     'updated_at' => $now,
                     'created_at' => $now,
                 ],

@@ -30,14 +30,6 @@ class CategoryForm
                             ->preload()
                             ->native(false),
 
-                        Select::make('company_id')
-                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/category.form.sections.general.fields.company'))
-                            ->relationship('company', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->native(false)
-                            ->required(),
-
                         ColorPicker::make('color')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/category.form.sections.general.fields.color'))
                             ->hexColor(),

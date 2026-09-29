@@ -9,12 +9,10 @@ use Illuminate\Support\Facades\Auth;
 use Webkul\Inventory\Models\Lot;
 use Webkul\PointOfSale\Database\Factories\OrderLineLotFactory;
 use Webkul\Security\Models\User;
-use Webkul\Support\Models\Company;
-use Webkul\Support\Traits\BelongsToCompany;
 
 class OrderLineLot extends Model
 {
-    use BelongsToCompany, HasFactory;
+    use HasFactory;
 
     protected $table = 'pos_order_line_lots';
 
@@ -23,7 +21,6 @@ class OrderLineLot extends Model
         'qty',
         'order_line_id',
         'lot_id',
-        'company_id',
         'creator_id',
     ];
 
@@ -45,11 +42,6 @@ class OrderLineLot extends Model
         return $this->belongsTo(Lot::class);
     }
 
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
-    }
-
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -60,19 +52,12 @@ class OrderLineLot extends Model
         $this->creator_id ??= Auth::id();
     }
 
-    public function inheritFromOrderLine(): void
-    {
-        $this->company_id ??= $this->orderLine?->company_id;
-    }
-
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function (OrderLineLot $lot) {
             $lot->computeCreatorId();
-
-            $lot->inheritFromOrderLine();
         });
     }
 

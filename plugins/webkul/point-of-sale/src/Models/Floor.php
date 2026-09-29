@@ -13,12 +13,10 @@ use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Webkul\PointOfSale\Database\Factories\FloorFactory;
 use Webkul\Security\Models\User;
-use Webkul\Support\Models\Company;
-use Webkul\Support\Traits\BelongsToCompany;
 
 class Floor extends Model implements Sortable
 {
-    use BelongsToCompany, HasFactory, SoftDeletes, SortableTrait;
+    use HasFactory, SoftDeletes, SortableTrait;
 
     protected $table = 'pos_floors';
 
@@ -27,7 +25,6 @@ class Floor extends Model implements Sortable
         'sort',
         'background_color',
         'background_image',
-        'company_id',
         'creator_id',
     ];
 
@@ -44,11 +41,6 @@ class Floor extends Model implements Sortable
     public function configs(): BelongsToMany
     {
         return $this->belongsToMany(Config::class, 'pos_config_floors', 'floor_id', 'config_id');
-    }
-
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
     }
 
     public function creator(): BelongsTo

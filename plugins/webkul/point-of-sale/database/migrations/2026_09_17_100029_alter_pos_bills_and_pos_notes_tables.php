@@ -12,13 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pos_bills', function (Blueprint $table) {
-            $table->foreignId('company_id')->nullable()->change();
-
             $table->boolean('is_for_all_configs')->default(1)->change();
-        });
-
-        Schema::table('pos_notes', function (Blueprint $table) {
-            $table->foreignId('company_id')->nullable()->change();
         });
     }
 

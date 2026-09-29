@@ -23,7 +23,6 @@ class BillSeeder extends Seeder
                     'value'              => $value,
                     'sort'               => $sort + 1,
                     'is_for_all_configs' => 1,
-                    'company_id'         => null,
                     'updated_at'         => $now,
                     'created_at'         => $now,
                 ],

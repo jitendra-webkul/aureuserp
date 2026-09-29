@@ -110,11 +110,7 @@ class ConfigForm
 
                 Select::make('floors')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.floors'))
-                    ->relationship(
-                        'floors',
-                        'name',
-                        fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
-                    )
+                    ->relationship('floors', 'name')
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -233,11 +229,7 @@ class ConfigForm
 
                 Select::make('categories')
                     ->label(static::label('sections.configurations.tabs.products.fields.categories'))
-                    ->relationship(
-                        'categories',
-                        'name',
-                        fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
-                    )
+                    ->relationship('categories', 'name')
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -481,11 +473,7 @@ class ConfigForm
                 Select::make('bills')
                     ->label(static::label('sections.configurations.tabs.receipts.fields.bills'))
                     ->helperText(static::label('sections.configurations.tabs.receipts.fields.bills-helper-text'))
-                    ->relationship(
-                        'bills',
-                        'name',
-                        fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
-                    )
+                    ->relationship('bills', 'name')
                     ->multiple()
                     ->searchable()
                     ->preload()

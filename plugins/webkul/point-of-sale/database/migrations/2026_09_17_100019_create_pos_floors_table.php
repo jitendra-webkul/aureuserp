@@ -18,10 +18,6 @@ return new class extends Migration
             $table->string('background_color')->nullable();
             $table->string('background_image')->nullable();
 
-            $table->foreignId('company_id')
-                ->constrained('companies')
-                ->restrictOnDelete();
-
             $table->foreignId('creator_id')
                 ->nullable()
                 ->constrained('users')

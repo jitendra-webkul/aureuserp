@@ -17,11 +17,6 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->integer('sort')->nullable();
 
-            $table->foreignId('company_id')
-                ->nullable()
-                ->constrained('companies')
-                ->restrictOnDelete();
-
             $table->foreignId('creator_id')
                 ->nullable()
                 ->constrained('users')

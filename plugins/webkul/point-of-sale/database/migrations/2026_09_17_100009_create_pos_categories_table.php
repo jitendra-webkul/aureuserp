@@ -23,10 +23,6 @@ return new class extends Migration
                 ->constrained('pos_categories')
                 ->nullOnDelete();
 
-            $table->foreignId('company_id')
-                ->constrained('companies')
-                ->restrictOnDelete();
-
             $table->foreignId('creator_id')
                 ->nullable()
                 ->constrained('users')

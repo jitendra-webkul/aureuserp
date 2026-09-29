@@ -10,12 +10,10 @@ use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Webkul\PointOfSale\Database\Factories\NoteFactory;
 use Webkul\Security\Models\User;
-use Webkul\Support\Models\Company;
-use Webkul\Support\Traits\BelongsToCompany;
 
 class Note extends Model implements Sortable
 {
-    use BelongsToCompany, HasFactory, SortableTrait;
+    use HasFactory, SortableTrait;
 
     protected $table = 'pos_notes';
 
@@ -23,7 +21,6 @@ class Note extends Model implements Sortable
         'name',
         'color',
         'sort',
-        'company_id',
         'creator_id',
     ];
 
@@ -31,11 +28,6 @@ class Note extends Model implements Sortable
         'order_column_name'  => 'sort',
         'sort_when_creating' => true,
     ];
-
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo(Company::class);
-    }
 
     public function creator(): BelongsTo
     {
