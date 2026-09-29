@@ -26,7 +26,7 @@ const modes = computed(() => [
 ])
 
 const lastRow = [
-    { k: '+/-', label: '+/-', tone: 'border-warning-200 bg-warning-100 text-warning-900 hover:bg-warning-200 dark:border-warning-500/30 dark:bg-warning-500/20 dark:text-warning-200 dark:hover:bg-warning-500/30' },
+    { k: '-', label: '+/-', tone: 'border-warning-200 bg-warning-100 text-warning-900 hover:bg-warning-200 dark:border-warning-500/30 dark:bg-warning-500/20 dark:text-warning-200 dark:hover:bg-warning-500/30' },
     { k: '0', label: '0', tone: '' },
     { k: '.', label: '.', tone: 'border-info-200 bg-info-100 text-info-900 hover:bg-info-200 dark:border-info-500/30 dark:bg-info-500/20 dark:text-info-200 dark:hover:bg-info-500/30' },
 ]
@@ -131,7 +131,7 @@ function modeClass(mode, index) {
                 type="button"
                 :class="`${keyBase} border-danger-200 bg-danger-100 text-danger-800 hover:bg-danger-200 dark:border-danger-500/30 dark:bg-danger-500/20 dark:text-danger-200 dark:hover:bg-danger-500/30`"
                 :aria-label="till.t('numpad.backspace')"
-                @click="till.pressNumpad('backspace')"
+                @click="till.pressNumpad('Backspace')"
             >
                 &#9003;
             </button>

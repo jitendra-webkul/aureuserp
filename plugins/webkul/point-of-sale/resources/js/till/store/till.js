@@ -9,6 +9,66 @@ const PERSIST_DEBOUNCE = 200
 
 const DATABASE_VERSION = 1
 
+const BUFFER_MAX_LENGTH = 12
+
+const KEYBOARD_BURST_WINDOW = 100
+
+const KEYBOARD_BURST_LIMIT = 2
+
+const BUFFER_KEYS = new Set(['Backspace', 'Delete', '+', '-', '.', ',', ...'0123456789'.split('')])
+
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock'])
+
+function isBufferEmpty(buffer) {
+    return buffer === '' || buffer === null
+}
+
+function nextBuffer(buffer, key, fresh = false) {
+    if ((key === 'Backspace' || key === 'Delete') && fresh) {
+        return ''
+    }
+
+    const current = buffer ?? ''
+
+    let next = current
+
+    if (key === '.' || key === ',') {
+        if (isBufferEmpty(buffer)) {
+            next = '0.'
+        } else if (current === '-') {
+            next = '-0.'
+        } else if (!current.includes('.')) {
+            next = `${current}.`
+        }
+    } else if (key === 'Delete') {
+        next = isBufferEmpty(buffer) ? null : ''
+    } else if (key === 'Backspace') {
+        next = isBufferEmpty(buffer)
+            ? null
+            : current.slice(0, current.endsWith('.') ? -2 : -1)
+    } else if (key === '+') {
+        next = current.startsWith('-') ? current.slice(1) : current
+    } else if (key === '-') {
+        if (isBufferEmpty(buffer)) {
+            next = '-0'
+        } else {
+            next = current.startsWith('-') ? current.slice(1) : `-${current}`
+        }
+    } else if (/^\+\d+(\.\d+)?$/.test(key)) {
+        const bumped = Number(key.slice(1)) + (Number(current) || 0)
+
+        next = String(floatRound(bumped, { precisionDigits: 4 }))
+    } else if (/^\d$/.test(key)) {
+        if (isBufferEmpty(buffer)) {
+            next = key
+        } else if (current.length <= BUFFER_MAX_LENGTH) {
+            next = `${current}${key}`
+        }
+    }
+
+    return next === '-' ? '' : next
+}
+
 function uuidv4() {
     if (window.crypto?.randomUUID) {
         return window.crypto.randomUUID()
@@ -43,6 +103,7 @@ export class Till {
             activeLineUuid: null,
             numpadMode: 'qty',
             numpadBuffer: '',
+            numpadFresh: true,
             priceListId: boot.config.price_list_id ?? null,
             fiscalPositionId: boot.config.fiscal_position_id ?? null,
             isTakeaway: false,
@@ -58,6 +119,7 @@ export class Till {
             noteDraft: '',
             activePaymentUuid: null,
             paymentBuffer: '',
+            paymentFresh: true,
             productModalOpen: false,
             actionsModalOpen: false,
             cancellingOrder: false,
@@ -148,6 +210,8 @@ export class Till {
         this.watchPersistence()
 
         this.startWedge()
+
+        this.startKeyboard()
 
         this.state.ready = true
     }
@@ -889,6 +953,8 @@ export class Till {
         this.state.activeLineUuid = null
         this.state.screen = 'products'
 
+        this.resetNumpadBuffer()
+
         this.flushDeferredEvictions()
 
         return order
@@ -898,6 +964,8 @@ export class Till {
         this.state.activeOrderUuid = uuid
         this.state.activeLineUuid = null
         this.state.screen = 'products'
+
+        this.resetNumpadBuffer()
 
         this.state.priceListId = this.activeOrder?.price_list_id ?? this.config.price_list_id ?? null
 
@@ -1463,6 +1531,8 @@ export class Till {
             && !line.note
         ))
 
+        this.resetNumpadBuffer()
+
         if (existing) {
             existing.qty = floatRound(existing.qty + qty, { precisionDigits: 4 })
 
@@ -1493,7 +1563,8 @@ export class Till {
 
     selectLine(uuid) {
         this.state.activeLineUuid = this.state.activeLineUuid === uuid ? null : uuid
-        this.state.numpadBuffer = ''
+
+        this.resetNumpadBuffer()
     }
 
     removeLine(uuid) {
@@ -1530,7 +1601,13 @@ export class Till {
         }
 
         this.state.numpadMode = mode
+
+        this.resetNumpadBuffer()
+    }
+
+    resetNumpadBuffer() {
         this.state.numpadBuffer = ''
+        this.state.numpadFresh = true
     }
 
     pressNumpad(key) {
@@ -1540,62 +1617,44 @@ export class Till {
             return
         }
 
-        if (key === 'clear') {
-            this.state.numpadBuffer = ''
+        let buffer = nextBuffer(this.state.numpadBuffer, key, this.state.numpadFresh)
 
-            this.applyNumpad(line, 0)
-
-            return
+        if (key === '-' && buffer === '-0') {
+            buffer = this.negatedNumpadValue(line) ?? buffer
         }
 
-        if (key === 'backspace') {
-            if (this.state.numpadBuffer !== '') {
-                this.state.numpadBuffer = this.state.numpadBuffer.slice(0, -1)
+        this.state.numpadBuffer = buffer ?? ''
+        this.state.numpadFresh = false
 
-                this.applyNumpad(line, this.bufferAmount(this.state.numpadBuffer))
-
-                return
+        if (buffer === null) {
+            if (this.state.numpadMode === 'qty') {
+                this.removeLine(line.uuid)
             }
 
-            this.resetActiveField(line)
+            this.state.numpadMode = 'qty'
+
+            this.resetNumpadBuffer()
 
             return
         }
 
-        if (key === '+/-') {
-            this.state.numpadBuffer = this.state.numpadBuffer.startsWith('-')
-                ? this.state.numpadBuffer.slice(1)
-                : `-${this.state.numpadBuffer}`
-
-            this.applyNumpad(line, this.bufferAmount(this.state.numpadBuffer))
-
-            return
-        }
-
-        if (key === '.' && this.state.numpadBuffer.includes('.')) {
-            return
-        }
-
-        this.state.numpadBuffer += key
-
-        this.applyNumpad(line, this.bufferAmount(this.state.numpadBuffer))
+        this.applyNumpad(line, this.bufferAmount(buffer))
     }
 
-    resetActiveField(line) {
-        if (this.state.numpadMode === 'discount') {
-            line.discount = 0
+    negatedNumpadValue(line) {
+        if (this.state.numpadMode === 'qty') {
+            return line.refunded_order_line_id ? null : String(-line.qty)
+        }
 
-            return
+        if (this.state.numpadMode === 'discount') {
+            return String(-line.discount)
         }
 
         if (this.state.numpadMode === 'price') {
-            line.price_unit = 0
-            line.price_overridden = true
-
-            return
+            return String(-line.price_unit)
         }
 
-        line.qty = 0
+        return null
     }
 
     applyNumpad(line, value) {
@@ -1811,6 +1870,84 @@ export class Till {
         window.addEventListener('keydown', this.wedge)
     }
 
+    startKeyboard() {
+        if (this.keyboard) {
+            return
+        }
+
+        let keys = []
+        let timer = null
+
+        const flush = () => {
+            const pressed = keys
+
+            keys = []
+
+            if (pressed.length > KEYBOARD_BURST_LIMIT || pressed.some((key) => !BUFFER_KEYS.has(key))) {
+                return
+            }
+
+            pressed.forEach((key) => this.pressKeyboardKey(key))
+        }
+
+        this.keyboard = (event) => {
+            if (!this.acceptsKeyboard(event) || MODIFIER_KEYS.has(event.key)) {
+                return
+            }
+
+            keys.push(event.key)
+
+            window.clearTimeout(timer)
+
+            timer = window.setTimeout(flush, KEYBOARD_BURST_WINDOW)
+        }
+
+        window.addEventListener('keydown', this.keyboard)
+    }
+
+    acceptsKeyboard(event) {
+        if (!this.state.ready || event.ctrlKey || event.metaKey || event.altKey) {
+            return false
+        }
+
+        const target = event.target
+
+        const editing = target instanceof HTMLInputElement
+            || target instanceof HTMLTextAreaElement
+            || target instanceof HTMLSelectElement
+            || target?.isContentEditable
+
+        if (editing || document.querySelector('.fi-modal-open')) {
+            return false
+        }
+
+        return this.state.screen === 'products' || this.state.screen === 'payment'
+    }
+
+    pressKeyboardKey(key) {
+        if (this.state.screen === 'payment') {
+            this.pressPaymentKey(key)
+
+            return
+        }
+
+        this.pressNumpad(key)
+    }
+
+    stop() {
+        if (this.wedge) {
+            window.removeEventListener('keydown', this.wedge)
+
+            this.wedge = null
+        }
+
+        if (this.keyboard) {
+            window.removeEventListener('keydown', this.keyboard)
+
+            this.keyboard = null
+        }
+    }
+
     scan(code) {
         const product = this.productByBarcode(code)
 
@@ -1958,52 +2095,55 @@ export class Till {
 
     selectPayment(uuid) {
         this.state.activePaymentUuid = uuid
+
+        this.resetPaymentBuffer()
+    }
+
+    resetPaymentBuffer() {
         this.state.paymentBuffer = ''
+        this.state.paymentFresh = true
     }
 
     pressPaymentKey(key) {
+        const order = this.activeOrder
+
+        if (order && !order.payments.length && this.startsPaymentLine(key)) {
+            const method = this.master.payment_methods.all()[0]
+
+            if (method) {
+                this.addPayment(method.id)
+            }
+        }
+
         const payment = this.activePayment
 
         if (!payment) {
             return
         }
 
-        if (key === 'backspace') {
-            if (this.state.paymentBuffer.length > 1) {
-                this.state.paymentBuffer = this.state.paymentBuffer.slice(0, -1)
-                payment.amount = this.bufferAmount(this.state.paymentBuffer)
-
-                return
-            }
-
-            this.state.paymentBuffer = ''
-            payment.amount = 0
-
-            return
+        if (key === 'Backspace' && this.state.paymentFresh) {
+            this.state.paymentBuffer = this.paymentAmountBuffer(payment)
+            this.state.paymentFresh = false
         }
 
-        if (key === '+/-') {
-            payment.amount = -payment.amount
-            this.state.paymentBuffer = String(payment.amount)
+        const buffer = nextBuffer(this.state.paymentBuffer, key, this.state.paymentFresh)
 
-            return
+        this.state.paymentBuffer = buffer ?? ''
+        this.state.paymentFresh = false
+
+        payment.amount = this.bufferAmount(buffer ?? '')
+    }
+
+    startsPaymentLine(key) {
+        return /^\d$/.test(key) || /^\+\d+(\.\d+)?$/.test(key)
+    }
+
+    paymentAmountBuffer(payment) {
+        if (floatIsZero(payment.amount, { precisionRounding: this.currency.rounding })) {
+            return ''
         }
 
-        if (key.startsWith('+')) {
-            const bump = Number(key.slice(1))
-
-            payment.amount = floatRound(payment.amount + bump, { precisionRounding: this.currency.rounding })
-            this.state.paymentBuffer = String(payment.amount)
-
-            return
-        }
-
-        if (key === '.' && this.state.paymentBuffer.includes('.')) {
-            return
-        }
-
-        this.state.paymentBuffer += key
-        payment.amount = this.bufferAmount(this.state.paymentBuffer)
+        return String(floatRound(payment.amount, { precisionRounding: this.currency.rounding }))
     }
 
     removePayment(uuid) {
@@ -2019,7 +2159,8 @@ export class Till {
 
         if (this.state.activePaymentUuid === uuid) {
             this.state.activePaymentUuid = order.payments[0]?.uuid ?? null
-            this.state.paymentBuffer = ''
+
+            this.resetPaymentBuffer()
         }
     }
 

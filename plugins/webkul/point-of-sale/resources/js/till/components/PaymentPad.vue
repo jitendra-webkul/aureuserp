@@ -18,10 +18,10 @@ const rows = [
     [{ k: '4' }, { k: '5' }, { k: '6' }, { k: '+20', tone: bump }],
     [{ k: '7' }, { k: '8' }, { k: '9' }, { k: '+50', tone: bump }],
     [
-        { k: '+/-', tone: `${key} border-warning-200 bg-warning-100 text-warning-900 hover:bg-warning-200 dark:border-warning-500/30 dark:bg-warning-500/20 dark:text-warning-200` },
+        { k: '-', label: '+/-', tone: `${key} border-warning-200 bg-warning-100 text-warning-900 hover:bg-warning-200 dark:border-warning-500/30 dark:bg-warning-500/20 dark:text-warning-200` },
         { k: '0' },
         { k: '.', tone: `${key} border-info-200 bg-info-100 text-info-900 hover:bg-info-200 dark:border-info-500/30 dark:bg-info-500/20 dark:text-info-200` },
-        { k: 'backspace', label: '⌫', tone: `${key} border-danger-200 bg-danger-100 text-danger-800 hover:bg-danger-200 dark:border-danger-500/30 dark:bg-danger-500/20 dark:text-danger-200` },
+        { k: 'Backspace', label: '⌫', tone: `${key} border-danger-200 bg-danger-100 text-danger-800 hover:bg-danger-200 dark:border-danger-500/30 dark:bg-danger-500/20 dark:text-danger-200` },
     ],
 ]
 </script>
@@ -98,7 +98,7 @@ const rows = [
                     :key="entry.k"
                     type="button"
                     :class="entry.tone ?? plain"
-                    :disabled="!till.activePayment"
+                    :disabled="!till.activePayment && !(order && !order.payments.length && till.startsPaymentLine(entry.k))"
                     @click="till.pressPaymentKey(entry.k)"
                 >
                     {{ entry.label ?? entry.k }}

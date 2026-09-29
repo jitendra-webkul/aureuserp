@@ -4,6 +4,8 @@ import { Till } from './store/till.js'
 
 let mounted = null
 
+let activeTill = null
+
 async function mountTill(element) {
     unmountTill()
 
@@ -24,10 +26,16 @@ async function mountTill(element) {
 
     mounted = app
 
+    activeTill = till
+
     window.pointOfSaleTill = till
 }
 
 function unmountTill() {
+    activeTill?.stop()
+
+    activeTill = null
+
     mounted?.unmount()
 
     mounted = null
