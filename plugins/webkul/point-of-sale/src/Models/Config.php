@@ -32,6 +32,7 @@ use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Enums\TaxDisplay;
 use Webkul\PointOfSale\Models\Warehouse as PointOfSaleWarehouse;
 use Webkul\PointOfSale\Services\PaymentMethodProvisioner;
+use Webkul\PointOfSale\Services\RestaurantFloorProvisioner;
 use Webkul\PointOfSale\Settings\AccountSettings;
 use Webkul\Product\Models\PriceList;
 use Webkul\Product\Models\Product;
@@ -462,6 +463,11 @@ class Config extends Model implements Sortable
     public function ensureDefaultPaymentMethods(): void
     {
         app(PaymentMethodProvisioner::class)->ensureFor($this);
+    }
+
+    public function syncRestaurantFloors(): void
+    {
+        app(RestaurantFloorProvisioner::class)->syncFor($this);
     }
 
     public function computeReceivableAccountId(): void

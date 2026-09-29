@@ -237,6 +237,24 @@ return [
         'validate'           => 'Validate',
     ],
 
+    'floor' => [
+        'back'     => 'Floor',
+        'table'    => 'Table :table',
+        'no-table' => 'No table',
+        'empty'    => 'No tables on this floor yet. Add them in the back office.',
+        'seats'    => '{1} :count seat|[2,*] :count seats',
+        'orders'   => '{1} :count order|[2,*] :count orders',
+        'guests'   => '{1} :count guest|[2,*] :count guests',
+    ],
+
+    'guests' => [
+        'label'     => 'Guests',
+        'heading'   => 'Number of guests',
+        'increase'  => 'Add a guest',
+        'decrease'  => 'Remove a guest',
+        'per-guest' => ':amount per guest',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel:',
         'served-by' => 'Served by :cashier',
@@ -246,6 +264,7 @@ return [
         'change'    => 'Change',
         'order'     => 'Order :order',
         'new-order' => 'New order',
+        'guests'    => '{1} :count guest|[2,*] :count guests',
     ],
 
     'install' => [

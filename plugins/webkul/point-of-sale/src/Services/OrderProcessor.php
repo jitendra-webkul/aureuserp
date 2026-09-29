@@ -20,6 +20,7 @@ use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\OrderLineLot;
 use Webkul\PointOfSale\Models\Payment;
 use Webkul\PointOfSale\Models\Session;
+use Webkul\PointOfSale\Models\Table;
 use Webkul\Product\Models\Product;
 
 class OrderProcessor
@@ -200,6 +201,8 @@ class OrderProcessor
 
         $payload['partner_id'] = $this->partners->resolve($payload, $config);
 
+        $payload['table_id'] = $this->resolveTableId($config, $payload['table_id'] ?? null);
+
         $attributes = array_merge(
             Arr::only($payload, [
                 'reference',
@@ -231,6 +234,18 @@ class OrderProcessor
         } catch (UniqueConstraintViolationException) {
             return Order::withoutGlobalScopes()->where('uuid', $uuid)->firstOrFail();
         }
+    }
+
+    protected function resolveTableId(Config $config, mixed $tableId): ?int
+    {
+        if (blank($tableId) || ! $config->is_restaurant) {
+            return null;
+        }
+
+        return Table::query()
+            ->whereKey($tableId)
+            ->whereHas('floor.configs', fn ($query) => $query->whereKey($config->id))
+            ->value('id');
     }
 
     protected function syncLines(Order $order, array $lines): void

@@ -5,10 +5,12 @@ namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\Fl
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -46,11 +48,30 @@ class TablesRelationManager extends RelationManager
 
                 TextInput::make('position_h')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.position-h'))
-                    ->numeric(),
+                    ->numeric()
+                    ->minValue(0)
+                    ->helperText(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.position-h-helper-text')),
 
                 TextInput::make('position_v')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.position-v'))
-                    ->numeric(),
+                    ->numeric()
+                    ->minValue(0)
+                    ->helperText(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.position-v-helper-text')),
+
+                TextInput::make('width')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.width'))
+                    ->numeric()
+                    ->minValue(20)
+                    ->required(),
+
+                TextInput::make('height')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.height'))
+                    ->numeric()
+                    ->minValue(20)
+                    ->required(),
+
+                ColorPicker::make('color')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.form.fields.color')),
             ])
             ->columns(2);
     }
@@ -69,6 +90,18 @@ class TablesRelationManager extends RelationManager
                 TextColumn::make('seats')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.table.columns.seats'))
                     ->numeric(),
+                TextColumn::make('width')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.table.columns.width'))
+                    ->numeric()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('height')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.table.columns.height'))
+                    ->numeric()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                ColorColumn::make('color')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor/relation-managers/tables.table.columns.color'))
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->headerActions([
                 CreateAction::make(),

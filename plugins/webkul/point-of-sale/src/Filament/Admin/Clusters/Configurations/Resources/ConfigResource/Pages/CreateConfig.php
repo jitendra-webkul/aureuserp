@@ -28,6 +28,8 @@ class CreateConfig extends CreateRecord
     protected function afterCreate(): void
     {
         $this->getRecord()->ensureDefaultPaymentMethods();
+
+        $this->getRecord()->syncRestaurantFloors();
     }
 
     protected function getCreatedNotification(): ?Notification

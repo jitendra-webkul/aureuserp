@@ -237,6 +237,24 @@ return [
         'validate'           => 'Validar',
     ],
 
+    'floor' => [
+        'back'     => 'Planta',
+        'table'    => 'Mesa :table',
+        'no-table' => 'Sem mesa',
+        'empty'    => 'Ainda não há mesas neste andar. Adicione-as no back office.',
+        'seats'    => '{1} :count lugar|[2,*] :count lugares',
+        'orders'   => '{1} :count pedido|[2,*] :count pedidos',
+        'guests'   => '{1} :count cliente|[2,*] :count clientes',
+    ],
+
+    'guests' => [
+        'label'     => 'Clientes',
+        'heading'   => 'Número de clientes',
+        'increase'  => 'Adicionar cliente',
+        'decrease'  => 'Remover cliente',
+        'per-guest' => ':amount por cliente',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',
@@ -246,6 +264,7 @@ return [
         'change'    => 'Troco',
         'order'     => 'Pedido :order',
         'new-order' => 'Novo pedido',
+        'guests'    => '{1} :count cliente|[2,*] :count clientes',
     ],
 
     'install' => [

@@ -25,6 +25,8 @@ beforeEach(function () {
     $this->floor = PosHelper::floor();
     $this->table = PosHelper::table($this->floor, ['table_number' => 'T2', 'shape' => TableShape::ROUND]);
 
+    $this->config->floors()->attach($this->floor->id);
+
     InventoryHelper::stockUp($this->product, $this->warehouse->lotStockLocation, 50);
 });
 
@@ -113,4 +115,61 @@ it('removes an emptied line from the original bill when fully split', function (
 it('keeps the round shape on a table', function () {
     expect($this->table->shape)->toBe(TableShape::ROUND)
         ->and($this->table->seats)->toBe(4);
+});
+
+it('provisions a default floor with one table when a restaurant terminal has none', function () {
+    $this->config->floors()->detach();
+
+    $this->config->refresh()->syncRestaurantFloors();
+
+    $floors = $this->config->refresh()->floors;
+
+    expect($floors)->toHaveCount(1)
+        ->and($floors->first()->name)->toBe($this->config->company->name)
+        ->and($floors->first()->tables)->toHaveCount(1)
+        ->and($floors->first()->tables->first()->table_number)->toBe('1')
+        ->and($floors->first()->tables->first()->seats)->toBe(1);
+});
+
+it('keeps the chosen floors of a restaurant terminal', function () {
+    $this->config->refresh()->syncRestaurantFloors();
+
+    expect($this->config->refresh()->floors->pluck('id')->all())->toBe([$this->floor->id]);
+});
+
+it('releases the floors when restaurant mode is turned off', function () {
+    $this->config->update(['is_restaurant' => false]);
+
+    $this->config->refresh()->syncRestaurantFloors();
+
+    expect($this->config->refresh()->floors)->toBeEmpty()
+        ->and($this->floor->refresh()->exists)->toBeTrue();
+});
+
+it('drops a table that belongs to a floor the terminal does not use', function () {
+    $foreignTable = PosHelper::table(PosHelper::floor(), ['table_number' => 'X1']);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 50.0)],
+        [PosHelper::payment($this->cash, 50.0)],
+        ['table_id' => $foreignTable->id],
+    ));
+
+    expect($order->table_id)->toBeNull();
+});
+
+it('drops the table once restaurant mode is off', function () {
+    $this->config->update(['is_restaurant' => false]);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 50.0)],
+        [PosHelper::payment($this->cash, 50.0)],
+        ['table_id' => $this->table->id],
+    ));
+
+    expect($order->table_id)->toBeNull();
 });

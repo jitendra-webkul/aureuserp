@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Services\BootLoader;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
@@ -128,4 +129,55 @@ it('ships only the products of the picked categories when they are restricted', 
 
     expect($ids)->toContain($coffee->id)
         ->and($ids)->not->toContain($this->product->id);
+});
+
+it('ships no floors outside restaurant mode', function () {
+    $payload = app(BootLoader::class)->load($this->config, $this->session);
+
+    expect($payload['floors'])->toBe([]);
+});
+
+it('ships the floor plan of a restaurant terminal', function () {
+    $floor = PosHelper::floor(['name' => 'Patio']);
+
+    $table = PosHelper::table($floor, ['table_number' => '7', 'position_h' => 120, 'position_v' => 40, 'seats' => 6]);
+
+    $this->config->floors()->attach($floor->id);
+
+    $this->config->update(['is_restaurant' => true]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    $shipped = collect($payload['floors'])->firstWhere('id', $floor->id);
+
+    expect($shipped['name'])->toBe('Patio')
+        ->and($shipped['tables'])->toHaveCount(1)
+        ->and($shipped['tables'][0])->toMatchArray([
+            'id'           => $table->id,
+            'floor_id'     => $floor->id,
+            'table_number' => '7',
+            'position_h'   => 120.0,
+            'position_v'   => 40.0,
+            'seats'        => 6,
+        ]);
+});
+
+it('ships the table and guest count of an open order', function () {
+    $floor = PosHelper::floor();
+
+    $table = PosHelper::table($floor);
+
+    $order = Order::create([
+        'session_id'     => $this->session->id,
+        'config_id'      => $this->config->id,
+        'table_id'       => $table->id,
+        'customer_count' => 4,
+    ]);
+
+    $payload = app(BootLoader::class)->load($this->config, $this->session);
+
+    $shipped = collect($payload['orders'])->firstWhere('uuid', $order->uuid);
+
+    expect($shipped['table_id'])->toBe($table->id)
+        ->and($shipped['customer_count'])->toBe(4);
 });

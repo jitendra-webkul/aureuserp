@@ -237,6 +237,24 @@ return [
         'validate'           => 'Valider',
     ],
 
+    'floor' => [
+        'back'     => 'Plan',
+        'table'    => 'Table :table',
+        'no-table' => 'Sans table',
+        'empty'    => 'Aucune table sur cet étage pour l’instant. Ajoutez-les depuis l’administration.',
+        'seats'    => '{1} :count place|[2,*] :count places',
+        'orders'   => '{1} :count commande|[2,*] :count commandes',
+        'guests'   => '{1} :count couvert|[2,*] :count couverts',
+    ],
+
+    'guests' => [
+        'label'     => 'Couverts',
+        'heading'   => 'Nombre de couverts',
+        'increase'  => 'Ajouter un couvert',
+        'decrease'  => 'Retirer un couvert',
+        'per-guest' => ':amount par couvert',
+    ],
+
     'receipt' => [
         'phone'     => 'Tél. :',
         'served-by' => 'Servi par :cashier',
@@ -246,6 +264,7 @@ return [
         'change'    => 'Monnaie',
         'order'     => 'Commande :order',
         'new-order' => 'Nouvelle commande',
+        'guests'    => '{1} :count couvert|[2,*] :count couverts',
     ],
 
     'install' => [

@@ -237,6 +237,24 @@ return [
         'validate'           => 'Validar',
     ],
 
+    'floor' => [
+        'back'     => 'Plano',
+        'table'    => 'Mesa :table',
+        'no-table' => 'Sin mesa',
+        'empty'    => 'Aún no hay mesas en esta planta. Añádelas desde la administración.',
+        'seats'    => '{1} :count asiento|[2,*] :count asientos',
+        'orders'   => '{1} :count pedido|[2,*] :count pedidos',
+        'guests'   => '{1} :count comensal|[2,*] :count comensales',
+    ],
+
+    'guests' => [
+        'label'     => 'Comensales',
+        'heading'   => 'Número de comensales',
+        'increase'  => 'Añadir comensal',
+        'decrease'  => 'Quitar comensal',
+        'per-guest' => ':amount por comensal',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',
@@ -246,6 +264,7 @@ return [
         'change'    => 'Cambio',
         'order'     => 'Pedido :order',
         'new-order' => 'Nuevo pedido',
+        'guests'    => '{1} :count comensal|[2,*] :count comensales',
     ],
 
     'install' => [

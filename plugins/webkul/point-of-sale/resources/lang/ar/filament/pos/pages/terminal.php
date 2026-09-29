@@ -237,6 +237,24 @@ return [
         'validate'           => 'تأكيد',
     ],
 
+    'floor' => [
+        'back'     => 'المخطط',
+        'table'    => 'طاولة :table',
+        'no-table' => 'بدون طاولة',
+        'empty'    => 'لا توجد طاولات في هذا الطابق بعد. أضفها من المكتب الخلفي.',
+        'seats'    => ':count مقاعد',
+        'orders'   => ':count طلبات',
+        'guests'   => ':count ضيوف',
+    ],
+
+    'guests' => [
+        'label'     => 'الضيوف',
+        'heading'   => 'عدد الضيوف',
+        'increase'  => 'إضافة ضيف',
+        'decrease'  => 'إزالة ضيف',
+        'per-guest' => ':amount لكل ضيف',
+    ],
+
     'receipt' => [
         'phone'     => 'هاتف:',
         'served-by' => 'قدّمها :cashier',
@@ -246,6 +264,7 @@ return [
         'change'    => 'الباقي',
         'order'     => 'الطلب :order',
         'new-order' => 'طلب جديد',
+        'guests'    => ':count ضيوف',
     ],
 
     'install' => [

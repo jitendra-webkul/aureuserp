@@ -34,7 +34,8 @@ return [
                             'enable-print-bill'         => 'Impression de l\'addition',
                             'enable-takeaway'           => 'À emporter',
                             'takeaway-fiscal-position'  => 'Position fiscale alternative',
-                            'floors'                    => 'Étages',
+                            'floors'                    => 'Plan des étages et des tables',
+                            'floors-helper-text'        => 'Concevez les étages et attribuez les commandes aux tables.',
                         ],
                     ],
 

@@ -5,11 +5,16 @@ return [
 
     'form' => [
         'fields' => [
-            'table-number' => 'Número da mesa',
-            'shape'        => 'Formato',
-            'seats'        => 'Assentos',
-            'position-h'   => 'Posição horizontal',
-            'position-v'   => 'Posição vertical',
+            'table-number'           => 'Número da mesa',
+            'shape'                  => 'Formato',
+            'seats'                  => 'Assentos',
+            'position-h'             => 'Posição horizontal',
+            'position-v'             => 'Posição vertical',
+            'position-h-helper-text' => 'Distância da borda esquerda da planta, em pixels.',
+            'position-v-helper-text' => 'Distância da borda superior da planta, em pixels.',
+            'width'                  => 'Largura',
+            'height'                 => 'Altura',
+            'color'                  => 'Cor',
         ],
     ],
 
@@ -18,6 +23,9 @@ return [
             'table-number' => 'Número da mesa',
             'shape'        => 'Formato',
             'seats'        => 'Assentos',
+            'width'        => 'Largura',
+            'height'       => 'Altura',
+            'color'        => 'Cor',
         ],
     ],
 ];

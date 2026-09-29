@@ -34,7 +34,8 @@ return [
                             'enable-print-bill'         => 'طباعة الفاتورة',
                             'enable-takeaway'           => 'طلبات خارجية',
                             'takeaway-fiscal-position'  => 'وضع ضريبي بديل',
-                            'floors'                    => 'الطوابق',
+                            'floors'                    => 'خريطة الطوابق والطاولات',
+                            'floors-helper-text'        => 'صمّم الطوابق وخصّص الطلبات للطاولات.',
                         ],
                     ],
 

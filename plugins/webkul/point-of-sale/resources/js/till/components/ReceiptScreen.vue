@@ -5,6 +5,8 @@ const till = inject('till')
 
 const order = computed(() => till.activeOrder)
 
+const table = computed(() => till.tableById.get(order.value?.table_id) ?? null)
+
 const totals = computed(() => till.orderTotals())
 
 const company = computed(() => till.boot.company ?? {})
@@ -69,6 +71,12 @@ function print() {
 
                 <p v-if="order?.tracking_number" class="text-center text-3xl font-light leading-tight">
                     {{ order.tracking_number }}
+                </p>
+
+                <p v-if="table || order?.customer_count" class="mt-1 text-center text-xs">
+                    <template v-if="table">{{ till.tableLabel(table) }}</template>
+                    <template v-if="table && order?.customer_count"> &middot; </template>
+                    <template v-if="order?.customer_count">{{ till.choice('receipt.guests', order.customer_count) }}</template>
                 </p>
 
                 <p v-if="order?.partner_id" class="mt-2 text-center text-xs">
@@ -155,7 +163,7 @@ function print() {
             <button
                 type="button"
                 class="flex min-h-12 flex-2 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700"
-                @click="till.newOrder()"
+                @click="till.finishOrder()"
             >
                 {{ till.t('receipt.new-order') }}
             </button>

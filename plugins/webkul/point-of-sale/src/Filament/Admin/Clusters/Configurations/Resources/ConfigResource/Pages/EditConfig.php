@@ -30,6 +30,11 @@ class EditConfig extends EditRecord
         ];
     }
 
+    protected function afterSave(): void
+    {
+        $this->getRecord()->syncRestaurantFloors();
+    }
+
     protected function getSavedNotification(): ?Notification
     {
         return Notification::make()

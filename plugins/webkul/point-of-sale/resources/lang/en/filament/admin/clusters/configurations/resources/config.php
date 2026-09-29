@@ -34,7 +34,8 @@ return [
                             'enable-print-bill'         => 'Bill Printing',
                             'enable-takeaway'           => 'Takeaway',
                             'takeaway-fiscal-position'  => 'Alternative Fiscal Position',
-                            'floors'                    => 'Floors',
+                            'floors'                    => 'Floors & Tables Map',
+                            'floors-helper-text'        => 'Design floors and assign orders to tables.',
                         ],
                     ],
 

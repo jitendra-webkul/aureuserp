@@ -82,6 +82,8 @@ class ConfigForm
                 Toggle::make('is_restaurant')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.is-restaurant'))
                     ->helperText(static::label('sections.configurations.tabs.restaurant.fields.is-restaurant-helper-text'))
+                    ->disabled(fn (?Config $record): bool => static::lockedByOpenSession($record))
+                    ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->live()
                     ->columnSpanFull(),
 
@@ -110,7 +112,12 @@ class ConfigForm
 
                 Select::make('floors')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.floors'))
-                    ->relationship('floors', 'name')
+                    ->helperText(static::label('sections.configurations.tabs.restaurant.fields.floors-helper-text'))
+                    ->relationship(
+                        'floors',
+                        'name',
+                        fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
+                    )
                     ->multiple()
                     ->searchable()
                     ->preload()

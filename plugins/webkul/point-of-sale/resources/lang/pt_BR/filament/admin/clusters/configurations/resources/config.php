@@ -34,7 +34,8 @@ return [
                             'enable-print-bill'         => 'Impressão da conta',
                             'enable-takeaway'           => 'Para viagem',
                             'takeaway-fiscal-position'  => 'Posição fiscal alternativa',
-                            'floors'                    => 'Andares',
+                            'floors'                    => 'Mapa de andares e mesas',
+                            'floors-helper-text'        => 'Desenhe os andares e atribua pedidos às mesas.',
                         ],
                     ],
 

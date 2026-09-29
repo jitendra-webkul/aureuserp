@@ -1,6 +1,7 @@
 <script setup>
 import { inject, computed, ref } from 'vue'
 import TillModal from './TillModal.vue'
+import OrderTableBadge from './OrderTableBadge.vue'
 
 const till = inject('till')
 
@@ -58,7 +59,11 @@ function discard(uuid) {
                 >
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">
-                            {{ till.orderLabel(order) }}
+                            <span class="flex min-w-0 items-center gap-1.5">
+                                <OrderTableBadge :order="order" />
+
+                                <span class="truncate">{{ till.orderLabel(order) }}</span>
+                            </span>
                         </p>
 
                         <p class="truncate font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">

@@ -34,7 +34,8 @@ return [
                             'enable-print-bill'         => 'Impresión de cuenta',
                             'enable-takeaway'           => 'Para llevar',
                             'takeaway-fiscal-position'  => 'Posición fiscal alternativa',
-                            'floors'                    => 'Plantas',
+                            'floors'                    => 'Mapa de plantas y mesas',
+                            'floors-helper-text'        => 'Diseña las plantas y asigna pedidos a las mesas.',
                         ],
                     ],
 

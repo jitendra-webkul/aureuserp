@@ -1,11 +1,14 @@
 <script setup>
 import { inject, computed } from 'vue'
+import OrderTableBadge from './OrderTableBadge.vue'
 
 const till = inject('till')
 
 const state = till.state
 
-const drafts = computed(() => till.drafts)
+const drafts = computed(() => till.parkedOrders)
+
+const table = computed(() => till.activeTable)
 
 const visible = computed(() => {
     const all = drafts.value
@@ -31,6 +34,20 @@ function summary(order) {
 <template>
     <div class="flex flex-none items-stretch gap-2">
         <button
+            v-if="till.isRestaurant"
+            type="button"
+            class="flex flex-none items-center gap-1.5 rounded-lg border border-primary-600 bg-primary-600 px-2.5 text-xs font-semibold text-white transition-colors hover:bg-primary-700 dark:border-primary-500"
+            :title="till.t('floor.back')"
+            @click="till.goToFloor()"
+        >
+            <svg class="size-4 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v2.5A2.25 2.25 0 0 0 4.25 9h2.5A2.25 2.25 0 0 0 9 6.75v-2.5A2.25 2.25 0 0 0 6.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 2 13.25v2.5A2.25 2.25 0 0 0 4.25 18h2.5A2.25 2.25 0 0 0 9 15.75v-2.5A2.25 2.25 0 0 0 6.75 11h-2.5Zm9-9A2.25 2.25 0 0 0 11 4.25v2.5A2.25 2.25 0 0 0 13.25 9h2.5A2.25 2.25 0 0 0 18 6.75v-2.5A2.25 2.25 0 0 0 15.75 2h-2.5Zm0 9A2.25 2.25 0 0 0 11 13.25v2.5A2.25 2.25 0 0 0 13.25 18h2.5A2.25 2.25 0 0 0 18 15.75v-2.5A2.25 2.25 0 0 0 15.75 11h-2.5Z" clip-rule="evenodd" />
+            </svg>
+
+            <span class="truncate">{{ table ? till.tableLabel(table) : till.t('floor.back') }}</span>
+        </button>
+
+        <button
             v-for="order in visible"
             :key="order.uuid"
             type="button"
@@ -40,8 +57,10 @@ function summary(order) {
                 : 'border-gray-200 bg-white hover:border-gray-300 dark:hover:border-gray-600 dark:border-gray-700 dark:bg-gray-900'"
             @click="till.selectOrder(order.uuid)"
         >
-            <span class="truncate text-xs font-semibold leading-tight text-gray-950 dark:text-white">
-                {{ till.orderLabel(order) }}
+            <span class="flex min-w-0 items-center gap-1 text-xs font-semibold leading-tight text-gray-950 dark:text-white">
+                <OrderTableBadge :order="order" />
+
+                <span class="truncate">{{ till.orderLabel(order) }}</span>
             </span>
 
             <span class="truncate font-mono text-[0.625rem] leading-tight tabular-nums text-gray-500 dark:text-gray-400">

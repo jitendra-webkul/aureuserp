@@ -21,12 +21,14 @@ use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
+use Webkul\PointOfSale\Models\Floor;
 use Webkul\PointOfSale\Models\Note;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\PaymentMethod;
 use Webkul\PointOfSale\Models\Product;
 use Webkul\PointOfSale\Models\Session;
+use Webkul\PointOfSale\Models\Table;
 use Webkul\Product\Models\PriceList;
 use Webkul\Support\Models\Currency;
 use Webkul\Support\Models\UOM;
@@ -69,6 +71,7 @@ class BootLoader
             'payment_methods'  => $this->paymentMethods($config),
             'bills'            => $this->bills($config),
             'notes'            => $this->notes(),
+            'floors'           => $this->floors($config),
             'partners'         => $this->partners($config),
             'orders'           => $this->openOrders($session),
             'stock'            => $this->stock($config),
@@ -721,6 +724,37 @@ class BootLoader
             ])->values()->all();
     }
 
+    protected function floors(Config $config): array
+    {
+        if (! $config->is_restaurant) {
+            return [];
+        }
+
+        return $config->floors()
+            ->with(['tables' => fn ($query) => $query->orderBy('table_number')])
+            ->orderBy('sort')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Floor $floor): array => [
+                'id'               => $floor->id,
+                'name'             => $floor->name,
+                'background_color' => $floor->background_color,
+                'background_image' => $floor->background_image ? Storage::url($floor->background_image) : null,
+                'tables'           => $floor->tables->map(fn (Table $table): array => [
+                    'id'           => $table->id,
+                    'floor_id'     => $table->floor_id,
+                    'table_number' => $table->table_number,
+                    'shape'        => $table->shape?->value ?? $table->shape,
+                    'position_h'   => (float) $table->position_h,
+                    'position_v'   => (float) $table->position_v,
+                    'width'        => (float) $table->width,
+                    'height'       => (float) $table->height,
+                    'seats'        => (int) $table->seats,
+                    'color'        => $table->color,
+                ])->values()->all(),
+            ])->values()->all();
+    }
+
     protected function openOrders(Session $session): array
     {
         return Order::query()
@@ -729,16 +763,18 @@ class BootLoader
             ->where('state', 'draft')
             ->get()
             ->map(fn (Order $order): array => [
-                'id'            => $order->id,
-                'uuid'          => $order->uuid,
-                'pos_reference' => $order->reference,
-                'partner_id'    => $order->partner_id,
-                'state'         => $order->state?->value,
-                'note'          => $order->note,
-                'is_takeaway'   => (bool) $order->is_takeaway,
-                'to_invoice'    => (bool) $order->is_to_invoice,
-                'shipped_at'    => $order->shipped_at?->toDateString(),
-                'lines'         => $order->lines->map(fn ($line): array => [
+                'id'             => $order->id,
+                'uuid'           => $order->uuid,
+                'pos_reference'  => $order->reference,
+                'partner_id'     => $order->partner_id,
+                'state'          => $order->state?->value,
+                'note'           => $order->note,
+                'is_takeaway'    => (bool) $order->is_takeaway,
+                'table_id'       => $order->table_id,
+                'customer_count' => (int) $order->customer_count,
+                'to_invoice'     => (bool) $order->is_to_invoice,
+                'shipped_at'     => $order->shipped_at?->toDateString(),
+                'lines'          => $order->lines->map(fn ($line): array => [
                     'uuid'       => $line->uuid,
                     'product_id' => $line->product_id,
                     'qty'        => (float) $line->qty,
