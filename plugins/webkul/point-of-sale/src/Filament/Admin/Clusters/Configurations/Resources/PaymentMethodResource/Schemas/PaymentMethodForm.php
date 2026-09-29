@@ -45,9 +45,6 @@ class PaymentMethodForm
                             ->live()
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.is-split-transaction'))
                             ->helperText(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.is-split-transaction-helper-text')),
-
-                        Toggle::make('is_active')
-                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.form.sections.general.fields.is-active')),
                     ])
                     ->columns(2),
 

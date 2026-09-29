@@ -50,9 +50,6 @@ class PaymentMethodsTable
                 IconColumn::make('is_cash_count')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.columns.is-cash-count'))
                     ->boolean(),
-                IconColumn::make('is_active')
-                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.columns.is-active'))
-                    ->boolean(),
                 TextColumn::make('company.name')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.columns.company'))
                     ->placeholder('—')

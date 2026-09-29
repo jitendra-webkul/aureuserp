@@ -34,7 +34,6 @@ class PaymentMethod extends Model implements Sortable
         'image',
         'is_cash_count',
         'is_split_transaction',
-        'is_active',
         'journal_id',
         'receivable_account_id',
         'outstanding_account_id',
@@ -47,7 +46,6 @@ class PaymentMethod extends Model implements Sortable
         'terminal_type'        => PaymentTerminalType::class,
         'is_cash_count'        => 'boolean',
         'is_split_transaction' => 'boolean',
-        'is_active'            => 'boolean',
     ];
 
     protected $attributes = [
@@ -55,7 +53,6 @@ class PaymentMethod extends Model implements Sortable
         'terminal_type'        => 'none',
         'is_cash_count'        => false,
         'is_split_transaction' => false,
-        'is_active'            => true,
     ];
 
     public $sortable = [

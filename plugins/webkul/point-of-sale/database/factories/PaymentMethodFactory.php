@@ -26,7 +26,6 @@ class PaymentMethodFactory extends Factory
             'terminal_type'        => PaymentTerminalType::NONE,
             'sort'                 => fake()->numberBetween(1, 20),
             'is_split_transaction' => false,
-            'is_active'            => true,
             'journal_id'           => static::journalOfType(JournalType::CASH),
             'creator_id'           => User::query()->value('id') ?? User::factory(),
         ];

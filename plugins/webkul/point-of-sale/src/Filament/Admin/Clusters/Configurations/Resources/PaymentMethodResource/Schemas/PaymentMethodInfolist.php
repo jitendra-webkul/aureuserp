@@ -47,10 +47,6 @@ class PaymentMethodInfolist
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.infolist.sections.general.entries.is-split-transaction'))
                             ->boolean(),
 
-                        IconEntry::make('is_active')
-                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.infolist.sections.general.entries.is-active'))
-                            ->boolean(),
-
                         TextEntry::make('company.name')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.infolist.sections.general.entries.company-name'))
                             ->placeholder('—'),

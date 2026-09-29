@@ -22,7 +22,6 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->boolean('is_cash_count')->default(0);
             $table->boolean('is_split_transaction')->default(0);
-            $table->boolean('is_active')->default(1);
 
             $table->foreignId('journal_id')
                 ->nullable()
