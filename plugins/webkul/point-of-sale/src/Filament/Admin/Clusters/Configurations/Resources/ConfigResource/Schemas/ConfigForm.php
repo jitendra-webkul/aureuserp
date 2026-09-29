@@ -111,6 +111,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => static::usesTakeaway($get)),
 
@@ -283,6 +284,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query->whereIn('type', [JournalType::GENERAL, JournalType::SALE]), $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Select::make('invoice_journal_id')
@@ -293,6 +295,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query->where('type', JournalType::SALE), $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Toggle::make('is_closing_entry_by_product')
@@ -314,6 +317,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_fiscal_position') || static::usesTakeaway($get)),
 
@@ -341,6 +345,7 @@ class ConfigForm
                             ->where('reconcile', true),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Select::make('cash_movement_account_id')
@@ -351,6 +356,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::accounts($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Select::make('balancing_account_id')
@@ -361,6 +367,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::accounts($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Toggle::make('enable_cogs')
@@ -377,6 +384,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_cogs')),
 
@@ -388,6 +396,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::accounts($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_cogs')),
             ])
@@ -440,6 +449,7 @@ class ConfigForm
                         fn (Builder $query, Get $get, ?Config $record): Builder => static::availablePriceLists($query, $get, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Toggle::make('enable_line_discount')
@@ -459,6 +469,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record)->where('type', ProductType::SERVICE),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_global_discount')),
             ])
@@ -534,6 +545,7 @@ class ConfigForm
                     )
                     ->default(fn (): ?int => static::scoped(Warehouse::query(), null)->orderBy('id')->value('id'))
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->required(),
 
@@ -546,6 +558,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query->where('type', OperationTypeEnum::OUTGOING), $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->required(fn (string $operation): bool => $operation !== 'create'),
 
@@ -557,6 +570,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query->where('type', OperationTypeEnum::INCOMING), $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false),
 
                 Toggle::make('enable_ship_later')
@@ -572,6 +586,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_ship_later')),
 
