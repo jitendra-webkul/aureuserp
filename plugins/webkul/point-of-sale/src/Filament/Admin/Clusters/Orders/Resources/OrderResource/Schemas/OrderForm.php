@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Webkul\Field\Filament\Forms\Components\ProgressStepper as FormProgressStepper;
 use Webkul\PointOfSale\Enums\OrderState;
@@ -210,10 +211,11 @@ class OrderForm
                                             ->default(now())
                                             ->disabled(static::isSettledPayment(...)),
                                         Select::make('payment_method_id')
-                                            ->options(fn ($livewire): array => $livewire->getRecord()?->config
-                                                ?->paymentMethods
-                                                ->pluck('name', 'id')
-                                                ->all() ?? [])
+                                            ->relationship(
+                                                'paymentMethod',
+                                                'name',
+                                                fn (Builder $query, $livewire): Builder => $query->whereIn('id', $livewire->getRecord()?->config?->paymentMethods->pluck('id')->all() ?? []),
+                                            )
                                             ->required()
                                             ->disabled(static::isSettledPayment(...)),
                                         TextInput::make('amount')
