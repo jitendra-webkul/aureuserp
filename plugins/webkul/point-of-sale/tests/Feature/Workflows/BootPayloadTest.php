@@ -181,3 +181,32 @@ it('ships the table and guest count of an open order', function () {
     expect($shipped['table_id'])->toBe($table->id)
         ->and($shipped['customer_count'])->toBe(4);
 });
+
+it('ships the tip product hidden from the catalogue', function () {
+    $tip = InventoryHelper::product(['name' => 'Tip', 'price' => 0.0]);
+
+    $this->config->update([
+        'enable_tip'     => true,
+        'tip_product_id' => $tip->id,
+    ]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    $products = collect($payload['products']);
+
+    expect($products->firstWhere('id', $tip->id)['is_hidden'])->toBeTrue()
+        ->and($products->firstWhere('id', $this->product->id)['is_hidden'])->toBeFalse();
+});
+
+it('ships no tip product while tips are off', function () {
+    $tip = InventoryHelper::product(['name' => 'Tip', 'price' => 0.0]);
+
+    $this->config->update([
+        'enable_tip'     => false,
+        'tip_product_id' => $tip->id,
+    ]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    expect(collect($payload['products'])->firstWhere('id', $tip->id))->toBeNull();
+});

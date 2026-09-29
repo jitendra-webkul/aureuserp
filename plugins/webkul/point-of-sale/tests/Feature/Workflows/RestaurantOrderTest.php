@@ -1,9 +1,11 @@
 <?php
 
+use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\TableShape;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Order;
+use Webkul\PointOfSale\Services\FiscalPositionResolver;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -172,4 +174,45 @@ it('drops the table once restaurant mode is off', function () {
     ));
 
     expect($order->table_id)->toBeNull();
+});
+
+it('applies the takeaway fiscal position even when flexible taxes are off', function () {
+    $takeaway = FiscalPosition::create([
+        'name'       => 'Takeaway',
+        'company_id' => PosHelper::company()->id,
+    ]);
+
+    $this->config->update([
+        'enable_fiscal_position'      => false,
+        'enable_takeaway'             => true,
+        'takeaway_fiscal_position_id' => $takeaway->id,
+    ]);
+
+    $order = Order::create([
+        'session_id'  => $this->session->id,
+        'config_id'   => $this->config->id,
+        'is_takeaway' => true,
+    ]);
+
+    expect(app(FiscalPositionResolver::class)->resolveFor($order->refresh())?->id)->toBe($takeaway->id);
+});
+
+it('keeps a dine-in order off the takeaway fiscal position', function () {
+    $takeaway = FiscalPosition::create([
+        'name'       => 'Takeaway',
+        'company_id' => PosHelper::company()->id,
+    ]);
+
+    $this->config->update([
+        'enable_fiscal_position'      => false,
+        'enable_takeaway'             => true,
+        'takeaway_fiscal_position_id' => $takeaway->id,
+    ]);
+
+    $order = Order::create([
+        'session_id' => $this->session->id,
+        'config_id'  => $this->config->id,
+    ]);
+
+    expect(app(FiscalPositionResolver::class)->resolveFor($order->refresh()))->toBeNull();
 });

@@ -58,6 +58,66 @@ const danger = 'flex min-h-20 flex-col items-center justify-center gap-2 rounded
             </button>
 
             <button
+                v-if="till.isRestaurant && till.config.enable_print_bill"
+                type="button"
+                :class="tile"
+                :disabled="!till.activeOrder?.lines.length"
+                @click="till.openBill()"
+            >
+                <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5 2.75C5 1.784 5.784 1 6.75 1h6.5c.966 0 1.75.784 1.75 1.75v3.552c.377.046.752.097 1.126.153A2.212 2.212 0 0 1 18 8.653v4.097A2.25 2.25 0 0 1 15.75 15h-.241l.305 1.984A1.75 1.75 0 0 1 14.084 19H5.915a1.75 1.75 0 0 1-1.73-2.016L4.492 15H4.25A2.25 2.25 0 0 1 2 12.75V8.653c0-1.082.775-2.034 1.874-2.198.374-.056.75-.107 1.127-.153L5 6.25v-3.5Zm8.5 3.397a41.533 41.533 0 0 0-7 0V2.75a.25.25 0 0 1 .25-.25h6.5a.25.25 0 0 1 .25.25v3.397ZM6.608 12.5a.25.25 0 0 0-.247.212l-.693 4.5a.25.25 0 0 0 .247.288h8.17a.25.25 0 0 0 .246-.288l-.692-4.5a.25.25 0 0 0-.247-.212H6.608Z" clip-rule="evenodd" />
+                </svg>
+
+                <span>{{ till.t('bill.label') }}</span>
+            </button>
+
+            <button
+                v-if="till.isRestaurant && till.config.enable_split_bill"
+                type="button"
+                :class="tile"
+                :disabled="!till.canSplit"
+                @click="till.openSplit()"
+            >
+                <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5h-1v-3.379a3 3 0 0 0-.879-2.121L10.5 5.379A3 3 0 0 0 8.379 4.5H7v-1Z" />
+                    <path d="M4.5 6A1.5 1.5 0 0 0 3 7.5v9A1.5 1.5 0 0 0 4.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L9.44 6.439A1.5 1.5 0 0 0 8.378 6H4.5Z" />
+                </svg>
+
+                <span>{{ till.t('split.label') }}</span>
+            </button>
+
+            <button
+                v-if="till.canToggleTakeaway"
+                type="button"
+                :class="tile"
+                @click="till.toggleTakeaway()"
+            >
+                <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M6 5v1H4.667a1.75 1.75 0 0 0-1.743 1.598l-.826 9.5A1.75 1.75 0 0 0 3.84 19H16.16a1.75 1.75 0 0 0 1.743-1.902l-.826-9.5A1.75 1.75 0 0 0 15.333 6H14V5a4 4 0 0 0-8 0Zm4-2.5A2.5 2.5 0 0 0 7.5 5v1h5V5A2.5 2.5 0 0 0 10 2.5ZM7.5 10a2.5 2.5 0 0 0 5 0V8.75a.75.75 0 0 1 1.5 0V10a4 4 0 0 1-8 0V8.75a.75.75 0 0 1 1.5 0V10Z" clip-rule="evenodd" />
+                </svg>
+
+                <span>{{ till.t(till.activeOrder.is_takeaway ? 'takeaway.to-dine-in' : 'takeaway.to-takeaway') }}</span>
+            </button>
+
+            <button
+                v-if="till.canRenameOrder"
+                type="button"
+                :class="tile"
+                @click="till.openOrderName()"
+            >
+                <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                    <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+                </svg>
+
+                <span>{{ till.t('order-name.label') }}</span>
+
+                <span v-if="till.activeOrder.floating_name" class="truncate text-xs font-normal text-gray-500 dark:text-gray-400">
+                    {{ till.activeOrder.floating_name }}
+                </span>
+            </button>
+
+            <button
                 v-if="!confirmingCancel"
                 type="button"
                 :class="danger"

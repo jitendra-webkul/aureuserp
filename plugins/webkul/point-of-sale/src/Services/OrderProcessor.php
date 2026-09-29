@@ -50,6 +50,8 @@ class OrderProcessor
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
+            $this->syncTip($order);
+
             $this->assertRefundLines($order);
 
             $this->syncPayments($order, $payload['payments'] ?? []);
@@ -234,6 +236,29 @@ class OrderProcessor
         } catch (UniqueConstraintViolationException) {
             return Order::withoutGlobalScopes()->where('uuid', $uuid)->firstOrFail();
         }
+    }
+
+    protected function syncTip(Order $order): void
+    {
+        $config = $order->config;
+
+        if (! $config?->enable_tip || ! $config->tip_product_id) {
+            return;
+        }
+
+        $amount = (float) $order->lines()
+            ->where('product_id', $config->tip_product_id)
+            ->get()
+            ->sum(fn (OrderLine $line): float => (float) $line->qty * (float) $line->price_unit);
+
+        if (float_is_zero($amount, precisionDigits: 4)) {
+            return;
+        }
+
+        $order->forceFill([
+            'is_tipped'  => true,
+            'tip_amount' => $amount,
+        ])->save();
     }
 
     protected function resolveTableId(Config $config, mixed $tableId): ?int

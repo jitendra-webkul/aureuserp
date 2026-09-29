@@ -91,6 +91,26 @@ const rows = [
             <span v-if="order?.shipped_at" class="ms-auto font-mono tabular-nums">{{ order.shipped_at }}</span>
         </button>
 
+        <button
+            v-if="till.tipProductId"
+            type="button"
+            class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] w-full items-center gap-2 rounded-lg border px-3 text-base font-medium transition-colors"
+            :class="till.tipAmount()
+                ? 'border-primary-500 bg-primary-50 text-primary-800 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
+                : 'justify-center border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
+            @click="till.openTip()"
+        >
+            <span class="flex items-center gap-2">
+                <svg class="size-5 flex-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="m9.653 16.915-.005-.003-.019-.01a20.759 20.759 0 0 1-1.162-.682 22.045 22.045 0 0 1-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 0 1 8-2.828A4.5 4.5 0 0 1 18 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 0 1-3.744 2.582l-.019.01-.005.003h-.002a.739.739 0 0 1-.69.001l-.002-.001Z" />
+                </svg>
+
+                {{ till.t('tip.label') }}
+            </span>
+
+            <span v-if="till.tipAmount()" class="ms-auto font-mono tabular-nums">{{ till.money(till.tipAmount()) }}</span>
+        </button>
+
         <div class="grid grid-cols-4 gap-[clamp(0.25rem,0.8vh,0.5rem)]">
             <template v-for="(row, index) in rows" :key="index">
                 <button

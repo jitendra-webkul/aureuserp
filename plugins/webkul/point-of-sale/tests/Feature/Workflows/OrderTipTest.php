@@ -103,3 +103,30 @@ it('refuses a tip when the terminal has no tip product', function () {
     expect(fn () => PointOfSale::addOrderTip($order, 5.0))
         ->toThrow(InsufficientPaymentException::class);
 });
+
+it('records the tip from a synced tip line', function () {
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [
+            PosHelper::line($this->product->id, 1, 20.0),
+            PosHelper::line($this->tipProduct->id, 1, 3.0),
+        ],
+        [PosHelper::payment($this->cash, 23.0)],
+    ));
+
+    expect($order->refresh()->is_tipped)->toBeTrue()
+        ->and((float) $order->tip_amount)->toBe(3.0);
+});
+
+it('leaves an order without a tip line untipped', function () {
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 20.0)],
+        [PosHelper::payment($this->cash, 20.0)],
+    ));
+
+    expect($order->refresh()->is_tipped)->toBeFalse()
+        ->and((float) $order->tip_amount)->toBe(0.0);
+});

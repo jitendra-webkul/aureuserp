@@ -106,6 +106,12 @@ export class Till {
             floorId: boot.floors?.[0]?.id ?? null,
             guestsModalOpen: false,
             guestsDraft: 0,
+            splitQuantities: {},
+            billModalOpen: false,
+            tipModalOpen: false,
+            tipDraft: '',
+            orderNameModalOpen: false,
+            orderNameDraft: '',
             numpadMode: 'qty',
             numpadBuffer: '',
             numpadFresh: true,
@@ -378,6 +384,7 @@ export class Till {
             is_takeaway: Boolean(order.is_takeaway),
             table_id: order.table_id ?? null,
             customer_count: Number(order.customer_count ?? 0),
+            floating_name: order.floating_name ?? '',
             to_invoice: Boolean(order.to_invoice),
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
@@ -470,6 +477,7 @@ export class Till {
                 is_takeaway: order.is_takeaway,
                 table_id: order.table_id ?? null,
                 customer_count: order.customer_count ?? 0,
+                floating_name: order.floating_name ?? '',
                 to_invoice: order.to_invoice,
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
@@ -693,6 +701,10 @@ export class Till {
     }
 
     orderLabel(order) {
+        if (order.floating_name) {
+            return order.floating_name
+        }
+
         if (order.partner_id) {
             return this.master.partners.get(order.partner_id)?.name ?? order.pos_reference
         }
@@ -1122,6 +1134,303 @@ export class Till {
         }
     }
 
+    get canSplit() {
+        const order = this.activeOrder
+
+        return Boolean(this.isRestaurant && this.config.enable_split_bill && order)
+            && order.lines.reduce((carry, line) => carry + Math.abs(line.qty), 0) >= 2
+    }
+
+    openSplit() {
+        if (!this.canSplit) {
+            return
+        }
+
+        this.closeActions()
+
+        this.state.splitQuantities = {}
+        this.state.screen = 'split'
+    }
+
+    closeSplit() {
+        this.state.splitQuantities = {}
+        this.state.screen = 'products'
+    }
+
+    splitsWhole(line) {
+        return !Number.isInteger(line.qty) || line.lots?.length > 0 || this.isTipLine(line)
+    }
+
+    tapSplitLine(line) {
+        const current = this.state.splitQuantities[line.uuid] ?? 0
+
+        let next = current + 1
+
+        if (this.splitsWhole(line)) {
+            next = current === line.qty ? 0 : line.qty
+        } else if (current >= line.qty) {
+            next = 0
+        }
+
+        this.state.splitQuantities = { ...this.state.splitQuantities, [line.uuid]: next }
+    }
+
+    get splitTotal() {
+        const order = this.activeOrder
+
+        if (!order) {
+            return 0
+        }
+
+        return order.lines.reduce((carry, line) => {
+            const quantity = this.state.splitQuantities[line.uuid] ?? 0
+
+            if (!quantity || !line.qty) {
+                return carry
+            }
+
+            return carry + (this.lineTotals(line).total / line.qty) * quantity
+        }, 0)
+    }
+
+    orderBaseName(order) {
+        return this.orderTable(order)?.table_number ?? order.floating_name ?? ''
+    }
+
+    nextSplitName(order) {
+        const base = String(this.orderBaseName(order) || order.tracking_number || '')
+
+        const taken = this.drafts
+            .map((entry) => entry.floating_name)
+            .filter((name) => name && name.length === base.length + 1 && name.startsWith(base))
+            .map((name) => name.slice(-1))
+            .sort()
+
+        const last = taken.at(-1)
+
+        if (!last) {
+            return `${base}B`
+        }
+
+        if (last >= 'Z') {
+            return null
+        }
+
+        return `${base}${String.fromCharCode(last.charCodeAt(0) + 1)}`
+    }
+
+    confirmSplit() {
+        const original = this.activeOrder
+
+        if (!original) {
+            return
+        }
+
+        const moving = original.lines.filter((line) => (this.state.splitQuantities[line.uuid] ?? 0) > 0)
+
+        if (!moving.length) {
+            return
+        }
+
+        const name = this.nextSplitName(original)
+
+        if (!name) {
+            return
+        }
+
+        const target = this.newOrder(null)
+
+        target.floating_name = name
+        target.partner_id = original.partner_id
+        target.price_list_id = original.price_list_id
+        target.fiscal_position_id = original.fiscal_position_id
+        target.is_takeaway = original.is_takeaway
+
+        const emptied = []
+
+        for (const line of moving) {
+            const quantity = this.state.splitQuantities[line.uuid]
+
+            target.lines.push(reactive({
+                ...line,
+                lots: [...(line.lots ?? [])],
+                uuid: uuidv4(),
+                order_uuid: target.uuid,
+                qty: quantity,
+            }))
+
+            const remaining = floatRound(line.qty - quantity, { precisionDigits: 4 })
+
+            if (floatIsZero(remaining, { precisionDigits: 4 })) {
+                emptied.push(line.uuid)
+            } else {
+                line.qty = remaining
+            }
+        }
+
+        if (emptied.length) {
+            this.database.remove('pos.order.line', emptied)
+
+            original.lines = original.lines.filter((line) => !emptied.includes(line.uuid))
+        }
+
+        original.customer_count = Math.max(0, (original.customer_count ?? 0) - 1)
+
+        this.state.splitQuantities = {}
+
+        this.selectOrder(target.uuid)
+    }
+
+    openBill() {
+        if (!this.activeOrder?.lines.length) {
+            return
+        }
+
+        this.closeActions()
+
+        this.state.billModalOpen = true
+    }
+
+    closeBill() {
+        this.state.billModalOpen = false
+    }
+
+    get canToggleTakeaway() {
+        return Boolean(this.isRestaurant && this.config.enable_takeaway && this.activeOrder)
+    }
+
+    toggleTakeaway() {
+        const order = this.activeOrder
+
+        if (!order || !this.canToggleTakeaway) {
+            return
+        }
+
+        order.is_takeaway = !order.is_takeaway
+
+        order.fiscal_position_id = order.is_takeaway
+            ? (this.config.takeaway_fiscal_position_id ?? this.config.fiscal_position_id ?? null)
+            : (this.config.fiscal_position_id ?? null)
+
+        this.closeActions()
+    }
+
+    get canRenameOrder() {
+        return Boolean(this.isRestaurant && this.activeOrder && !this.activeOrder.table_id)
+    }
+
+    openOrderName() {
+        if (!this.canRenameOrder) {
+            return
+        }
+
+        this.closeActions()
+
+        this.state.orderNameDraft = this.activeOrder.floating_name ?? ''
+        this.state.orderNameModalOpen = true
+    }
+
+    closeOrderName() {
+        this.state.orderNameModalOpen = false
+    }
+
+    confirmOrderName() {
+        const order = this.activeOrder
+
+        if (order) {
+            order.floating_name = String(this.state.orderNameDraft ?? '').trim().slice(0, 64)
+        }
+
+        this.state.orderNameModalOpen = false
+    }
+
+    get tipProductId() {
+        const productId = this.config.tip_product_id
+
+        return this.config.enable_tip && productId && this.master.products.get(productId) ? productId : null
+    }
+
+    isTipLine(line) {
+        return Boolean(this.tipProductId) && line.product_id === this.tipProductId
+    }
+
+    tipLine(order = this.activeOrder) {
+        return order?.lines.find((line) => this.isTipLine(line)) ?? null
+    }
+
+    tipAmount(order = this.activeOrder) {
+        return this.tipLine(order)?.price_unit ?? 0
+    }
+
+    openTip() {
+        const order = this.activeOrder
+
+        if (!order || !this.tipProductId) {
+            return
+        }
+
+        const tip = this.tipAmount(order)
+
+        const change = this.orderTotals(order).change
+
+        const start = tip === 0 && change > 0 ? change : tip
+
+        this.state.tipDraft = start ? String(floatRound(start, { precisionRounding: this.currency.rounding })) : ''
+        this.state.tipModalOpen = true
+    }
+
+    closeTip() {
+        this.state.tipModalOpen = false
+    }
+
+    confirmTip() {
+        this.setTip(Number(this.state.tipDraft) || 0)
+
+        this.state.tipModalOpen = false
+    }
+
+    setTip(amount) {
+        const order = this.activeOrder
+
+        if (!order || !this.tipProductId) {
+            return
+        }
+
+        const tip = Math.max(0, floatRound(amount, { precisionRounding: this.currency.rounding }))
+
+        const line = this.tipLine(order)
+
+        if (floatIsZero(tip, { precisionRounding: this.currency.rounding })) {
+            if (line) {
+                this.removeLine(line.uuid)
+            }
+
+            return
+        }
+
+        if (line) {
+            line.price_unit = tip
+            line.qty = 1
+
+            return
+        }
+
+        const product = this.master.products.get(this.tipProductId)
+
+        order.lines.push(reactive({
+            uuid: uuidv4(),
+            order_uuid: order.uuid,
+            product_id: this.tipProductId,
+            qty: 1,
+            price_unit: tip,
+            price_overridden: true,
+            discount: 0,
+            note: '',
+            lots: [],
+            tax_ids: product?.tax_ids ?? [],
+        }))
+    }
+
     startIdleWatch() {
         if (this.idleWatch || !this.isRestaurant) {
             return
@@ -1293,17 +1602,19 @@ export class Till {
     }
 
     taxesFor(line) {
-        const mapped = this.mapTaxIds(line.tax_ids ?? [])
+        const order = this.state.orders.find((entry) => entry.uuid === line.order_uuid)
+
+        const mapped = this.mapTaxIds(line.tax_ids ?? [], order ? order.fiscal_position_id : this.state.fiscalPositionId)
 
         return mapped.map((id) => this.taxById.get(id)).filter(Boolean)
     }
 
-    mapTaxIds(taxIds) {
-        if (!this.state.fiscalPositionId || !taxIds.length) {
+    mapTaxIds(taxIds, fiscalPositionId = this.state.fiscalPositionId) {
+        if (!fiscalPositionId || !taxIds.length) {
             return taxIds
         }
 
-        const position = this.master.fiscal_positions.get(this.state.fiscalPositionId)
+        const position = this.master.fiscal_positions.get(fiscalPositionId)
 
         if (!position || !position.tax_map.length) {
             return taxIds
@@ -1806,6 +2117,16 @@ export class Till {
             return
         }
 
+        if (this.isTipLine(line) && this.state.numpadMode !== 'price') {
+            if (key === 'Backspace' || key === 'Delete') {
+                this.removeLine(line.uuid)
+
+                this.resetNumpadBuffer()
+            }
+
+            return
+        }
+
         let buffer = nextBuffer(this.state.numpadBuffer, key, this.state.numpadFresh)
 
         if (key === '-' && buffer === '-0') {
@@ -1994,7 +2315,7 @@ export class Till {
         const categoryIds = categoryId ? this.categoryWithDescendantIds(categoryId) : null
 
         return this.master.products.filter((product) => {
-            if (product.parent_id) {
+            if (product.parent_id || product.is_hidden) {
                 return false
             }
 

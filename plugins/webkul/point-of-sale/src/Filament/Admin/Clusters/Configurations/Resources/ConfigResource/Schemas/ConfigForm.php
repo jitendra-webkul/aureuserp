@@ -89,15 +89,19 @@ class ConfigForm
 
                 Toggle::make('enable_split_bill')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.enable-split-bill'))
+                    ->helperText(static::label('sections.configurations.tabs.restaurant.fields.enable-split-bill-helper-text'))
                     ->visible(fn (Get $get): bool => (bool) $get('is_restaurant')),
 
                 Toggle::make('enable_print_bill')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.enable-print-bill'))
+                    ->helperText(static::label('sections.configurations.tabs.restaurant.fields.enable-print-bill-helper-text'))
                     ->visible(fn (Get $get): bool => (bool) $get('is_restaurant')),
 
                 Toggle::make('enable_takeaway')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.enable-takeaway'))
-                    ->live(),
+                    ->helperText(static::label('sections.configurations.tabs.restaurant.fields.enable-takeaway-helper-text'))
+                    ->live()
+                    ->visible(fn (Get $get): bool => (bool) $get('is_restaurant')),
 
                 Select::make('takeaway_fiscal_position_id')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.takeaway-fiscal-position'))
@@ -108,16 +112,12 @@ class ConfigForm
                     )
                     ->searchable()
                     ->native(false)
-                    ->visible(fn (Get $get): bool => (bool) $get('enable_takeaway')),
+                    ->visible(fn (Get $get): bool => static::usesTakeaway($get)),
 
                 Select::make('floors')
                     ->label(static::label('sections.configurations.tabs.restaurant.fields.floors'))
                     ->helperText(static::label('sections.configurations.tabs.restaurant.fields.floors-helper-text'))
-                    ->relationship(
-                        'floors',
-                        'name',
-                        fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record),
-                    )
+                    ->relationship('floors', 'name')
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -171,6 +171,7 @@ class ConfigForm
                     ->relationship('cashRounding', 'name')
                     ->searchable()
                     ->native(false)
+                    ->preload()
                     ->visible(fn (Get $get): bool => (bool) $get('enable_cash_rounding')),
 
                 Toggle::make('enable_only_round_cash_method')
@@ -190,6 +191,7 @@ class ConfigForm
                         fn (Builder $query, ?Config $record): Builder => static::scoped($query, $record)->where('type', ProductType::SERVICE),
                     )
                     ->searchable()
+                    ->preload()
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get('enable_tip')),
             ])
@@ -249,6 +251,11 @@ class ConfigForm
             ->columns(2);
     }
 
+    protected static function usesTakeaway(Get $get): bool
+    {
+        return (bool) $get('is_restaurant') && (bool) $get('enable_takeaway');
+    }
+
     protected static function lockedByOpenSession(?Config $record): bool
     {
         return $record !== null
@@ -296,7 +303,8 @@ class ConfigForm
                     ->label(static::label('sections.configurations.tabs.accounting.fields.enable-fiscal-position'))
                     ->helperText(static::label('sections.configurations.tabs.accounting.fields.enable-fiscal-position-helper-text'))
                     ->live()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->visible(fn (Get $get): bool => ! static::usesTakeaway($get)),
 
                 Select::make('fiscal_position_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.fiscal-position'))
@@ -307,7 +315,7 @@ class ConfigForm
                     )
                     ->searchable()
                     ->native(false)
-                    ->visible(fn (Get $get): bool => (bool) $get('enable_fiscal_position')),
+                    ->visible(fn (Get $get): bool => (bool) $get('enable_fiscal_position') || static::usesTakeaway($get)),
 
                 Select::make('fiscalPositions')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.fiscal-positions'))
@@ -320,7 +328,7 @@ class ConfigForm
                     ->searchable()
                     ->preload()
                     ->native(false)
-                    ->visible(fn (Get $get): bool => (bool) $get('enable_fiscal_position')),
+                    ->visible(fn (Get $get): bool => (bool) $get('enable_fiscal_position') && ! static::usesTakeaway($get)),
 
                 Select::make('receivable_account_id')
                     ->label(static::label('sections.configurations.tabs.accounting.fields.receivable-account'))

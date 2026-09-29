@@ -263,15 +263,31 @@ class BootLoader
     {
         $products = $this->sellableProducts($config, $session);
 
+        $tipProductId = $this->tipProductId($config);
+
+        if ($tipProductId && ! $products->contains('id', $tipProductId)) {
+            $products = $products->concat(Product::query()->whereKey($tipProductId)->get());
+        }
+
         $priceList = $this->prices->priceListForConfig($config);
 
         return $products
             ->map(fn (Product $product): array => array_merge(
                 $this->productRow($product, $config),
-                ['price' => $this->prices->resolve($product, $priceList)],
+                [
+                    'price'     => $this->prices->resolve($product, $priceList),
+                    'is_hidden' => $product->id === $tipProductId,
+                ],
             ))
             ->values()
             ->all();
+    }
+
+    protected function tipProductId(Config $config): ?int
+    {
+        return $config->enable_tip && $config->tip_product_id
+            ? (int) $config->tip_product_id
+            : null;
     }
 
     protected function variants(Config $config, ?Session $session = null): array

@@ -255,6 +255,38 @@ return [
         'per-guest' => ':amount per guest',
     ],
 
+    'split' => [
+        'label'    => 'Split',
+        'heading'  => 'Bill Splitting',
+        'hint'     => 'Tap a line to move one unit to the new bill. Tap again to move more.',
+        'new-bill' => 'New bill',
+        'confirm'  => 'Split Order',
+    ],
+
+    'bill' => [
+        'label'   => 'Bill',
+        'heading' => 'Bill Printing',
+    ],
+
+    'takeaway' => [
+        'badge'       => 'Takeaway',
+        'to-takeaway' => 'Switch to Takeaway',
+        'to-dine-in'  => 'Switch to Dine in',
+    ],
+
+    'order-name' => [
+        'label'       => 'Edit Order Name',
+        'heading'     => 'Edit Order Name',
+        'placeholder' => 'e.g. 18:45 John 4P',
+    ],
+
+    'tip' => [
+        'label'  => 'Tip',
+        'add'    => 'Add Tip',
+        'change' => 'Change Tip',
+        'remove' => 'Remove tip',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel:',
         'served-by' => 'Served by :cashier',

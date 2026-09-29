@@ -255,6 +255,38 @@ return [
         'per-guest' => ':amount par couvert',
     ],
 
+    'split' => [
+        'label'    => 'Partager',
+        'heading'  => 'Partage de l’addition',
+        'hint'     => 'Touchez une ligne pour déplacer une unité vers la nouvelle addition. Touchez à nouveau pour en déplacer plus.',
+        'new-bill' => 'Nouvelle addition',
+        'confirm'  => 'Partager la commande',
+    ],
+
+    'bill' => [
+        'label'   => 'Addition',
+        'heading' => 'Impression de l’addition',
+    ],
+
+    'takeaway' => [
+        'badge'       => 'À emporter',
+        'to-takeaway' => 'Passer à emporter',
+        'to-dine-in'  => 'Passer sur place',
+    ],
+
+    'order-name' => [
+        'label'       => 'Modifier le nom de la commande',
+        'heading'     => 'Modifier le nom de la commande',
+        'placeholder' => 'ex. 18:45 Jean 4P',
+    ],
+
+    'tip' => [
+        'label'  => 'Pourboire',
+        'add'    => 'Ajouter un pourboire',
+        'change' => 'Modifier le pourboire',
+        'remove' => 'Retirer le pourboire',
+    ],
+
     'receipt' => [
         'phone'     => 'Tél. :',
         'served-by' => 'Servi par :cashier',

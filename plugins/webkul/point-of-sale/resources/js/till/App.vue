@@ -4,6 +4,10 @@ import OrderTabs from './components/OrderTabs.vue'
 import ProductGrid from './components/ProductGrid.vue'
 import FloorScreen from './components/FloorScreen.vue'
 import GuestsModal from './components/GuestsModal.vue'
+import SplitScreen from './components/SplitScreen.vue'
+import BillModal from './components/BillModal.vue'
+import TipModal from './components/TipModal.vue'
+import OrderNameModal from './components/OrderNameModal.vue'
 import Cart from './components/Cart.vue'
 import Numpad from './components/Numpad.vue'
 import PaymentPad from './components/PaymentPad.vue'
@@ -35,6 +39,8 @@ const state = till.state
         <StatusBar />
 
         <FloorScreen v-if="state.screen === 'floor'" class="min-h-0 flex-auto p-4" />
+
+        <SplitScreen v-else-if="state.screen === 'split'" class="min-h-0 flex-auto p-4" />
 
         <div v-else class="grid h-full min-h-0 flex-auto grid-cols-[1fr] grid-rows-[minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[1fr_minmax(22rem,32%)]">
             <section class="flex min-h-0 min-w-0 flex-col gap-3">
@@ -79,5 +85,11 @@ const state = till.state
         <ShipLaterModal />
 
         <GuestsModal />
+
+        <BillModal />
+
+        <TipModal />
+
+        <OrderNameModal />
     </div>
 </template>

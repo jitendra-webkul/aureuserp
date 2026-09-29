@@ -255,6 +255,38 @@ return [
         'per-guest' => ':amount por cliente',
     ],
 
+    'split' => [
+        'label'    => 'Dividir',
+        'heading'  => 'Dividir a conta',
+        'hint'     => 'Toque em uma linha para mover uma unidade para a nova conta. Toque novamente para mover mais.',
+        'new-bill' => 'Nova conta',
+        'confirm'  => 'Dividir pedido',
+    ],
+
+    'bill' => [
+        'label'   => 'Conta',
+        'heading' => 'Impressão da conta',
+    ],
+
+    'takeaway' => [
+        'badge'       => 'Para viagem',
+        'to-takeaway' => 'Mudar para viagem',
+        'to-dine-in'  => 'Mudar para comer no local',
+    ],
+
+    'order-name' => [
+        'label'       => 'Editar nome do pedido',
+        'heading'     => 'Editar nome do pedido',
+        'placeholder' => 'ex.: 18:45 João 4P',
+    ],
+
+    'tip' => [
+        'label'  => 'Gorjeta',
+        'add'    => 'Adicionar gorjeta',
+        'change' => 'Alterar gorjeta',
+        'remove' => 'Remover gorjeta',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',

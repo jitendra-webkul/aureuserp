@@ -255,6 +255,38 @@ return [
         'per-guest' => ':amount por comensal',
     ],
 
+    'split' => [
+        'label'    => 'Dividir',
+        'heading'  => 'Dividir la cuenta',
+        'hint'     => 'Toca una línea para pasar una unidad a la nueva cuenta. Toca de nuevo para pasar más.',
+        'new-bill' => 'Nueva cuenta',
+        'confirm'  => 'Dividir pedido',
+    ],
+
+    'bill' => [
+        'label'   => 'Cuenta',
+        'heading' => 'Imprimir la cuenta',
+    ],
+
+    'takeaway' => [
+        'badge'       => 'Para llevar',
+        'to-takeaway' => 'Cambiar a para llevar',
+        'to-dine-in'  => 'Cambiar a comer aquí',
+    ],
+
+    'order-name' => [
+        'label'       => 'Editar nombre del pedido',
+        'heading'     => 'Editar nombre del pedido',
+        'placeholder' => 'p. ej. 18:45 Juan 4P',
+    ],
+
+    'tip' => [
+        'label'  => 'Propina',
+        'add'    => 'Añadir propina',
+        'change' => 'Cambiar propina',
+        'remove' => 'Quitar propina',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',

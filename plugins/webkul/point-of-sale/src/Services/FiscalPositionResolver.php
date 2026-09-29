@@ -14,16 +14,16 @@ class FiscalPositionResolver
     {
         $config = $order->config;
 
+        if ($order->is_takeaway && $config?->is_restaurant && $config->enable_takeaway && $config->takeaway_fiscal_position_id) {
+            return $config->takeawayFiscalPosition;
+        }
+
         if (! $config?->enable_fiscal_position) {
             return null;
         }
 
         if ($order->fiscal_position_id) {
             return $order->fiscalPosition;
-        }
-
-        if ($order->is_takeaway && $config->takeaway_fiscal_position_id) {
-            return $config->takeawayFiscalPosition;
         }
 
         return $config->fiscalPosition;
