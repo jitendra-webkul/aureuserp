@@ -13,10 +13,14 @@ const canvas = computed(() => {
     const width = Math.max(0, ...tables.value.map((table) => table.position_h + table.width))
     const height = Math.max(0, ...tables.value.map((table) => table.position_v + table.height))
 
-    const style = {
+    return {
         width: `${width + 24}px`,
         height: `${height + 24}px`,
     }
+})
+
+const backdrop = computed(() => {
+    const style = {}
 
     if (floor.value?.background_color) {
         style.backgroundColor = floor.value.background_color
@@ -35,33 +39,42 @@ function summary(table) {
     return summaries.value.get(table.id) ?? { count: 0, total: 0, guests: 0 }
 }
 
+function isOccupied(table) {
+    return summary(table).count > 0
+}
+
+function paint(table) {
+    if (!table.color) {
+        return {}
+    }
+
+    return isOccupied(table)
+        ? { borderColor: table.color, backgroundColor: table.color }
+        : { borderColor: table.color }
+}
+
 function placement(table) {
-    const style = {
+    return {
         left: `${table.position_h}px`,
         top: `${table.position_v}px`,
         width: `${table.width}px`,
         height: `${table.height}px`,
+        ...paint(table),
     }
-
-    if (table.color) {
-        style.backgroundColor = table.color
-    }
-
-    return style
 }
 
 function tileClass(table) {
     const shape = table.shape === 'round' ? 'rounded-full' : 'rounded-xl'
 
-    const occupied = summary(table).count > 0
-
-    if (table.color) {
-        return `${shape} border-2 text-white ${occupied ? 'border-primary-500 ring-4 ring-primary-500/40' : 'border-transparent'}`
+    if (isOccupied(table)) {
+        return table.color
+            ? `${shape} border-4 text-white`
+            : `${shape} border-4 border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500`
     }
 
-    return occupied
-        ? `${shape} border-2 border-primary-500 bg-primary-50 text-primary-900 ring-4 ring-primary-500/20 dark:bg-primary-500/15 dark:text-primary-100`
-        : `${shape} border-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:hover:border-gray-500`
+    return table.color
+        ? `${shape} border-4 bg-white/70 text-gray-900 hover:bg-white dark:bg-gray-900/70 dark:text-gray-100 dark:hover:bg-gray-900`
+        : `${shape} border-4 border-gray-300 bg-white/70 text-gray-900 hover:border-gray-400 hover:bg-white dark:border-gray-600 dark:bg-gray-900/70 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-900`
 }
 </script>
 
@@ -95,12 +108,15 @@ function tileClass(table) {
             </button>
         </div>
 
-        <div class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950">
+        <div
+            class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 bg-local bg-left-top bg-no-repeat dark:border-gray-700 dark:bg-gray-950"
+            :style="backdrop"
+        >
             <p v-if="!tables.length" class="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
                 {{ till.t('floor.empty') }}
             </p>
 
-            <div v-else-if="isMapped" class="relative m-3 bg-cover bg-center bg-no-repeat" :style="canvas">
+            <div v-else-if="isMapped" class="relative m-3" :style="canvas">
                 <button
                     v-for="table in tables"
                     :key="table.id"
@@ -129,7 +145,7 @@ function tileClass(table) {
                     type="button"
                     class="flex aspect-square flex-col items-center justify-center gap-1 p-2 text-center shadow-sm transition-colors"
                     :class="tileClass(table)"
-                    :style="table.color ? { backgroundColor: table.color } : null"
+                    :style="paint(table)"
                     @click="till.openTable(table.id)"
                 >
                     <span class="text-2xl font-bold leading-none">{{ table.table_number }}</span>
