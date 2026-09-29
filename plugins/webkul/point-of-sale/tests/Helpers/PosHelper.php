@@ -298,16 +298,14 @@ class PosHelper
     public static function posCategory(array $overrides = []): Category
     {
         return Category::create(array_merge([
-            'name'       => 'Kitchen',
-            'company_id' => static::company()->id,
+            'name' => 'Kitchen',
         ], $overrides));
     }
 
     public static function floor(array $overrides = []): Floor
     {
         return Floor::create(array_merge([
-            'name'       => 'Main Floor',
-            'company_id' => static::company()->id,
+            'name' => 'Main Floor',
         ], $overrides));
     }
 
@@ -317,7 +315,6 @@ class PosHelper
             'floor_id'     => $floor->id,
             'table_number' => '1',
             'seats'        => 4,
-            'company_id'   => static::company()->id,
         ], $overrides));
     }
 

@@ -220,7 +220,6 @@ class RefundProcessor
         foreach ($this->lotsFor($line, $quantity) as $lot) {
             OrderLineLot::create(array_merge($lot, [
                 'order_line_id' => $refundLine->id,
-                'company_id'    => $refundLine->company_id,
             ]));
         }
     }

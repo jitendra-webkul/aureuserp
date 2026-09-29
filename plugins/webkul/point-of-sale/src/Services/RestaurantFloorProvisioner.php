@@ -21,15 +21,13 @@ class RestaurantFloorProvisioner
         }
 
         $floor = Floor::create([
-            'name'       => $config->company?->name ?? $config->name,
-            'company_id' => $config->company_id,
+            'name' => $config->company?->name ?? $config->name,
         ]);
 
         Table::create([
             'table_number' => '1',
             'seats'        => 1,
             'floor_id'     => $floor->id,
-            'company_id'   => $config->company_id,
         ]);
 
         $config->floors()->attach($floor->id);
