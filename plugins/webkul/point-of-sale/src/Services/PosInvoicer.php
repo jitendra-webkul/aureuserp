@@ -57,7 +57,8 @@ class PosInvoicer
                 'date'                    => $order->ordered_at,
                 'invoice_date'            => $order->ordered_at,
                 'fiscal_position_id'      => $order->fiscal_position_id,
-                'invoice_payment_term_id' => null,
+                'invoice_payment_term_id' => $order->partner?->property_payment_term_id,
+                'invoice_date_due'        => $order->partner?->property_payment_term_id ? null : $order->ordered_at,
             ]);
 
             $order->lines->each(function (OrderLine $line) use ($invoice): void {
