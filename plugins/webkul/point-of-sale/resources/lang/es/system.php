@@ -61,6 +61,11 @@ return [
         'cash' => 'Efectivo',
     ],
 
+    'order-processor' => [
+        'price-locked'           => 'Cambiar el precio de :product requiere un responsable.',
+        'line-discount-disabled' => 'Los descuentos por línea están desactivados en este punto de venta.',
+    ],
+
     'session-preflight' => [
         'draft-orders'       => 'Paga o cancela estos pedidos antes de cerrar la sesión: :orders.',
 
@@ -133,6 +138,7 @@ return [
         'stock-output-missing'            => 'Define una cuenta de salida de stock en el punto de venta.',
         'line-account-missing'            => 'Una línea del asiento de cierre no tiene cuenta.',
         'rounding-account-missing'        => 'El redondeo de efectivo no tiene cuenta de pérdidas o ganancias.',
+        'difference-exceeded'             => 'La diferencia máxima permitida es :amount. Contacta con tu responsable para aceptar la diferencia de cierre.',
     ],
 
     'invoicer' => [

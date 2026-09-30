@@ -270,6 +270,22 @@ class RegisterControls extends Component
         $this->paymentCounted[$methodId] = float_round($amount, precisionDigits: 2);
     }
 
+    public function exceedsAuthorizedDifference(array $control): bool
+    {
+        if ($control['amount_authorized_diff'] === null) {
+            return false;
+        }
+
+        $cash = $control['default_cash_details'] ?? null;
+
+        $largest = collect($this->paymentDifferences())
+            ->push($cash ? $this->cashDifference($cash) : 0)
+            ->map(fn ($difference): float => abs((float) $difference))
+            ->max();
+
+        return float_compare($largest, (float) $control['amount_authorized_diff'], precisionDigits: 2) > 0;
+    }
+
     public function cashDifference(array $cash): float
     {
         return $this->closingCash === null

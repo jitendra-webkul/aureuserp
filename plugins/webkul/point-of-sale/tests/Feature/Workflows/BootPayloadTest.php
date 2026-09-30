@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Services\BootLoader;
 
@@ -240,4 +241,39 @@ it('ships the discount product hidden with the default percentage', function () 
 
     expect(collect($payload['products'])->firstWhere('id', $discount->id)['is_hidden'])->toBeTrue()
         ->and($payload['config']['global_discount_percentage'])->toBe(15.0);
+});
+
+it('ships no default fiscal position while flexible taxes are off', function () {
+    $position = FiscalPosition::create([
+        'name'       => 'Export',
+        'company_id' => PosHelper::company()->id,
+    ]);
+
+    $this->config->forceFill([
+        'enable_fiscal_position' => false,
+        'fiscal_position_id'     => $position->id,
+    ])->save();
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    expect($payload['config']['fiscal_position_id'])->toBeNull()
+        ->and($payload['fiscal_positions'])->toBe([]);
+});
+
+it('ships the takeaway fiscal position of a restaurant without flexible taxes', function () {
+    $takeaway = FiscalPosition::create([
+        'name'       => 'Takeaway',
+        'company_id' => PosHelper::company()->id,
+    ]);
+
+    $this->config->forceFill([
+        'is_restaurant'               => true,
+        'enable_takeaway'             => true,
+        'enable_fiscal_position'      => false,
+        'takeaway_fiscal_position_id' => $takeaway->id,
+    ])->save();
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    expect(collect($payload['fiscal_positions'])->pluck('id')->all())->toContain($takeaway->id);
 });

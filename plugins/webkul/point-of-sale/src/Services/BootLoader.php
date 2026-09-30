@@ -121,7 +121,7 @@ class BootLoader
             'tax_display'                   => $config->tax_display?->value,
             'stock_update_mode'             => Session::defaultStockUpdateMode(),
             'price_list_id'                 => $config->price_list_id,
-            'fiscal_position_id'            => $config->fiscal_position_id,
+            'fiscal_position_id'            => $config->usesFiscalPositions() ? $config->fiscal_position_id : null,
             'takeaway_fiscal_position_id'   => $config->takeaway_fiscal_position_id,
             'discount_product_id'           => $config->discount_product_id,
             'tip_product_id'                => $config->tip_product_id,
@@ -602,13 +602,13 @@ class BootLoader
 
     protected function fiscalPositions(Config $config): array
     {
-        if (! $config->enable_fiscal_position) {
+        if (! $config->usesFiscalPositions()) {
             return [];
         }
 
-        $positions = $config->fiscalPositions;
+        $positions = $config->enable_fiscal_position ? $config->fiscalPositions : collect();
 
-        foreach (array_filter([$config->fiscal_position_id, $config->takeaway_fiscal_position_id]) as $id) {
+        foreach ($config->allowedFiscalPositionIds() as $id) {
             if (! $positions->contains('id', $id)) {
                 $extra = FiscalPosition::find($id);
 

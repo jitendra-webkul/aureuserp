@@ -61,6 +61,11 @@ return [
         'cash' => 'Cash',
     ],
 
+    'order-processor' => [
+        'price-locked'           => 'Price changes on :product need a manager.',
+        'line-discount-disabled' => 'Line discounts are turned off on this point of sale.',
+    ],
+
     'session-preflight' => [
         'draft-orders' => 'Pay or cancel these orders before closing the session: :orders.',
 
@@ -133,6 +138,7 @@ return [
         'stock-output-missing'            => 'Set a stock output account on the point of sale.',
         'line-account-missing'            => 'A closing entry line has no account.',
         'rounding-account-missing'        => 'The cash rounding has no profit or loss account.',
+        'difference-exceeded'             => 'The maximum difference allowed is :amount. Please contact your manager to accept the closing difference.',
     ],
 
     'invoicer' => [

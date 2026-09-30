@@ -158,6 +158,12 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                     {{ __('point-of-sale::filament/pos/pages/terminal.closing.authorized-diff', ['amount' => $this->money($control['amount_authorized_diff'])]) }}
                 </p>
+
+                @if ($this->exceedsAuthorizedDifference($control))
+                    <p class="text-xs font-semibold text-danger-600 dark:text-danger-400">
+                        {{ __('point-of-sale::filament/pos/pages/terminal.closing.authorized-diff-exceeded') }}
+                    </p>
+                @endif
             @endif
         </div>
 

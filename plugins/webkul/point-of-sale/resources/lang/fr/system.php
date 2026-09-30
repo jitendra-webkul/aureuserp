@@ -61,6 +61,11 @@ return [
         'cash' => 'Espèces',
     ],
 
+    'order-processor' => [
+        'price-locked'           => 'Modifier le prix de :product nécessite un responsable.',
+        'line-discount-disabled' => 'Les remises par ligne sont désactivées sur ce point de vente.',
+    ],
+
     'session-preflight' => [
         'draft-orders'       => 'Payez ou annulez ces commandes avant de clôturer la session : :orders.',
 
@@ -133,6 +138,7 @@ return [
         'stock-output-missing'            => 'Définissez un compte de sortie de stock sur le point de vente.',
         'line-account-missing'            => 'Une ligne de l\'écriture de clôture n\'a pas de compte.',
         'rounding-account-missing'        => 'L\'arrondi des espèces n\'a pas de compte de profits ou de pertes.',
+        'difference-exceeded'             => 'L’écart maximal autorisé est de :amount. Contactez votre responsable pour accepter l’écart de clôture.',
     ],
 
     'invoicer' => [

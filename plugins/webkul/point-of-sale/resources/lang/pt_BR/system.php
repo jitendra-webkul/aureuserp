@@ -61,6 +61,11 @@ return [
         'cash' => 'Dinheiro',
     ],
 
+    'order-processor' => [
+        'price-locked'           => 'Alterar o preço de :product exige um gerente.',
+        'line-discount-disabled' => 'Os descontos por linha estão desativados neste ponto de venda.',
+    ],
+
     'session-preflight' => [
         'draft-orders'       => 'Pague ou cancele estes pedidos antes de fechar a sessão: :orders.',
 
@@ -133,6 +138,7 @@ return [
         'stock-output-missing'            => 'Defina uma conta de saída de estoque no ponto de venda.',
         'line-account-missing'            => 'Uma linha do lançamento de fechamento não tem conta.',
         'rounding-account-missing'        => 'O arredondamento de dinheiro não tem conta de lucros ou perdas.',
+        'difference-exceeded'             => 'A diferença máxima permitida é :amount. Contate seu gerente para aceitar a diferença de fechamento.',
     ],
 
     'invoicer' => [

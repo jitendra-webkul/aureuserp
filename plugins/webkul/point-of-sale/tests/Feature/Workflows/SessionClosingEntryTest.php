@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Webkul\Account\Enums\DisplayType;
 use Webkul\Account\Enums\DocumentType;
 use Webkul\Account\Enums\MoveState;
@@ -377,4 +379,42 @@ it('leaves cash movements out of the closing entry drawer line', function () {
     $drawerLine = Move::find($session->move_id)->lines->firstWhere('account_id', $liquidityId);
 
     expect((float) $drawerLine->debit)->toBe(100.0);
+});
+
+it('refuses a cashier closing over the authorized difference', function () {
+    $this->config->forceFill([
+        'enable_cash_control'       => true,
+        'enable_maximum_difference' => true,
+        'amount_authorized_diff'    => 5,
+    ])->save();
+
+    Gate::before(fn (): ?bool => false);
+
+    expect(fn () => PointOfSale::closeSessionWithAccounting($this->session->refresh(), 100.0))
+        ->toThrow(PosConfigurationException::class, Str::before(__('point-of-sale::system.session-closer.difference-exceeded'), ':'));
+
+    expect($this->session->refresh()->state)->not->toBe(SessionState::CLOSED);
+});
+
+it('closes with the cash method journal when the session opened without one', function () {
+    $this->session->forceFill([
+        'cash_journal_id'  => null,
+        'has_cash_control' => false,
+    ])->save();
+
+    PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+    ));
+
+    $session = PointOfSale::closeSessionWithAccounting($this->session->refresh());
+
+    $move = Move::findOrFail($session->move_id);
+
+    $cashAccountId = $this->cash->journal->default_account_id;
+
+    expect((float) $move->lines->where('account_id', $cashAccountId)->sum('debit'))->toBe(100.0)
+        ->and((float) $move->lines->sum('debit'))->toBe((float) $move->lines->sum('credit'));
 });

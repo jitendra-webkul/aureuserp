@@ -146,6 +146,8 @@ class ConfigForm
                     ->searchable()
                     ->preload()
                     ->native(false)
+                    ->disabled(fn (?Config $record): bool => static::lockedByOpenSession($record))
+                    ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->columnSpanFull(),
 
                 Toggle::make('enable_cash_control')

@@ -2,6 +2,7 @@
 
 namespace Webkul\PointOfSale\Services;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Webkul\Account\Enums\MoveState;
 use Webkul\Account\Enums\MoveType;
@@ -34,6 +35,8 @@ class SessionCloser
 
             $session = $this->sessions->close($session, $cashBalanceEndReal, $notes);
 
+            $this->assertWithinAuthorizedDifference($session, $paymentDifferences);
+
             $this->sessionPickings->generateFor($session);
 
             $lines = $this->builder->build($session);
@@ -63,6 +66,34 @@ class SessionCloser
 
             return $session->refresh();
         });
+    }
+
+    protected function assertWithinAuthorizedDifference(Session $session, array $paymentDifferences): void
+    {
+        $config = $session->config;
+
+        if (! $config?->enable_maximum_difference) {
+            return;
+        }
+
+        $largest = collect($paymentDifferences)
+            ->push($session->cash_difference ?? 0)
+            ->map(fn ($difference): float => abs((float) $difference))
+            ->max();
+
+        if (float_compare($largest, (float) $config->amount_authorized_diff, precisionDigits: 4) <= 0) {
+            return;
+        }
+
+        if (Auth::user()?->can('update', $config)) {
+            return;
+        }
+
+        throw new PosConfigurationException(
+            __('point-of-sale::system.session-closer.difference-exceeded', [
+                'amount' => number_format((float) $config->amount_authorized_diff, 2),
+            ])
+        );
     }
 
     protected function applyBalancingLine(Session $session, array $lines, float $delta, ?int $balancingAccountId): array

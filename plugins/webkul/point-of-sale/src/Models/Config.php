@@ -468,6 +468,31 @@ class Config extends Model implements Sortable
         app(PaymentMethodProvisioner::class)->ensureFor($this);
     }
 
+    public function usesFiscalPositions(): bool
+    {
+        return (bool) $this->enable_fiscal_position
+            || ((bool) $this->is_restaurant && (bool) $this->enable_takeaway);
+    }
+
+    public function allowedFiscalPositionIds(): array
+    {
+        if (! $this->usesFiscalPositions()) {
+            return [];
+        }
+
+        $ids = [$this->fiscal_position_id];
+
+        if ($this->enable_fiscal_position) {
+            $ids = array_merge($ids, $this->fiscalPositions()->pluck('accounts_fiscal_positions.id')->all());
+        }
+
+        if ($this->is_restaurant && $this->enable_takeaway) {
+            $ids[] = $this->takeaway_fiscal_position_id;
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $ids))));
+    }
+
     public function syncRestaurantFloors(): void
     {
         app(RestaurantFloorProvisioner::class)->syncFor($this);

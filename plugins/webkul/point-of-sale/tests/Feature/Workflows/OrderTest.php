@@ -2,10 +2,13 @@
 
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
+use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Events\OrderPaid;
 use Webkul\PointOfSale\Exceptions\InsufficientPaymentException;
 use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Order;
 
@@ -254,4 +257,49 @@ it('keeps the time the till took the payment as the order date', function () {
     ));
 
     expect($order->refresh()->ordered_at->equalTo(Date::parse('2026-09-20T04:30:00Z')))->toBeTrue();
+});
+
+it('rejects a line discount when line discounts are off', function () {
+    $this->config->forceFill(['enable_line_discount' => false])->save();
+
+    expect(fn () => PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0, ['discount' => 10])],
+        [PosHelper::payment($this->cash, 90.0)],
+    )))->toThrow(PosConfigurationException::class, __('point-of-sale::system.order-processor.line-discount-disabled'));
+});
+
+it('rejects a changed price from a cashier on a price controlled register', function () {
+    $this->product->update(['price' => 100.0]);
+
+    $this->config->forceFill(['enable_price_control' => true])->save();
+
+    Gate::before(fn (): ?bool => false);
+
+    expect(fn () => PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 1.0)],
+        [PosHelper::payment($this->cash, 1.0)],
+    )))->toThrow(PosConfigurationException::class);
+});
+
+it('drops a fiscal position the register does not allow', function () {
+    $position = FiscalPosition::create([
+        'name'       => 'Export',
+        'company_id' => PosHelper::company()->id,
+    ]);
+
+    $this->config->forceFill(['enable_fiscal_position' => false])->save();
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+        ['fiscal_position_id' => $position->id],
+    ));
+
+    expect($order->refresh()->fiscal_position_id)->toBeNull();
 });

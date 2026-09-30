@@ -22,7 +22,7 @@ class CashMovementPoster
 
         $config = $session?->config;
 
-        $journal = $session?->cashJournal;
+        $journal = $session?->resolveCashJournal();
 
         if (! $config || ! $journal) {
             return null;

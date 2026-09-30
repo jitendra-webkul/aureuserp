@@ -61,6 +61,11 @@ return [
         'cash' => 'نقدي',
     ],
 
+    'order-processor' => [
+        'price-locked'           => 'تغيير سعر :product يتطلب موافقة المدير.',
+        'line-discount-disabled' => 'خصومات البنود معطلة في نقطة البيع هذه.',
+    ],
+
     'session-preflight' => [
         'draft-orders'       => 'ادفع هذه الطلبات أو ألغِها قبل إغلاق الجلسة: :orders.',
 
@@ -133,6 +138,7 @@ return [
         'stock-output-missing'            => 'حدّد حساب إخراج المخزون في نقطة البيع.',
         'line-account-missing'            => 'أحد بنود قيد الإغلاق بدون حساب.',
         'rounding-account-missing'        => 'التقريب النقدي ليس له حساب أرباح أو خسائر.',
+        'difference-exceeded'             => 'الحد الأقصى المسموح للفرق هو :amount. يرجى التواصل مع المدير لقبول فرق الإغلاق.',
     ],
 
     'invoicer' => [

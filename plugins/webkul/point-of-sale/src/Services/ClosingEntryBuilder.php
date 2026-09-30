@@ -357,7 +357,7 @@ class ClosingEntryBuilder
         }
 
         $account = $this->accounts->resolve(
-            $session->cashJournal?->default_account_id,
+            $session->resolveCashJournal()?->default_account_id,
             $session->company_id,
         );
 
@@ -387,7 +387,7 @@ class ClosingEntryBuilder
             return collect();
         }
 
-        $journal = $session->cashJournal;
+        $journal = $session->resolveCashJournal();
 
         $account = $difference > 0
             ? $this->accounts->cashProfitAccountFor($journal, $session->company_id)

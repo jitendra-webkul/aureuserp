@@ -137,6 +137,8 @@ it('prefers the takeaway fiscal position on a takeaway order', function () {
     $takeaway = FiscalPosition::create(['name' => 'Takeaway', 'company_id' => PosHelper::company()->id]);
 
     $this->config->update([
+        'is_restaurant'               => true,
+        'enable_takeaway'             => true,
         'enable_fiscal_position'      => true,
         'fiscal_position_id'          => $eatIn->id,
         'takeaway_fiscal_position_id' => $takeaway->id,

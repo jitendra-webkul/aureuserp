@@ -141,6 +141,12 @@ class Session extends Model
         return $this->belongsTo(Journal::class, 'cash_journal_id');
     }
 
+    public function resolveCashJournal(): ?Journal
+    {
+        return $this->cashJournal
+            ?? $this->config?->paymentMethods->firstWhere('is_cash_count', true)?->journal;
+    }
+
     public function move(): BelongsTo
     {
         return $this->belongsTo(Move::class);

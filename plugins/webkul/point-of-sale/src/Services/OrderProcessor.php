@@ -4,6 +4,7 @@ namespace Webkul\PointOfSale\Services;
 
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,6 +14,7 @@ use Webkul\Account\Models\Product as AccountProduct;
 use Webkul\Account\Models\Tax;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Exceptions\RefundExceedsSoldQuantityException;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Order;
@@ -47,6 +49,8 @@ class OrderProcessor
 
         return DB::transaction(function () use ($payload, $uuid, $existing): Order {
             $order = $existing ?? $this->createOrder($payload, $uuid);
+
+            $this->assertLineRules($order, $payload['lines'] ?? []);
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
@@ -205,6 +209,8 @@ class OrderProcessor
 
         $payload['table_id'] = $this->resolveTableId($config, $payload['table_id'] ?? null);
 
+        $payload['fiscal_position_id'] = $this->resolveFiscalPositionId($config, $payload);
+
         $attributes = array_merge(
             Arr::only($payload, [
                 'reference',
@@ -259,6 +265,69 @@ class OrderProcessor
             'is_tipped'  => true,
             'tip_amount' => $amount,
         ])->save();
+    }
+
+    protected function resolveFiscalPositionId(Config $config, array $payload): ?int
+    {
+        if (! empty($payload['is_takeaway']) && $config->is_restaurant && $config->enable_takeaway && $config->takeaway_fiscal_position_id) {
+            return (int) $config->takeaway_fiscal_position_id;
+        }
+
+        $allowed = $config->allowedFiscalPositionIds();
+
+        $requested = (int) ($payload['fiscal_position_id'] ?? 0);
+
+        if ($requested && in_array($requested, $allowed, true)) {
+            return $requested;
+        }
+
+        return $config->usesFiscalPositions() && $config->fiscal_position_id
+            ? (int) $config->fiscal_position_id
+            : null;
+    }
+
+    protected function assertLineRules(Order $order, array $lines): void
+    {
+        $config = $order->config;
+
+        if (! $config) {
+            return;
+        }
+
+        $exempt = array_filter([
+            $config->enable_tip ? (int) $config->tip_product_id : 0,
+            $config->enable_global_discount ? (int) $config->discount_product_id : 0,
+        ]);
+
+        $priceLocked = $config->enable_price_control && ! Auth::user()?->can('update', $config);
+
+        foreach ($lines as $line) {
+            $productId = (int) ($line['product_id'] ?? 0);
+
+            if (in_array($productId, $exempt, true) || ! empty($line['refunded_order_line_id'])) {
+                continue;
+            }
+
+            if (! $config->enable_line_discount && float_compare((float) ($line['discount'] ?? 0), 0, precisionDigits: 4) > 0) {
+                throw new PosConfigurationException(__('point-of-sale::system.order-processor.line-discount-disabled'));
+            }
+
+            if (! $priceLocked || ! array_key_exists('price_unit', $line)) {
+                continue;
+            }
+
+            $product = Product::withoutGlobalScopes()->find($productId);
+
+            if (! $product) {
+                continue;
+            }
+
+            $resolved = $this->prices->resolveForOrder($order, $product, (float) ($line['qty'] ?? 1));
+
+            if (float_compare((float) $line['price_unit'], $resolved, precisionDigits: 4) !== 0) {
+                throw new PosConfigurationException(__('point-of-sale::system.order-processor.price-locked', ['product' => $product->name]));
+            }
+        }
     }
 
     protected function resolveTableId(Config $config, mixed $tableId): ?int
