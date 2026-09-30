@@ -92,7 +92,7 @@ const reference = computed(() => [info.value?.reference, info.value?.barcode].fi
             <button
                 type="button"
                 class="flex min-h-12 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700"
-                @click="till.closeProductInfo(); till.pickProduct(info.id)"
+                @click="till.pickProduct(info.id); till.closeProductInfo()"
             >
                 {{ till.t('product-info.add') }}
             </button>
