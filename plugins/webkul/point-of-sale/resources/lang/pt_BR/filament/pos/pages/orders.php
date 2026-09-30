@@ -34,10 +34,16 @@ return [
 
     'refund' => [
         'prompt'    => 'Selecione o(s) produto(s) a reembolsar e informe a quantidade',
+        'refunded'  => 'Reembolsado:',
         'to-refund' => 'A reembolsar:',
         'qty'       => 'Qtd.',
         'price'     => 'Preço',
         'backspace' => 'Retrocesso',
+
+        'max-exceeded' => [
+            'title' => 'Máximo excedido',
+            'body'  => 'A quantidade a reembolsar é maior que a quantidade pedida. Foram solicitados :requested, mas apenas :max pode ser reembolsado.',
+        ],
     ],
 
     'actions' => [
