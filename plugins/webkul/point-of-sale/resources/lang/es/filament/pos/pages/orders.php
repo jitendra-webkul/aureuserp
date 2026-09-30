@@ -27,6 +27,7 @@ return [
         'order'    => 'Número de pedido',
         'customer' => 'Cliente',
         'cashier'  => 'Cajero',
+        'tracking' => 'Número de seguimiento',
         'total'    => 'Total',
         'status'   => 'Estado',
     ],

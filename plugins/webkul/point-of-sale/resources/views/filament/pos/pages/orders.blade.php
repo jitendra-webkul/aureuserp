@@ -52,15 +52,16 @@
 
             <div class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                 <table class="w-full text-sm">
-                    <thead class="sticky top-0 z-[1] bg-gray-700 text-start text-xs uppercase tracking-wide text-white dark:bg-gray-800">
+                    <thead class="sticky top-0 z-[1] bg-gray-700 text-xs uppercase tracking-wide text-white dark:bg-gray-800">
                         <tr>
-                            <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.date') }}</th>
-                            <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.receipt') }}</th>
-                            <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.order') }}</th>
-                            <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.customer') }}</th>
-                            <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.cashier') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.date') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.receipt') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.order') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.customer') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.cashier') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.tracking') }}</th>
                             <th class="px-3 py-2 text-end font-medium">{{ __($prefix.'columns.total') }}</th>
-                            <th class="px-3 py-2 font-medium">{{ __($prefix.'columns.status') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.status') }}</th>
                         </tr>
                     </thead>
 
@@ -89,6 +90,8 @@
 
                                 <td class="max-w-32 truncate px-3 py-2">{{ $order->user?->name }}</td>
 
+                                <td class="whitespace-nowrap px-3 py-2 font-mono text-xs tabular-nums">{{ $order->tracking_number ?? '—' }}</td>
+
                                 <td class="whitespace-nowrap px-3 py-2 text-end font-mono tabular-nums font-semibold">
                                     {{ $this->money((float) $order->amount_total, $order) }}
                                 </td>
@@ -97,7 +100,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-3 py-10 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="8" class="px-3 py-10 text-center text-gray-500 dark:text-gray-400">
                                     {{ __($prefix.'empty.heading') }}
                                 </td>
                             </tr>

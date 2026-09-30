@@ -27,6 +27,7 @@ return [
         'order'    => 'Order number',
         'customer' => 'Customer',
         'cashier'  => 'Cashier',
+        'tracking' => 'Tracking number',
         'total'    => 'Total',
         'status'   => 'Status',
     ],
