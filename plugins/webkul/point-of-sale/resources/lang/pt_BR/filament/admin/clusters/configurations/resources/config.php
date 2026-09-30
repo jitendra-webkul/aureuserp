@@ -135,12 +135,13 @@ return [
 
                         'fields' => [
                             'enable-receipt-print'                  => 'Impressão de recibos',
+                            'enable-receipt-print-helper-text'      => 'Exibe um botão Imprimir na tela do recibo após o pagamento.',
                             'enable-receipt-auto-print'             => 'Impressão automática de recibos',
                             'enable-receipt-auto-print-helper-text' => 'Imprime os recibos automaticamente assim que o pagamento é registrado.',
                             'receipt-header'                        => 'Cabeçalho do recibo',
                             'receipt-footer'                        => 'Rodapé do recibo',
                             'bills'                                 => 'Moedas/Cédulas',
-                            'bills-helper-text'                     => 'Cédulas e moedas oferecidas na tela de pagamento em dinheiro.',
+                            'bills-helper-text'                     => 'Cédulas e moedas oferecidas ao contar o dinheiro na abertura e no fechamento.',
                         ],
                     ],
 

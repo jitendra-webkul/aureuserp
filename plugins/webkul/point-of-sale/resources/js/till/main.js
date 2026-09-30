@@ -16,7 +16,15 @@ async function mountTill(element) {
         accessToken: element.dataset.accessToken ?? 'anonymous',
     })
 
+    activeTill = till
+
     await till.start()
+
+    if (activeTill !== till) {
+        till.stop()
+
+        return
+    }
 
     const app = createApp(App)
 
@@ -25,8 +33,6 @@ async function mountTill(element) {
     app.mount(element)
 
     mounted = app
-
-    activeTill = till
 
     window.pointOfSaleTill = till
 }

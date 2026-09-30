@@ -135,12 +135,13 @@ return [
 
                         'fields' => [
                             'enable-receipt-print'                   => 'Receipt Printing',
+                            'enable-receipt-print-helper-text'       => 'Show a Print button on the receipt screen after payment.',
                             'enable-receipt-auto-print'              => 'Automatic Receipt Printing',
                             'enable-receipt-auto-print-helper-text'  => 'Print receipts automatically once the payment is registered.',
                             'receipt-header'                         => 'Receipt Header',
                             'receipt-footer'                         => 'Receipt Footer',
                             'bills'                                  => 'Coins/Bills',
-                            'bills-helper-text'                      => 'Denominations offered on the cash payment screen.',
+                            'bills-helper-text'                      => 'Denominations offered when counting the cash at opening and closing.',
                         ],
                     ],
 
