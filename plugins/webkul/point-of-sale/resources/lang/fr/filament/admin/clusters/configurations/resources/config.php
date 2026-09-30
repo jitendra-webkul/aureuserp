@@ -135,12 +135,13 @@ return [
 
                         'fields' => [
                             'enable-receipt-print'                  => 'Impression des reçus',
+                            'enable-receipt-print-helper-text'      => 'Afficher un bouton Imprimer sur l’écran du reçu après le paiement.',
                             'enable-receipt-auto-print'             => 'Impression automatique des reçus',
                             'enable-receipt-auto-print-helper-text' => 'Imprimer les reçus automatiquement dès que le paiement est enregistré.',
                             'receipt-header'                        => 'En-tête du reçu',
                             'receipt-footer'                        => 'Pied du reçu',
                             'bills'                                 => 'Pièces/Billets',
-                            'bills-helper-text'                     => 'Coupures proposées sur l\'écran de paiement en espèces.',
+                            'bills-helper-text'                     => 'Coupures proposées lors du comptage de la caisse à l’ouverture et à la fermeture.',
                         ],
                     ],
 

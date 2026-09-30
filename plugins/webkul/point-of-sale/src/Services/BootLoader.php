@@ -683,7 +683,7 @@ class BootLoader
 
     protected function paymentMethods(Config $config): array
     {
-        return $config->paymentMethods->map(fn (PaymentMethod $method): array => [
+        return $config->paymentMethods->sortBy([['sort', 'asc'], ['id', 'asc']])->map(fn (PaymentMethod $method): array => [
             'id'                 => $method->id,
             'name'               => $method->name,
             'type'               => $method->type?->value ?? $method->type,

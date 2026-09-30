@@ -135,12 +135,13 @@ return [
 
                         'fields' => [
                             'enable-receipt-print'                  => 'Impresión de recibos',
+                            'enable-receipt-print-helper-text'      => 'Muestra un botón Imprimir en la pantalla del recibo tras el pago.',
                             'enable-receipt-auto-print'             => 'Impresión automática de recibos',
                             'enable-receipt-auto-print-helper-text' => 'Imprime los recibos automáticamente en cuanto se registra el pago.',
                             'receipt-header'                        => 'Encabezado del recibo',
                             'receipt-footer'                        => 'Pie del recibo',
                             'bills'                                 => 'Monedas/Billetes',
-                            'bills-helper-text'                     => 'Denominaciones ofrecidas en la pantalla de pago en efectivo.',
+                            'bills-helper-text'                     => 'Denominaciones ofrecidas al contar el efectivo en la apertura y el cierre.',
                         ],
                     ],
 

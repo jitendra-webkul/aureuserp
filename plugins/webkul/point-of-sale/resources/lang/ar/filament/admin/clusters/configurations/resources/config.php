@@ -135,12 +135,13 @@ return [
 
                         'fields' => [
                             'enable-receipt-print'                  => 'طباعة الإيصال',
+                            'enable-receipt-print-helper-text'      => 'إظهار زر الطباعة في شاشة الإيصال بعد الدفع.',
                             'enable-receipt-auto-print'             => 'طباعة الإيصال تلقائياً',
                             'enable-receipt-auto-print-helper-text' => 'طباعة الإيصالات تلقائياً بمجرد تسجيل الدفعة.',
                             'receipt-header'                        => 'ترويسة الإيصال',
                             'receipt-footer'                        => 'تذييل الإيصال',
                             'bills'                                 => 'العملات/الأوراق النقدية',
-                            'bills-helper-text'                     => 'الفئات النقدية المعروضة في شاشة الدفع النقدي.',
+                            'bills-helper-text'                     => 'الفئات النقدية المعروضة عند عدّ النقد عند الفتح والإغلاق.',
                         ],
                     ],
 

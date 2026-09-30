@@ -107,6 +107,7 @@ export class Till {
             guestsModalOpen: false,
             guestsDraft: 0,
             splitQuantities: {},
+            autoPrintOrderUuid: null,
             billModalOpen: false,
             tipModalOpen: false,
             tipDraft: '',
@@ -1281,6 +1282,14 @@ export class Till {
         this.selectOrder(target.uuid)
     }
 
+    get printsReceipts() {
+        return this.config.enable_receipt_print !== false
+    }
+
+    get printsReceiptAutomatically() {
+        return this.printsReceipts && Boolean(this.config.enable_receipt_auto_print)
+    }
+
     openBill() {
         if (!this.activeOrder?.lines.length) {
             return
@@ -2386,7 +2395,6 @@ export class Till {
         }
 
         let keys = []
-        let timer = null
 
         const flush = () => {
             const pressed = keys
@@ -2401,15 +2409,15 @@ export class Till {
         }
 
         this.keyboard = (event) => {
-            if (!this.acceptsKeyboard(event) || MODIFIER_KEYS.has(event.key)) {
+            if (event.repeat || !this.acceptsKeyboard(event) || MODIFIER_KEYS.has(event.key)) {
                 return
             }
 
             keys.push(event.key)
 
-            window.clearTimeout(timer)
+            window.clearTimeout(this.keyboardTimer)
 
-            timer = window.setTimeout(flush, KEYBOARD_BURST_WINDOW)
+            this.keyboardTimer = window.setTimeout(flush, KEYBOARD_BURST_WINDOW)
         }
 
         window.addEventListener('keydown', this.keyboard)
@@ -2427,7 +2435,7 @@ export class Till {
             || target instanceof HTMLSelectElement
             || target?.isContentEditable
 
-        if (editing || document.querySelector('.fi-modal-open')) {
+        if (editing || this.state.cameraScanning || document.querySelector('.fi-modal-open')) {
             return false
         }
 
@@ -2453,6 +2461,8 @@ export class Till {
 
         if (this.keyboard) {
             window.removeEventListener('keydown', this.keyboard)
+
+            window.clearTimeout(this.keyboardTimer)
 
             this.keyboard = null
         }
@@ -2790,6 +2800,8 @@ export class Till {
         order.validated_at = new Date().toISOString()
 
         this.queue.push({ uuid: order.uuid, payload: this.orderPayload(order) })
+
+        this.state.autoPrintOrderUuid = this.printsReceiptAutomatically ? order.uuid : null
 
         this.state.screen = 'receipt'
 

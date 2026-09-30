@@ -483,11 +483,14 @@ class ConfigForm
             ->icon('heroicon-o-receipt-percent')
             ->schema([
                 Toggle::make('enable_receipt_print')
-                    ->label(static::label('sections.configurations.tabs.receipts.fields.enable-receipt-print')),
+                    ->label(static::label('sections.configurations.tabs.receipts.fields.enable-receipt-print'))
+                    ->helperText(static::label('sections.configurations.tabs.receipts.fields.enable-receipt-print-helper-text'))
+                    ->live(),
 
                 Toggle::make('enable_receipt_auto_print')
                     ->label(static::label('sections.configurations.tabs.receipts.fields.enable-receipt-auto-print'))
-                    ->helperText(static::label('sections.configurations.tabs.receipts.fields.enable-receipt-auto-print-helper-text')),
+                    ->helperText(static::label('sections.configurations.tabs.receipts.fields.enable-receipt-auto-print-helper-text'))
+                    ->visible(fn (Get $get): bool => (bool) $get('enable_receipt_print')),
 
                 Textarea::make('receipt_header')
                     ->label(static::label('sections.configurations.tabs.receipts.fields.receipt-header'))

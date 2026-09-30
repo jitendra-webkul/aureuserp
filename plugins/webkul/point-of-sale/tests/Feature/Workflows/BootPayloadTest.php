@@ -210,3 +210,19 @@ it('ships no tip product while tips are off', function () {
 
     expect(collect($payload['products'])->firstWhere('id', $tip->id))->toBeNull();
 });
+
+it('ships payment methods in their sort order', function () {
+    $late = PosHelper::bankMethod(['name' => 'Late']);
+
+    $early = PosHelper::bankMethod(['name' => 'Early']);
+
+    $late->update(['sort' => 20]);
+
+    $early->update(['sort' => 1]);
+
+    $this->config->paymentMethods()->sync([$late->id, $early->id]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    expect(collect($payload['payment_methods'])->pluck('id')->all())->toBe([$early->id, $late->id]);
+});
