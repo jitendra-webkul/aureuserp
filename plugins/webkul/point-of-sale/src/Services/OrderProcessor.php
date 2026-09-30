@@ -214,6 +214,8 @@ class OrderProcessor
         $attributes = array_merge(
             Arr::only($payload, [
                 'reference',
+                'tracking_number',
+                'sequence_number',
                 'note',
                 'email',
                 'mobile',
