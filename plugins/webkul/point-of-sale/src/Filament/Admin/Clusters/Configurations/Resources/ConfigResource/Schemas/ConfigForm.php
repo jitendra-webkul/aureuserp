@@ -10,6 +10,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Webkul\Account\Enums\AccountType;
@@ -547,6 +548,11 @@ class ConfigForm
                     ->searchable()
                     ->preload()
                     ->native(false)
+                    ->live()
+                    ->afterStateUpdated(function (Set $set): void {
+                        $set('operation_type_id', null);
+                        $set('return_operation_type_id', null);
+                    })
                     ->required(),
 
                 Select::make('operation_type_id')
@@ -555,11 +561,12 @@ class ConfigForm
                     ->relationship(
                         'operationType',
                         'name',
-                        fn (Builder $query, ?Config $record): Builder => static::scoped($query->where('type', OperationTypeEnum::OUTGOING), $record),
+                        fn (Builder $query, Get $get, ?Config $record): Builder => static::scoped($query->where('type', OperationTypeEnum::OUTGOING)->where('warehouse_id', $get('warehouse_id')), $record),
                     )
                     ->searchable()
                     ->preload()
                     ->native(false)
+                    ->disabled(fn (Get $get): bool => blank($get('warehouse_id')))
                     ->required(fn (string $operation): bool => $operation !== 'create'),
 
                 Select::make('return_operation_type_id')
@@ -567,11 +574,12 @@ class ConfigForm
                     ->relationship(
                         'returnOperationType',
                         'name',
-                        fn (Builder $query, ?Config $record): Builder => static::scoped($query->where('type', OperationTypeEnum::INCOMING), $record),
+                        fn (Builder $query, Get $get, ?Config $record): Builder => static::scoped($query->where('type', OperationTypeEnum::INCOMING)->where('warehouse_id', $get('warehouse_id')), $record),
                     )
                     ->searchable()
                     ->preload()
-                    ->native(false),
+                    ->native(false)
+                    ->disabled(fn (Get $get): bool => blank($get('warehouse_id'))),
 
                 Toggle::make('enable_ship_later')
                     ->label(static::label('sections.configurations.tabs.inventory.fields.enable-ship-later'))
