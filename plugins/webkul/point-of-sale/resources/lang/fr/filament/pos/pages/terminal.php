@@ -287,6 +287,13 @@ return [
         'remove' => 'Retirer le pourboire',
     ],
 
+    'global-discount' => [
+        'label'   => 'Remise',
+        'heading' => 'Pourcentage de remise',
+        'apply'   => 'Appliquer',
+        'hint'    => 'Remplace toute remise déjà appliquée à la commande.',
+    ],
+
     'receipt' => [
         'phone'     => 'Tél. :',
         'served-by' => 'Servi par :cashier',

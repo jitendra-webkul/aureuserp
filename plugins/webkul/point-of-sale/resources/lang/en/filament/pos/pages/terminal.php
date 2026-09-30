@@ -287,6 +287,13 @@ return [
         'remove' => 'Remove tip',
     ],
 
+    'global-discount' => [
+        'label'   => 'Discount',
+        'heading' => 'Discount Percentage',
+        'apply'   => 'Apply',
+        'hint'    => 'Replaces any discount already on the order.',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel:',
         'served-by' => 'Served by :cashier',

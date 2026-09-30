@@ -287,6 +287,13 @@ return [
         'remove' => 'Quitar propina',
     ],
 
+    'global-discount' => [
+        'label'   => 'Descuento',
+        'heading' => 'Porcentaje de descuento',
+        'apply'   => 'Aplicar',
+        'hint'    => 'Sustituye cualquier descuento ya aplicado al pedido.',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',

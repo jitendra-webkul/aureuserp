@@ -98,6 +98,10 @@ return [
             'account-missing' => 'Tax :tax has a distribution line without an account.',
         ],
 
+        'global-discount' => [
+            'product-missing' => 'Set a discount product on the point of sale to use global discounts.',
+        ],
+
         'cogs' => [
             'stock-output-missing' => 'Set a stock output account before enabling cost of goods sold.',
         ],

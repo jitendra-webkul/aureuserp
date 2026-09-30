@@ -44,6 +44,10 @@ class SessionPreflight
         if ($config->enable_cogs) {
             $this->assertCogsAccounts($config);
         }
+
+        if ($config->enable_global_discount && ! $config->discount_product_id) {
+            $this->fail('global-discount.product-missing');
+        }
     }
 
     public function assertCanClose(Session $session): void

@@ -8,6 +8,7 @@ import SplitScreen from './components/SplitScreen.vue'
 import BillModal from './components/BillModal.vue'
 import TipModal from './components/TipModal.vue'
 import OrderNameModal from './components/OrderNameModal.vue'
+import GlobalDiscountModal from './components/GlobalDiscountModal.vue'
 import Cart from './components/Cart.vue'
 import Numpad from './components/Numpad.vue'
 import PaymentPad from './components/PaymentPad.vue'
@@ -91,5 +92,7 @@ const state = till.state
         <TipModal />
 
         <OrderNameModal />
+
+        <GlobalDiscountModal />
     </div>
 </template>

@@ -287,6 +287,13 @@ return [
         'remove' => 'إزالة الإكرامية',
     ],
 
+    'global-discount' => [
+        'label'   => 'خصم',
+        'heading' => 'نسبة الخصم',
+        'apply'   => 'تطبيق',
+        'hint'    => 'يستبدل أي خصم موجود على الطلب.',
+    ],
+
     'receipt' => [
         'phone'     => 'هاتف:',
         'served-by' => 'قدّمها :cashier',
