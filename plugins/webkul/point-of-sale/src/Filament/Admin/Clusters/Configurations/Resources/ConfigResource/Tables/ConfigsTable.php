@@ -2,6 +2,7 @@
 
 namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource\Tables;
 
+use Exception;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,6 +17,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Grouping\Group as TableGroup;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\Support\Models\Company;
 
@@ -96,6 +99,29 @@ class ConfigsTable
                             ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.record-actions.delete.notification.success.body')),
                     ),
                 ForceDeleteAction::make()
+                    ->databaseTransaction(true)
+                    ->action(function (Config $record, ForceDeleteAction $action) {
+                        try {
+                            $record->forceDelete();
+
+                            $action->success();
+                        } catch (QueryException|Exception $e) {
+                            if ($e instanceof QueryException) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.record-actions.force-delete.notification.error.title'))
+                                    ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.record-actions.force-delete.notification.error.body'))
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->danger()
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
+
+                            $action->cancel(shouldRollBackDatabaseTransaction: true);
+                        }
+                    })
                     ->successNotification(
                         Notification::make()
                             ->success()
@@ -107,7 +133,37 @@ class ConfigsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    ForceDeleteBulkAction::make()
+                        ->hidden(false)
+                        ->databaseTransaction(true)
+                        ->action(function (Collection $records, ForceDeleteBulkAction $action) {
+                            try {
+                                $records->each(fn (Config $record) => $record->forceDelete());
+
+                                $action->success();
+                            } catch (QueryException|Exception $e) {
+                                if ($e instanceof QueryException) {
+                                    Notification::make()
+                                        ->danger()
+                                        ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.bulk-actions.force-delete.notification.error.title'))
+                                        ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.bulk-actions.force-delete.notification.error.body'))
+                                        ->send();
+                                } else {
+                                    Notification::make()
+                                        ->danger()
+                                        ->body($e->getMessage())
+                                        ->send();
+                                }
+
+                                $action->cancel(shouldRollBackDatabaseTransaction: true);
+                            }
+                        })
+                        ->successNotification(
+                            Notification::make()
+                                ->success()
+                                ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.bulk-actions.force-delete.notification.success.title'))
+                                ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.bulk-actions.force-delete.notification.success.body')),
+                        ),
                 ]),
             ]);
     }

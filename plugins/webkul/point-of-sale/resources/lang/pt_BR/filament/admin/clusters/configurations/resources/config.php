@@ -234,6 +234,27 @@ return [
                         'title' => 'Ponto de venda excluído permanentemente',
                         'body'  => 'O ponto de venda foi excluído permanentemente.',
                     ],
+
+                    'error' => [
+                        'title' => 'Não foi possível excluir o ponto de venda',
+                        'body'  => 'O ponto de venda não pode ser excluído permanentemente porque possui sessões ou pedidos. Arquive-o em vez disso.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Pontos de venda excluídos permanentemente',
+                        'body'  => 'Os pontos de venda selecionados foram excluídos permanentemente.',
+                    ],
+
+                    'error' => [
+                        'title' => 'Não foi possível excluir os pontos de venda',
+                        'body'  => 'Um ou mais pontos de venda não podem ser excluídos permanentemente porque possuem sessões ou pedidos. Arquive-os em vez disso.',
+                    ],
                 ],
             ],
         ],

@@ -47,6 +47,7 @@ class ListConfigs extends ListRecords
 
             'archived' => PresetView::make(__('point-of-sale::filament/admin/clusters/configurations/resources/config/pages/list-configs.tabs.archived'))
                 ->icon('heroicon-s-archive-box')
+                ->favorite()
                 ->modifyQueryUsing(fn (Builder $query) => $query->onlyTrashed()),
         ];
     }

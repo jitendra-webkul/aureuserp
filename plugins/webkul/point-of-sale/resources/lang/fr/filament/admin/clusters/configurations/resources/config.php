@@ -234,6 +234,27 @@ return [
                         'title' => 'Point de vente supprimé définitivement',
                         'body'  => 'Le point de vente a été supprimé définitivement.',
                     ],
+
+                    'error' => [
+                        'title' => 'Impossible de supprimer le point de vente',
+                        'body'  => 'Le point de vente ne peut pas être supprimé définitivement car il possède des sessions ou des commandes. Archivez-le plutôt.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Points de vente supprimés définitivement',
+                        'body'  => 'Les points de vente sélectionnés ont été supprimés définitivement.',
+                    ],
+
+                    'error' => [
+                        'title' => 'Impossible de supprimer les points de vente',
+                        'body'  => 'Un ou plusieurs points de vente ne peuvent pas être supprimés définitivement car ils possèdent des sessions ou des commandes. Archivez-les plutôt.',
+                    ],
                 ],
             ],
         ],

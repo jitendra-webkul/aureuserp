@@ -234,6 +234,27 @@ return [
                         'title' => 'Point of sale deleted permanently',
                         'body'  => 'The point of sale has been deleted permanently.',
                     ],
+
+                    'error' => [
+                        'title' => 'Point of sale could not be deleted',
+                        'body'  => 'The point of sale cannot be deleted permanently because it has sessions or orders. Archive it instead.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Points of sale deleted permanently',
+                        'body'  => 'The selected points of sale have been deleted permanently.',
+                    ],
+
+                    'error' => [
+                        'title' => 'Points of sale could not be deleted',
+                        'body'  => 'One or more points of sale cannot be deleted permanently because they have sessions or orders. Archive them instead.',
+                    ],
                 ],
             ],
         ],

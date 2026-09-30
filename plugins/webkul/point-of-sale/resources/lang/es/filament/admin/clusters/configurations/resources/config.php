@@ -234,6 +234,27 @@ return [
                         'title' => 'Punto de venta eliminado permanentemente',
                         'body'  => 'El punto de venta se ha eliminado permanentemente.',
                     ],
+
+                    'error' => [
+                        'title' => 'No se pudo eliminar el punto de venta',
+                        'body'  => 'El punto de venta no se puede eliminar permanentemente porque tiene sesiones o pedidos. Archívelo en su lugar.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Puntos de venta eliminados permanentemente',
+                        'body'  => 'Los puntos de venta seleccionados se han eliminado permanentemente.',
+                    ],
+
+                    'error' => [
+                        'title' => 'No se pudieron eliminar los puntos de venta',
+                        'body'  => 'Uno o más puntos de venta no se pueden eliminar permanentemente porque tienen sesiones o pedidos. Archívelos en su lugar.',
+                    ],
                 ],
             ],
         ],
