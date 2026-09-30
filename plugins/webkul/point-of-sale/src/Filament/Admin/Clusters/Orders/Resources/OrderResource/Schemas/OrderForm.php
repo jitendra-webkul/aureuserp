@@ -35,9 +35,11 @@ class OrderForm
                     ->inline()
                     ->columnSpanFull()
                     ->options(function ($record): array {
-                        $visible = $record?->state === OrderState::CANCELED
-                            ? [OrderState::DRAFT, OrderState::CANCELED]
-                            : [OrderState::DRAFT, OrderState::PAID, OrderState::DONE];
+                        $visible = match (true) {
+                            $record?->state === OrderState::CANCELED => [OrderState::DRAFT, OrderState::CANCELED],
+                            $record?->state === OrderState::INVOICED => [OrderState::DRAFT, OrderState::PAID, OrderState::DONE, OrderState::INVOICED],
+                            default                                  => [OrderState::DRAFT, OrderState::PAID, OrderState::DONE],
+                        };
 
                         return collect($visible)
                             ->mapWithKeys(fn (OrderState $state): array => [$state->value => $state->getLabel()])
