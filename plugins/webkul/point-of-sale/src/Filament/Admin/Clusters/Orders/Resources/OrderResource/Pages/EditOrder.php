@@ -10,11 +10,12 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Actions\RefundOrderAction;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Actions\RetryOrderPickingAction;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\OrderResource;
 use Webkul\PointOfSale\Models\Order;
+use Webkul\Support\Filament\Concerns\HasRepeaterColumnManager;
 use Webkul\Support\Traits\HasRecordNavigationTabs;
 
 class EditOrder extends EditRecord
 {
-    use HasRecordNavigationTabs;
+    use HasRecordNavigationTabs, HasRepeaterColumnManager;
 
     protected static string $resource = OrderResource::class;
 

@@ -33,10 +33,16 @@ return [
 
     'refund' => [
         'prompt'    => 'Select the product(s) to refund and set the quantity',
+        'refunded'  => 'Refunded:',
         'to-refund' => 'To refund:',
         'qty'       => 'Qty',
         'price'     => 'Price',
         'backspace' => 'Backspace',
+
+        'max-exceeded' => [
+            'title' => 'Maximum exceeded',
+            'body'  => 'The requested quantity to be refunded is higher than the ordered quantity. :requested is requested while only :max can be refunded.',
+        ],
     ],
 
     'actions' => [

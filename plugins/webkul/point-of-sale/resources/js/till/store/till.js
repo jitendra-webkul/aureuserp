@@ -345,6 +345,7 @@ export class Till {
         destination.price_list_id = pending.price_list_id ?? destination.price_list_id
         destination.fiscal_position_id = pending.fiscal_position_id ?? destination.fiscal_position_id
         destination.refunded_order_id = pending.refunded_order_id
+        destination.locked_partner_id = pending.partner_id ?? null
 
         for (const line of pending.lines) {
             destination.lines.push(this.hydrateLine({ ...line, price_overridden: true }, destination.uuid))
@@ -393,6 +394,7 @@ export class Till {
             price_list_id: order.price_list_id ?? this.state.priceListId,
             fiscal_position_id: order.fiscal_position_id ?? this.state.fiscalPositionId,
             refunded_order_id: order.refunded_order_id ?? null,
+            locked_partner_id: order.locked_partner_id ?? null,
             created_at: order.created_at ?? new Date().toISOString(),
             lines: (order.lines ?? []).map((line) => this.hydrateLine(line, order.uuid)),
             payments: (order.payments ?? []).map((payment) => ({
@@ -486,6 +488,7 @@ export class Till {
                 price_list_id: order.price_list_id,
                 fiscal_position_id: order.fiscal_position_id,
                 refunded_order_id: order.refunded_order_id ?? null,
+                locked_partner_id: order.locked_partner_id ?? null,
                 created_at: order.created_at,
             })
 
@@ -932,6 +935,10 @@ export class Till {
     }
 
     openCustomers() {
+        if (this.isCustomerLocked) {
+            return
+        }
+
         this.state.customerSearch = ''
         this.state.customerModalOpen = true
     }
@@ -962,6 +969,10 @@ export class Till {
 
     get activeOrder() {
         return this.state.orders.find((order) => order.uuid === this.state.activeOrderUuid)
+    }
+
+    get isCustomerLocked() {
+        return Boolean(this.activeOrder?.refunded_order_id) && Boolean(this.activeOrder?.locked_partner_id)
     }
 
     get activeLine() {
@@ -2297,7 +2308,7 @@ export class Till {
     selectCustomer(partnerId) {
         const order = this.activeOrder
 
-        if (order) {
+        if (order && !this.isCustomerLocked) {
             order.partner_id = partnerId
         }
     }

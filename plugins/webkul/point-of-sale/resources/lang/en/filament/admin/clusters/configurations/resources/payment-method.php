@@ -102,6 +102,27 @@ return [
                         'title' => 'Payment method deleted permanently',
                         'body'  => 'The payment method has been deleted permanently.',
                     ],
+
+                    'error' => [
+                        'title' => 'Payment method could not be deleted',
+                        'body'  => 'The payment method cannot be deleted permanently because it has payments. Archive it instead.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Payment methods deleted permanently',
+                        'body'  => 'The selected payment methods have been deleted permanently.',
+                    ],
+
+                    'error' => [
+                        'title' => 'Payment methods could not be deleted',
+                        'body'  => 'One or more payment methods cannot be deleted permanently because they have payments. Archive them instead.',
+                    ],
                 ],
             ],
         ],

@@ -102,6 +102,27 @@ return [
                         'title' => 'Mode de paiement supprimé définitivement',
                         'body'  => 'Le mode de paiement a été supprimé définitivement.',
                     ],
+
+                    'error' => [
+                        'title' => 'Impossible de supprimer le mode de paiement',
+                        'body'  => 'Le mode de paiement ne peut pas être supprimé définitivement car il possède des paiements. Archivez-le plutôt.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Modes de paiement supprimés définitivement',
+                        'body'  => 'Les modes de paiement sélectionnés ont été supprimés définitivement.',
+                    ],
+
+                    'error' => [
+                        'title' => 'Impossible de supprimer les modes de paiement',
+                        'body'  => 'Un ou plusieurs modes de paiement ne peuvent pas être supprimés définitivement car ils possèdent des paiements. Archivez-les plutôt.',
+                    ],
                 ],
             ],
         ],

@@ -122,7 +122,9 @@
                         select(lineId) {
                             if (! this.quantities[lineId]) return
                             this.active = this.active === lineId ? null : lineId
-                            this.buffer = ''
+                            this.buffer = this.active === lineId && this.quantities[lineId].qty > 0
+                                ? String(this.quantities[lineId].qty)
+                                : ''
                         },
                         press(key) {
                             const line = this.quantities[this.active]
@@ -137,7 +139,28 @@
                                 this.buffer += key
                             }
 
-                            line.qty = Math.min(Math.max(Number(this.buffer || 0), 0), line.refundable)
+                            const requested = Number(this.buffer || 0)
+
+                            if (requested > line.refundable) {
+                                if (window.FilamentNotification) {
+                                    new window.FilamentNotification()
+                                        .title(@js(__($prefix.'refund.max-exceeded.title')))
+                                        .body(
+                                            @js(__($prefix.'refund.max-exceeded.body'))
+                                                .replace(':requested', requested)
+                                                .replace(':max', line.refundable)
+                                        )
+                                        .warning()
+                                        .send()
+                                }
+
+                                this.buffer = ''
+                                line.qty = 0
+
+                                return
+                            }
+
+                            line.qty = Math.max(requested, 0)
                         },
                         get total() {
                             return Object.values(this.quantities).reduce((sum, line) => sum + Number(line.qty || 0), 0)
@@ -194,6 +217,13 @@
                                                 &middot; &minus;{{ $line->discount + 0 }}% discount
                                             @endif
                                         </span>
+
+                                        @if (float_compare((float) $line->refunded_qty, 0, precisionDigits: 4) > 0)
+                                            <span class="block font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                                                {{ __($prefix.'refund.refunded') }}
+                                                {{ number_format((float) $line->refunded_qty, 2) }}
+                                            </span>
+                                        @endif
 
                                         <span
                                             x-show="quantities[{{ $line->getKey() }}]?.qty > 0"

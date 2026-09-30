@@ -35,9 +35,11 @@ class OrderForm
                     ->inline()
                     ->columnSpanFull()
                     ->options(function ($record): array {
-                        $visible = $record?->state === OrderState::CANCELED
-                            ? [OrderState::DRAFT, OrderState::CANCELED]
-                            : [OrderState::DRAFT, OrderState::PAID, OrderState::DONE];
+                        $visible = match (true) {
+                            $record?->state === OrderState::CANCELED => [OrderState::DRAFT, OrderState::CANCELED],
+                            $record?->state === OrderState::INVOICED => [OrderState::DRAFT, OrderState::PAID, OrderState::DONE, OrderState::INVOICED],
+                            default                                  => [OrderState::DRAFT, OrderState::PAID, OrderState::DONE],
+                        };
 
                         return collect($visible)
                             ->mapWithKeys(fn (OrderState $state): array => [$state->value => $state->getLabel()])
@@ -64,7 +66,8 @@ class OrderForm
                                     ->relationship('partner', 'name')
                                     ->searchable()
                                     ->preload()
-                                    ->disabled(fn ($record): bool => $record?->state === OrderState::INVOICED),
+                                    ->disabled(fn ($record): bool => $record?->state === OrderState::INVOICED
+                                        || ($record?->isRefund() && $record->refundedOrder?->partner_id)),
                                 Select::make('user_id')
                                     ->label(__($prefix.'section.general.fields.cashier'))
                                     ->relationship('user', 'name')

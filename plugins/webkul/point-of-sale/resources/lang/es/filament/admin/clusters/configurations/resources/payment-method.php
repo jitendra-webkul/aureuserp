@@ -102,6 +102,27 @@ return [
                         'title' => 'Método de pago eliminado permanentemente',
                         'body'  => 'El método de pago se ha eliminado permanentemente.',
                     ],
+
+                    'error' => [
+                        'title' => 'No se pudo eliminar el método de pago',
+                        'body'  => 'El método de pago no se puede eliminar permanentemente porque tiene pagos. Archívelo en su lugar.',
+                    ],
+                ],
+            ],
+        ],
+
+        'bulk-actions' => [
+            'force-delete' => [
+                'notification' => [
+                    'success' => [
+                        'title' => 'Métodos de pago eliminados permanentemente',
+                        'body'  => 'Los métodos de pago seleccionados se han eliminado permanentemente.',
+                    ],
+
+                    'error' => [
+                        'title' => 'No se pudieron eliminar los métodos de pago',
+                        'body'  => 'Uno o más métodos de pago no se pueden eliminar permanentemente porque tienen pagos. Archívelos en su lugar.',
+                    ],
                 ],
             ],
         ],
