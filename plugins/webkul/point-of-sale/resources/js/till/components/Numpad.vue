@@ -49,10 +49,11 @@ function modeClass(mode, index) {
         <div class="grid grid-cols-3 gap-[clamp(0.25rem,0.8vh,0.5rem)]">
             <button
                 type="button"
-                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-base font-medium transition-colors"
+                class="flex min-h-[clamp(2.5rem,5.5vh,3.5rem)] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-base font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                 :class="partnerName
                     ? 'border-primary-500 bg-primary-50 text-primary-800 hover:bg-primary-100 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 active:bg-gray-100 dark:active:bg-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'"
+                :disabled="till.isCustomerLocked"
                 :title="partnerName ?? till.t('actions.customer')"
                 @click="till.openCustomers()"
             >

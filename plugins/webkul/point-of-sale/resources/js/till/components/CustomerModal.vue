@@ -107,7 +107,7 @@ function saveCustomer() {
 
             <div class="min-h-0 flex-auto overflow-y-auto">
                 <button
-                    v-if="order?.partner_id"
+                    v-if="order?.partner_id && !till.isCustomerLocked"
                     type="button"
                     class="flex w-full items-center gap-2 border-b border-gray-100 px-4 py-2.5 text-start text-sm font-medium text-danger-600 hover:bg-danger-50 dark:border-gray-800 dark:text-danger-400 dark:hover:bg-danger-500/10"
                     @click="choose(null)"

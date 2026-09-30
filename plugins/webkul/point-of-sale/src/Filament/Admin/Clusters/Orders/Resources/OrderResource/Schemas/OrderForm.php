@@ -64,7 +64,8 @@ class OrderForm
                                     ->relationship('partner', 'name')
                                     ->searchable()
                                     ->preload()
-                                    ->disabled(fn ($record): bool => $record?->state === OrderState::INVOICED),
+                                    ->disabled(fn ($record): bool => $record?->state === OrderState::INVOICED
+                                        || ($record?->isRefund() && $record->refundedOrder?->partner_id)),
                                 Select::make('user_id')
                                     ->label(__($prefix.'section.general.fields.cashier'))
                                     ->relationship('user', 'name')
