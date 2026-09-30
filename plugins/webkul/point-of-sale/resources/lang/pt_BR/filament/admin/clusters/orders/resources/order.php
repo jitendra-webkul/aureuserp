@@ -153,7 +153,7 @@ return [
             'has-failed-operation' => 'Operação com falha',
             'is-invoiced'          => 'Faturado',
             'is-edited'            => 'Editado',
-            'sequence-number'      => 'Número do pedido',
+            'tracking-number'      => 'Número de rastreio',
             'state'                => 'Status',
         ],
 

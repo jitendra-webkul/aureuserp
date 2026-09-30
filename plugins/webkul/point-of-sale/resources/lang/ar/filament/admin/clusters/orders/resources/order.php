@@ -153,7 +153,7 @@ return [
             'has-failed-operation' => 'عملية فاشلة',
             'is-invoiced'          => 'مفوتر',
             'is-edited'            => 'مُعدّل',
-            'sequence-number'      => 'رقم الطلب',
+            'tracking-number'      => 'رقم التتبع',
             'state'                => 'الحالة',
         ],
 

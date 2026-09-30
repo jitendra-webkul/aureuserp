@@ -153,7 +153,7 @@ return [
             'has-failed-operation' => 'Failed Operation',
             'is-invoiced'          => 'Invoiced',
             'is-edited'            => 'Edited',
-            'sequence-number'      => 'Order Number',
+            'tracking-number'      => 'Tracking Number',
             'state'                => 'Status',
         ],
 
