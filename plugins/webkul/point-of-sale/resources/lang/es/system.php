@@ -98,6 +98,10 @@ return [
             'account-missing' => 'El impuesto :tax tiene una línea de distribución sin cuenta.',
         ],
 
+        'global-discount' => [
+            'product-missing' => 'Establece un producto de descuento en el punto de venta para usar descuentos globales.',
+        ],
+
         'cogs' => [
             'stock-output-missing' => 'Define una cuenta de salida de stock antes de activar el coste de las ventas.',
         ],

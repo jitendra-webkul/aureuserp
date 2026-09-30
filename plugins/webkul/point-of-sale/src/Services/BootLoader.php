@@ -131,6 +131,7 @@ class BootLoader
             'is_restaurant'                 => (bool) $config->is_restaurant,
             'enable_line_discount'          => (bool) $config->enable_line_discount,
             'enable_global_discount'        => (bool) $config->enable_global_discount,
+            'global_discount_percentage'    => (float) $config->global_discount_percentage,
             'enable_price_control'          => (bool) $config->enable_price_control,
             'enable_customer_required'      => (bool) $config->enable_customer_required,
             'enable_receipt_print'          => (bool) $config->enable_receipt_print,
@@ -263,10 +264,12 @@ class BootLoader
     {
         $products = $this->sellableProducts($config, $session);
 
-        $tipProductId = $this->tipProductId($config);
+        $hiddenIds = $this->hiddenProductIds($config);
 
-        if ($tipProductId && ! $products->contains('id', $tipProductId)) {
-            $products = $products->concat(Product::query()->whereKey($tipProductId)->get());
+        $missing = array_values(array_diff($hiddenIds, $products->pluck('id')->all()));
+
+        if ($missing) {
+            $products = $products->concat(Product::query()->whereKey($missing)->get());
         }
 
         $priceList = $this->prices->priceListForConfig($config);
@@ -276,18 +279,19 @@ class BootLoader
                 $this->productRow($product, $config),
                 [
                     'price'     => $this->prices->resolve($product, $priceList),
-                    'is_hidden' => $product->id === $tipProductId,
+                    'is_hidden' => in_array($product->id, $hiddenIds, true),
                 ],
             ))
             ->values()
             ->all();
     }
 
-    protected function tipProductId(Config $config): ?int
+    protected function hiddenProductIds(Config $config): array
     {
-        return $config->enable_tip && $config->tip_product_id
-            ? (int) $config->tip_product_id
-            : null;
+        return array_values(array_filter([
+            $config->enable_tip ? (int) $config->tip_product_id : 0,
+            $config->enable_global_discount ? (int) $config->discount_product_id : 0,
+        ]));
     }
 
     protected function variants(Config $config, ?Session $session = null): array

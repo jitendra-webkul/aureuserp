@@ -287,6 +287,13 @@ return [
         'remove' => 'Remover gorjeta',
     ],
 
+    'global-discount' => [
+        'label'   => 'Desconto',
+        'heading' => 'Percentual de desconto',
+        'apply'   => 'Aplicar',
+        'hint'    => 'Substitui qualquer desconto já aplicado ao pedido.',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',

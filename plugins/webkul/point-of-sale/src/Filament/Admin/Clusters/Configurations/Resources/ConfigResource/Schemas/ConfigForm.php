@@ -460,6 +460,8 @@ class ConfigForm
                 Toggle::make('enable_global_discount')
                     ->label(static::label('sections.configurations.tabs.pricing.fields.enable-global-discount'))
                     ->helperText(static::label('sections.configurations.tabs.pricing.fields.enable-global-discount-helper-text'))
+                    ->disabled(fn (?Config $record): bool => static::lockedByOpenSession($record))
+                    ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->live(),
 
                 Select::make('discount_product_id')
@@ -472,6 +474,18 @@ class ConfigForm
                     ->searchable()
                     ->preload()
                     ->native(false)
+                    ->required(fn (Get $get): bool => (bool) $get('enable_global_discount'))
+                    ->visible(fn (Get $get): bool => (bool) $get('enable_global_discount')),
+
+                TextInput::make('global_discount_percentage')
+                    ->label(static::label('sections.configurations.tabs.pricing.fields.global-discount-percentage'))
+                    ->helperText(static::label('sections.configurations.tabs.pricing.fields.global-discount-percentage-helper-text'))
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->default(10)
+                    ->suffix('%')
+                    ->required(fn (Get $get): bool => (bool) $get('enable_global_discount'))
                     ->visible(fn (Get $get): bool => (bool) $get('enable_global_discount')),
             ])
             ->columns(2);

@@ -226,3 +226,18 @@ it('ships payment methods in their sort order', function () {
 
     expect(collect($payload['payment_methods'])->pluck('id')->all())->toBe([$early->id, $late->id]);
 });
+
+it('ships the discount product hidden with the default percentage', function () {
+    $discount = InventoryHelper::product(['name' => 'Discount', 'price' => 0.0]);
+
+    $this->config->update([
+        'enable_global_discount'     => true,
+        'discount_product_id'        => $discount->id,
+        'global_discount_percentage' => 15,
+    ]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    expect(collect($payload['products'])->firstWhere('id', $discount->id)['is_hidden'])->toBeTrue()
+        ->and($payload['config']['global_discount_percentage'])->toBe(15.0);
+});

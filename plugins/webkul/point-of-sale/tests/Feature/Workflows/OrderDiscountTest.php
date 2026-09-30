@@ -152,3 +152,35 @@ it('prefers the takeaway fiscal position on a takeaway order', function () {
 
     expect($order->fiscal_position_id)->toBe($takeaway->id);
 });
+
+it('keeps a synced global discount line with its negative price', function () {
+    $this->config->update([
+        'enable_global_discount' => true,
+        'discount_product_id'    => $this->discountProduct->id,
+    ]);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [
+            PosHelper::line($this->product->id, 1, 100.0, ['tax_ids' => []]),
+            PosHelper::line($this->discountProduct->id, 1, -10.0, ['tax_ids' => []]),
+        ],
+        [PosHelper::payment($this->cash, 90.0)],
+    ));
+
+    $line = $order->refresh()->lines->firstWhere('product_id', $this->discountProduct->id);
+
+    expect((float) $line->price_unit)->toBe(-10.0)
+        ->and((float) $order->amount_total)->toBe(90.0);
+});
+
+it('refuses to open a session while global discounts have no product', function () {
+    $this->config->update([
+        'enable_global_discount' => true,
+        'discount_product_id'    => null,
+    ]);
+
+    expect(fn () => PointOfSale::assertSessionCanOpen($this->config->refresh()))
+        ->toThrow(PosConfigurationException::class, __('point-of-sale::system.session-preflight.global-discount.product-missing'));
+});

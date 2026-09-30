@@ -108,6 +108,8 @@ export class Till {
             guestsDraft: 0,
             splitQuantities: {},
             autoPrintOrderUuid: null,
+            globalDiscountModalOpen: false,
+            globalDiscountDraft: '',
             billModalOpen: false,
             tipModalOpen: false,
             tipDraft: '',
@@ -1170,7 +1172,7 @@ export class Till {
     }
 
     splitsWhole(line) {
-        return !Number.isInteger(line.qty) || line.lots?.length > 0 || this.isTipLine(line)
+        return !Number.isInteger(line.qty) || line.lots?.length > 0 || this.isLockedLine(line)
     }
 
     tapSplitLine(line) {
@@ -1362,6 +1364,111 @@ export class Till {
         }
 
         this.state.orderNameModalOpen = false
+    }
+
+    get globalDiscountProductId() {
+        const productId = this.config.discount_product_id
+
+        return this.config.enable_global_discount && productId && this.master.products.get(productId) ? productId : null
+    }
+
+    isDiscountLine(line) {
+        return Boolean(this.globalDiscountProductId) && line.product_id === this.globalDiscountProductId
+    }
+
+    isLockedLine(line) {
+        return this.isTipLine(line) || this.isDiscountLine(line)
+    }
+
+    get canApplyGlobalDiscount() {
+        return Boolean(this.globalDiscountProductId)
+            && Boolean(this.activeOrder?.lines.some((line) => !this.isLockedLine(line)))
+    }
+
+    openGlobalDiscount() {
+        if (!this.canApplyGlobalDiscount) {
+            return
+        }
+
+        this.closeActions()
+
+        this.state.globalDiscountDraft = String(this.config.global_discount_percentage ?? 10)
+        this.state.globalDiscountModalOpen = true
+    }
+
+    closeGlobalDiscount() {
+        this.state.globalDiscountModalOpen = false
+    }
+
+    confirmGlobalDiscount() {
+        this.applyGlobalDiscount(Number(this.state.globalDiscountDraft) || 0)
+
+        this.state.globalDiscountModalOpen = false
+    }
+
+    discountableBase(line) {
+        const totals = this.lineTotals(line)
+
+        const excluded = totals.breakdown
+            .filter((tax) => !tax.price_include)
+            .reduce((carry, tax) => carry + tax.amount, 0)
+
+        return totals.total - excluded
+    }
+
+    applyGlobalDiscount(percentage) {
+        const order = this.activeOrder
+
+        const productId = this.globalDiscountProductId
+
+        if (!order || !productId) {
+            return
+        }
+
+        const rate = Math.min(Math.max(percentage, 0), 100)
+
+        for (const line of order.lines.filter((entry) => this.isDiscountLine(entry))) {
+            this.removeLine(line.uuid)
+        }
+
+        const groups = new Map()
+
+        for (const line of order.lines) {
+            if (this.isLockedLine(line)) {
+                continue
+            }
+
+            const taxIds = [...(line.tax_ids ?? [])].sort((a, b) => a - b)
+
+            const key = taxIds.join(',')
+
+            const group = groups.get(key) ?? { taxIds, base: 0 }
+
+            group.base += this.discountableBase(line)
+
+            groups.set(key, group)
+        }
+
+        for (const { taxIds, base } of groups.values()) {
+            const amount = floatRound(-(rate / 100) * base, { precisionRounding: this.currency.rounding })
+
+            if (amount >= 0) {
+                continue
+            }
+
+            order.lines.push(reactive({
+                uuid: uuidv4(),
+                order_uuid: order.uuid,
+                product_id: productId,
+                qty: 1,
+                price_unit: amount,
+                price_overridden: true,
+                discount: 0,
+                note: '',
+                lots: [],
+                tax_ids: taxIds.filter((id) => this.taxById.get(id)?.amount_type !== 'fixed'),
+            }))
+        }
     }
 
     get tipProductId() {
@@ -2137,7 +2244,7 @@ export class Till {
             return
         }
 
-        if (this.isTipLine(line) && this.state.numpadMode !== 'price') {
+        if (this.isLockedLine(line) && this.state.numpadMode !== 'price') {
             if (key === 'Backspace' || key === 'Delete') {
                 this.removeLine(line.uuid)
 

@@ -98,6 +98,10 @@ return [
             'account-missing' => 'La taxe :tax comporte une ligne de répartition sans compte.',
         ],
 
+        'global-discount' => [
+            'product-missing' => 'Définissez un produit de remise sur le point de vente pour utiliser les remises globales.',
+        ],
+
         'cogs' => [
             'stock-output-missing' => 'Définissez un compte de sortie de stock avant d\'activer le coût des ventes.',
         ],
