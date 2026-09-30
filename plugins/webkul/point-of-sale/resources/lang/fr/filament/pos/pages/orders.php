@@ -34,10 +34,16 @@ return [
 
     'refund' => [
         'prompt'    => 'Sélectionnez le(s) produit(s) à rembourser et indiquez la quantité',
+        'refunded'  => 'Remboursé :',
         'to-refund' => 'À rembourser :',
         'qty'       => 'Qté',
         'price'     => 'Prix',
         'backspace' => 'Retour arrière',
+
+        'max-exceeded' => [
+            'title' => 'Maximum dépassé',
+            'body'  => 'La quantité à rembourser est supérieure à la quantité commandée. :requested demandé(s) alors que seulement :max peut être remboursé.',
+        ],
     ],
 
     'actions' => [
