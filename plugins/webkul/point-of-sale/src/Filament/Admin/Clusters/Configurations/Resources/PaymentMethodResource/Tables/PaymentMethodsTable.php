@@ -2,6 +2,7 @@
 
 namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\PaymentMethodResource\Tables;
 
+use Exception;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -14,9 +15,10 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Grouping\Group as TableGroup;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Models\PaymentMethod;
 
@@ -66,7 +68,6 @@ class PaymentMethodsTable
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.filters.type'))
                     ->options(PaymentMethodType::class)
                     ->native(false),
-                TrashedFilter::make(),
             ])
             ->recordTitleAttribute('name')
             ->recordActions([
@@ -87,6 +88,29 @@ class PaymentMethodsTable
                             ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.record-actions.delete.notification.success.body')),
                     ),
                 ForceDeleteAction::make()
+                    ->databaseTransaction(true)
+                    ->action(function (PaymentMethod $record, ForceDeleteAction $action) {
+                        try {
+                            $record->forceDelete();
+
+                            $action->success();
+                        } catch (QueryException|Exception $e) {
+                            if ($e instanceof QueryException) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.record-actions.force-delete.notification.error.title'))
+                                    ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.record-actions.force-delete.notification.error.body'))
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->danger()
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
+
+                            $action->cancel(shouldRollBackDatabaseTransaction: true);
+                        }
+                    })
                     ->successNotification(
                         Notification::make()
                             ->success()
@@ -97,8 +121,39 @@ class PaymentMethodsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    RestoreBulkAction::make()
+                        ->hidden(false),
+                    ForceDeleteBulkAction::make()
+                        ->hidden(false)
+                        ->databaseTransaction(true)
+                        ->action(function (Collection $records, ForceDeleteBulkAction $action) {
+                            try {
+                                $records->each(fn (PaymentMethod $record) => $record->forceDelete());
+
+                                $action->success();
+                            } catch (QueryException|Exception $e) {
+                                if ($e instanceof QueryException) {
+                                    Notification::make()
+                                        ->danger()
+                                        ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.bulk-actions.force-delete.notification.error.title'))
+                                        ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.bulk-actions.force-delete.notification.error.body'))
+                                        ->send();
+                                } else {
+                                    Notification::make()
+                                        ->danger()
+                                        ->body($e->getMessage())
+                                        ->send();
+                                }
+
+                                $action->cancel(shouldRollBackDatabaseTransaction: true);
+                            }
+                        })
+                        ->successNotification(
+                            Notification::make()
+                                ->success()
+                                ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.bulk-actions.force-delete.notification.success.title'))
+                                ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.bulk-actions.force-delete.notification.success.body')),
+                        ),
                 ]),
             ]);
     }
