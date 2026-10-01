@@ -1090,7 +1090,6 @@ export class Till {
 
     orderHasContent(order) {
         return order.lines.length > 0
-            || order.payments.length > 0
             || (order.customer_count ?? 0) > 0
             || Boolean(order.is_booked)
     }
@@ -1134,7 +1133,7 @@ export class Till {
     releaseTable() {
         const order = this.activeOrder
 
-        if (!this.canBookTable || order.payments.length) {
+        if (!this.canBookTable) {
             return
         }
 

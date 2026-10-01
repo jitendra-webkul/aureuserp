@@ -64,7 +64,7 @@ function productImage(productId) {
                 </button>
 
                 <button
-                    v-else-if="till.canBookTable && order.is_booked && !order.payments.length"
+                    v-else-if="till.canBookTable && order.is_booked"
                     type="button"
                     class="rounded-lg border border-danger-300 px-5 py-2.5 text-sm font-semibold text-danger-700 transition-colors hover:bg-danger-50 dark:border-danger-500/40 dark:text-danger-300 dark:hover:bg-danger-500/10"
                     @click="till.releaseTable()"
