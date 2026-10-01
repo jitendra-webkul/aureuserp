@@ -45,9 +45,29 @@ function productImage(productId) {
         </div>
 
         <div v-else class="min-h-[clamp(4rem,12vh,7rem)] flex-auto overflow-y-auto">
-            <p v-if="!order?.lines.length" class="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                {{ till.t('cart.empty.description') }}
-            </p>
+            <div v-if="!order?.lines.length" class="flex flex-col items-center gap-3 p-6 text-center">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ till.t('cart.empty.description') }}
+                </p>
+
+                <button
+                    v-if="till.canBookTable && !order.is_booked"
+                    type="button"
+                    class="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
+                    @click="till.bookTable()"
+                >
+                    {{ till.t('booking.book') }}
+                </button>
+
+                <button
+                    v-else-if="till.canBookTable && order.is_booked && !order.payments.length"
+                    type="button"
+                    class="rounded-lg border border-danger-300 px-5 py-2.5 text-sm font-semibold text-danger-700 transition-colors hover:bg-danger-50 dark:border-danger-500/40 dark:text-danger-300 dark:hover:bg-danger-500/10"
+                    @click="till.releaseTable()"
+                >
+                    {{ till.t('booking.release') }}
+                </button>
+            </div>
 
             <div
                 v-for="line in order?.lines ?? []"

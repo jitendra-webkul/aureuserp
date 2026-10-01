@@ -9,6 +9,7 @@ import BillModal from './components/BillModal.vue'
 import TipModal from './components/TipModal.vue'
 import OrderNameModal from './components/OrderNameModal.vue'
 import GlobalDiscountModal from './components/GlobalDiscountModal.vue'
+import TableSelectorModal from './components/TableSelectorModal.vue'
 import Cart from './components/Cart.vue'
 import Numpad from './components/Numpad.vue'
 import PaymentPad from './components/PaymentPad.vue'
@@ -94,5 +95,7 @@ const state = till.state
         <OrderNameModal />
 
         <GlobalDiscountModal />
+
+        <TableSelectorModal />
     </div>
 </template>

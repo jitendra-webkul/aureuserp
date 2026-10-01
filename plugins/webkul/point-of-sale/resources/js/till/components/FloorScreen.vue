@@ -80,6 +80,27 @@ function tileClass(table) {
 
 <template>
     <div class="flex min-h-0 flex-col gap-3">
+        <div
+            v-if="till.state.transferOrderUuid"
+            class="flex flex-none flex-wrap items-center gap-3 rounded-xl border border-warning-300 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-500/40 dark:bg-warning-500/10 dark:text-warning-200"
+        >
+            <span class="flex-1 font-semibold">
+                {{ till.t('transfer.prompt', { order: till.transferOrder ? till.orderLabel(till.transferOrder) : '' }) }}
+            </span>
+
+            <span v-if="till.state.transferError" class="w-full text-danger-700 dark:text-danger-300 sm:order-last">
+                {{ till.state.transferError }}
+            </span>
+
+            <button
+                type="button"
+                class="rounded-lg border border-warning-300 bg-white px-3 py-1.5 font-medium text-warning-800 transition-colors hover:bg-warning-100 dark:border-warning-500/40 dark:bg-gray-900 dark:text-warning-200 dark:hover:bg-gray-800"
+                @click="till.cancelTransfer()"
+            >
+                {{ till.t('common.cancel') }}
+            </button>
+        </div>
+
         <div class="flex flex-none items-center gap-2">
             <div class="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
                 <button
@@ -124,7 +145,7 @@ function tileClass(table) {
                     class="absolute flex flex-col items-center justify-center gap-0.5 p-1 text-center shadow-sm transition-colors"
                     :class="tileClass(table)"
                     :style="placement(table)"
-                    @click="till.openTable(table.id)"
+                    @click="till.tapTable(table.id)"
                 >
                     <span class="text-base font-bold leading-none">{{ table.table_number }}</span>
 
@@ -146,7 +167,7 @@ function tileClass(table) {
                     class="flex aspect-square flex-col items-center justify-center gap-1 p-2 text-center shadow-sm transition-colors"
                     :class="tileClass(table)"
                     :style="paint(table)"
-                    @click="till.openTable(table.id)"
+                    @click="till.tapTable(table.id)"
                 >
                     <span class="text-2xl font-bold leading-none">{{ table.table_number }}</span>
 

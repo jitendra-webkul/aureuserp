@@ -295,6 +295,25 @@ return [
         'hint'    => 'Remplace toute remise déjà appliquée à la commande.',
     ],
 
+    'booking' => [
+        'book'    => 'Réserver la table',
+        'release' => 'Libérer la table',
+    ],
+
+    'transfer' => [
+        'label'        => 'Transférer / Fusionner',
+        'prompt'       => 'Sélectionnez une table pour transférer :order',
+        'has-payments' => 'Cette commande a des paiements. Supprimez-les avant de la fusionner avec une autre table.',
+    ],
+
+    'table-selector' => [
+        'label'       => 'Table',
+        'heading'     => 'Sélecteur de table',
+        'hint'        => 'Saisissez un numéro de table ou un nom pour une commande sans table.',
+        'placeholder' => 'Numéro de table ou nom',
+        'jump'        => 'Aller',
+    ],
+
     'receipt' => [
         'phone'     => 'Tél. :',
         'served-by' => 'Servi par :cashier',

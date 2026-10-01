@@ -109,6 +109,10 @@ export class Till {
             splitQuantities: {},
             autoPrintOrderUuid: null,
             globalDiscountModalOpen: false,
+            transferOrderUuid: null,
+            transferError: null,
+            tableSelectorOpen: false,
+            tableSelectorDraft: '',
             globalDiscountDraft: '',
             billModalOpen: false,
             tipModalOpen: false,
@@ -389,6 +393,8 @@ export class Till {
             table_id: order.table_id ?? null,
             customer_count: Number(order.customer_count ?? 0),
             floating_name: order.floating_name ?? '',
+            is_booked: Boolean(order.is_booked),
+            last_screen: order.last_screen ?? 'products',
             to_invoice: Boolean(order.to_invoice),
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
@@ -483,6 +489,8 @@ export class Till {
                 table_id: order.table_id ?? null,
                 customer_count: order.customer_count ?? 0,
                 floating_name: order.floating_name ?? '',
+                is_booked: Boolean(order.is_booked),
+                last_screen: order.last_screen ?? 'products',
                 to_invoice: order.to_invoice,
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
@@ -960,10 +968,16 @@ export class Till {
 
         this.state.lotWarningOpen = false
 
+        this.activeOrder.last_screen = 'payment'
+
         this.state.screen = 'payment'
     }
 
     goToProducts() {
+        if (this.activeOrder) {
+            this.activeOrder.last_screen = 'products'
+        }
+
         this.state.screen = 'products'
     }
 
@@ -1058,11 +1072,215 @@ export class Till {
     }
 
     orderHasContent(order) {
-        return order.lines.length > 0 || order.payments.length > 0 || (order.customer_count ?? 0) > 0
+        return order.lines.length > 0
+            || order.payments.length > 0
+            || (order.customer_count ?? 0) > 0
+            || Boolean(order.is_booked)
+    }
+
+    resumeScreenFor(order) {
+        return order?.state === 'draft' && order.last_screen === 'payment' && order.lines.length
+            ? 'payment'
+            : 'products'
     }
 
     selectFloor(floorId) {
         this.state.floorId = floorId
+    }
+
+    tapTable(tableId) {
+        if (this.state.transferOrderUuid) {
+            this.transferTo(tableId)
+
+            return
+        }
+
+        this.openTable(tableId)
+    }
+
+    get canBookTable() {
+        const order = this.activeOrder
+
+        return Boolean(this.isRestaurant && order?.table_id && order.state === 'draft' && !order.lines.length)
+    }
+
+    bookTable() {
+        if (!this.canBookTable) {
+            return
+        }
+
+        this.activeOrder.is_booked = true
+
+        this.goToFloor()
+    }
+
+    releaseTable() {
+        const order = this.activeOrder
+
+        if (!this.canBookTable || order.payments.length) {
+            return
+        }
+
+        order.is_booked = false
+
+        this.discardOrder(order.uuid)
+    }
+
+    startTransfer() {
+        const order = this.activeOrder
+
+        if (!this.isRestaurant || !order || order.state !== 'draft') {
+            return
+        }
+
+        this.closeActions()
+
+        order.is_booked = true
+
+        this.state.transferError = null
+
+        this.goToFloor()
+
+        this.state.transferOrderUuid = order.uuid
+    }
+
+    cancelTransfer() {
+        this.state.transferOrderUuid = null
+        this.state.transferError = null
+    }
+
+    get transferOrder() {
+        return this.state.orders.find((order) => order.uuid === this.state.transferOrderUuid) ?? null
+    }
+
+    canMergeLines(target, source) {
+        return target.product_id === source.product_id
+            && floatCompare(target.price_unit, source.price_unit, { precisionDigits: 4 }) === 0
+            && floatCompare(target.discount, source.discount, { precisionDigits: 4 }) === 0
+            && !target.note
+            && !source.note
+            && !target.lots?.length
+            && !source.lots?.length
+            && !this.isLockedLine(target)
+            && !this.isLockedLine(source)
+    }
+
+    transferTo(tableId) {
+        const source = this.transferOrder
+
+        if (!source) {
+            this.cancelTransfer()
+
+            return
+        }
+
+        if (source.table_id === tableId) {
+            this.cancelTransfer()
+
+            this.selectOrder(source.uuid)
+
+            return
+        }
+
+        const target = this.drafts.find((order) => order.table_id === tableId && order.uuid !== source.uuid)
+
+        if (!target) {
+            source.table_id = tableId
+            source.floating_name = ''
+
+            this.cancelTransfer()
+
+            this.selectOrder(source.uuid)
+
+            return
+        }
+
+        if (source.payments.length) {
+            this.state.transferError = this.t('transfer.has-payments')
+
+            return
+        }
+
+        for (const line of source.lines) {
+            const adopting = target.lines.find((entry) => this.canMergeLines(entry, line))
+
+            if (adopting) {
+                adopting.qty = floatRound(adopting.qty + line.qty, { precisionDigits: 4 })
+
+                continue
+            }
+
+            target.lines.push(reactive({
+                ...line,
+                lots: [...(line.lots ?? [])],
+                uuid: uuidv4(),
+                order_uuid: target.uuid,
+            }))
+        }
+
+        target.customer_count = (target.customer_count ?? 0) + (source.customer_count ?? 0)
+
+        this.dropOrder(source)
+
+        this.cancelTransfer()
+
+        this.selectOrder(target.uuid)
+    }
+
+    openTableSelector() {
+        if (!this.isRestaurant) {
+            return
+        }
+
+        this.state.tableSelectorDraft = ''
+        this.state.tableSelectorOpen = true
+    }
+
+    closeTableSelector() {
+        this.state.tableSelectorOpen = false
+    }
+
+    findTableByNumber(number) {
+        const needle = String(number).trim().toLowerCase()
+
+        const matches = (table) => String(table.table_number).trim().toLowerCase() === needle
+
+        return this.activeFloor?.tables.find(matches)
+            ?? this.floors.flatMap((floor) => floor.tables).find(matches)
+            ?? null
+    }
+
+    confirmTableSelector() {
+        const input = String(this.state.tableSelectorDraft ?? '').trim()
+
+        if (!input) {
+            return
+        }
+
+        this.state.tableSelectorOpen = false
+
+        const table = this.findTableByNumber(input)
+
+        if (table) {
+            this.state.floorId = table.floor_id
+
+            this.openTable(table.id)
+
+            return
+        }
+
+        const floating = this.drafts.find((order) => !order.table_id && order.floating_name === input)
+
+        if (floating) {
+            this.selectOrder(floating.uuid)
+
+            return
+        }
+
+        const order = this.newOrder(null)
+
+        order.floating_name = input.slice(0, 64)
+        order.is_booked = true
     }
 
     openTable(tableId) {
@@ -1588,7 +1806,7 @@ export class Till {
     selectOrder(uuid) {
         this.state.activeOrderUuid = uuid
         this.state.activeLineUuid = null
-        this.state.screen = 'products'
+        this.state.screen = this.resumeScreenFor(this.activeOrder)
 
         this.resetNumpadBuffer()
 

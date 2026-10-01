@@ -295,6 +295,25 @@ return [
         'hint'    => 'Replaces any discount already on the order.',
     ],
 
+    'booking' => [
+        'book'    => 'Book table',
+        'release' => 'Release table',
+    ],
+
+    'transfer' => [
+        'label'        => 'Transfer / Merge',
+        'prompt'       => 'Select a table to transfer :order',
+        'has-payments' => 'This order has payments. Remove them before merging it into another table.',
+    ],
+
+    'table-selector' => [
+        'label'       => 'Table',
+        'heading'     => 'Table Selector',
+        'hint'        => 'Enter a table number, or a name for an order without a table.',
+        'placeholder' => 'Table number or name',
+        'jump'        => 'Jump',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel:',
         'served-by' => 'Served by :cashier',
