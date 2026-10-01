@@ -5,6 +5,8 @@ namespace Webkul\PointOfSale;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Webkul\PluginManager\Package;
+use Webkul\PointOfSale\Support\VersionedCss;
+use Webkul\PointOfSale\Support\VersionedJs;
 
 class PointOfSalePlugin implements Plugin
 {
@@ -27,6 +29,7 @@ class PointOfSalePlugin implements Plugin
         $panel
             ->when($panel->getId() == 'admin', function (Panel $panel) {
                 $panel
+                    ->assets(static::assets(), 'point-of-sale')
                     ->discoverResources(
                         in: __DIR__.'/Filament/Admin/Resources',
                         for: 'Webkul\\PointOfSale\\Filament\\Admin\\Resources'
@@ -46,6 +49,7 @@ class PointOfSalePlugin implements Plugin
             })
             ->when($panel->getId() == 'pos', function (Panel $panel) {
                 $panel
+                    ->assets(static::assets(), 'point-of-sale')
                     ->discoverPages(
                         in: __DIR__.'/Filament/Pos/Pages',
                         for: 'Webkul\\PointOfSale\\Filament\\Pos\\Pages'
@@ -55,6 +59,14 @@ class PointOfSalePlugin implements Plugin
                         for: 'Webkul\\PointOfSale\\Filament\\Pos\\Widgets'
                     );
             });
+    }
+
+    public static function assets(): array
+    {
+        return [
+            VersionedCss::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.css'),
+            VersionedJs::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.js'),
+        ];
     }
 
     public function boot(Panel $panel): void

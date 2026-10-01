@@ -144,7 +144,7 @@ function release() {
                 </button>
             </div>
 
-            <input ref="picker" type="file" accept="image/*" class="hidden" @change="pickImage">
+            <input ref="picker" type="file" accept="image/*" class="sr-only" tabindex="-1" @change="pickImage">
 
             <button type="button" :class="button" :disabled="state.planSaving" @click="picker?.click()">
                 {{ draft.background_image ? till.t('floor-plan.change-image') : till.t('floor-plan.add-image') }}

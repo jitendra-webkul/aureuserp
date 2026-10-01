@@ -3,7 +3,6 @@
 namespace Webkul\PointOfSale;
 
 use Filament\Panel;
-use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +25,6 @@ use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Warehouse;
 use Webkul\PointOfSale\Observers\WarehouseObserver;
-use Webkul\PointOfSale\Support\VersionedCss;
-use Webkul\PointOfSale\Support\VersionedJs;
 use Webkul\Product\Filament\Resources\ProductResource\Support\ProductSchemaRegistry;
 use Webkul\Product\Models\Product;
 use Webkul\Product\Support\ProductUsageRegistry;
@@ -183,8 +180,6 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
     {
         Livewire::component('point-of-sale-register-controls', RegisterControls::class);
 
-        $this->registerCustomAssets();
-
         $this->registerModelObservers();
 
         $this->contributeProductSchema();
@@ -243,16 +238,6 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
             OrderLine::class,
             Config::class,
         );
-    }
-
-    public function registerCustomAssets(): void
-    {
-        $this->app->booted(function (): void {
-            FilamentAsset::register([
-                VersionedCss::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.css'),
-                VersionedJs::make('point-of-sale', __DIR__.'/../resources/dist/point-of-sale.js'),
-            ], 'point-of-sale');
-        });
     }
 
     protected function registerModelObservers(): void
