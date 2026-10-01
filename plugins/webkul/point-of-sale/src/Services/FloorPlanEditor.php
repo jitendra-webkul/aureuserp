@@ -2,7 +2,9 @@
 
 namespace Webkul\PointOfSale\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\TableShape;
 use Webkul\PointOfSale\Exceptions\PosConfigurationException;
@@ -72,6 +74,34 @@ class FloorPlanEditor
         });
     }
 
+    public function setBackgroundImage(Floor $floor, UploadedFile $image): Floor
+    {
+        $previous = $floor->background_image;
+
+        $path = $image->store('point-of-sale/floors', 'public');
+
+        $floor->forceFill(['background_image' => $path])->save();
+
+        if ($previous && $previous !== $path) {
+            Storage::disk('public')->delete($previous);
+        }
+
+        return $floor->refresh();
+    }
+
+    public function removeBackgroundImage(Floor $floor): Floor
+    {
+        $previous = $floor->background_image;
+
+        $floor->forceFill(['background_image' => null])->save();
+
+        if ($previous) {
+            Storage::disk('public')->delete($previous);
+        }
+
+        return $floor->refresh();
+    }
+
     public function deleteFloor(Floor $floor): void
     {
         DB::transaction(function () use ($floor): void {
@@ -83,6 +113,10 @@ class FloorPlanEditor
 
             $floor->delete();
         });
+
+        if ($floor->background_image) {
+            Storage::disk('public')->delete($floor->background_image);
+        }
     }
 
     protected function assertTablesFree(array $tableIds): void

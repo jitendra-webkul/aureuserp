@@ -342,6 +342,12 @@ return [
         'hint'                 => 'Arraste as mesas para movê-las, arraste o canto para redimensionar e toque em uma mesa para editá-la.',
         'new-floor'            => 'Andar :number',
         'failed'               => 'Não foi possível salvar a planta (:status).',
+        'add-image'            => 'Adicionar imagem',
+        'change-image'         => 'Trocar imagem',
+        'remove-image'         => 'Remover imagem',
+        'zoom-in'              => 'Aproximar',
+        'zoom-out'             => 'Afastar',
+        'fit'                  => 'Ajustar à tela',
     ],
 
     'receipt' => [

@@ -342,6 +342,12 @@ return [
         'hint'                 => 'Arrastra las mesas para moverlas, arrastra la esquina para cambiar su tamaño y toca una mesa para editarla.',
         'new-floor'            => 'Planta :number',
         'failed'               => 'No se pudo guardar el plano (:status).',
+        'add-image'            => 'Añadir imagen',
+        'change-image'         => 'Cambiar imagen',
+        'remove-image'         => 'Quitar imagen',
+        'zoom-in'              => 'Acercar',
+        'zoom-out'             => 'Alejar',
+        'fit'                  => 'Ajustar a la pantalla',
     ],
 
     'receipt' => [

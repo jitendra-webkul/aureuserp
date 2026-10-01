@@ -1,6 +1,8 @@
 <script setup>
-import { inject, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
 import FloorPlanEditor from './FloorPlanEditor.vue'
+import FloorZoom from './FloorZoom.vue'
+import { useFloorCanvas } from './floor-canvas.js'
 
 const till = inject('till')
 
@@ -8,31 +10,14 @@ const floor = computed(() => till.activeFloor)
 
 const tables = computed(() => floor.value?.tables ?? [])
 
-const isMapped = computed(() => till.state.floorView === 'map' && tables.value.some((table) => table.position_h > 0 || table.position_v > 0))
+const isMapped = computed(() => till.state.floorView === 'map'
+    && (Boolean(floor.value?.background_image) || tables.value.some((table) => table.position_h > 0 || table.position_v > 0)))
 
-const canvas = computed(() => {
-    const width = Math.max(0, ...tables.value.map((table) => table.position_h + table.width))
-    const height = Math.max(0, ...tables.value.map((table) => table.position_v + table.height))
+const backdrop = computed(() => (floor.value?.background_color ? { backgroundColor: floor.value.background_color } : {}))
 
-    return {
-        width: `${width + 24}px`,
-        height: `${height + 24}px`,
-    }
-})
+const scroller = ref(null)
 
-const backdrop = computed(() => {
-    const style = {}
-
-    if (floor.value?.background_color) {
-        style.backgroundColor = floor.value.background_color
-    }
-
-    if (floor.value?.background_image) {
-        style.backgroundImage = `url("${floor.value.background_image}")`
-    }
-
-    return style
-})
+const canvas = useFloorCanvas(scroller, floor, tables)
 
 const summaries = computed(() => new Map(tables.value.map((table) => [table.id, till.tableSummary(table.id)])))
 
@@ -118,6 +103,8 @@ function tileClass(table) {
                 </button>
             </div>
 
+            <FloorZoom v-if="!till.state.planEditing && isMapped" :canvas="canvas" />
+
             <button
                 v-if="!till.state.planEditing && tables.length"
                 type="button"
@@ -153,33 +140,36 @@ function tileClass(table) {
 
         <div
             v-else
-            class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 bg-local bg-left-top bg-no-repeat dark:border-gray-700 dark:bg-gray-950"
+            ref="scroller"
+            class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950"
             :style="backdrop"
         >
             <p v-if="!tables.length" class="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
                 {{ till.t('floor.empty') }}
             </p>
 
-            <div v-else-if="isMapped" class="relative m-3" :style="canvas">
-                <button
-                    v-for="table in tables"
-                    :key="table.id"
-                    type="button"
-                    class="absolute flex flex-col items-center justify-center gap-0.5 p-1 text-center shadow-sm transition-colors"
-                    :class="tileClass(table)"
-                    :style="placement(table)"
-                    @click="till.tapTable(table.id)"
-                >
-                    <span class="text-base font-bold leading-none">{{ table.table_number }}</span>
+            <div v-else-if="isMapped" class="relative" :style="canvas.frameStyle.value">
+                <div class="absolute left-0 top-0 origin-top-left" :style="canvas.planStyle.value">
+                    <button
+                        v-for="table in tables"
+                        :key="table.id"
+                        type="button"
+                        class="absolute flex flex-col items-center justify-center gap-0.5 p-1 text-center shadow-sm transition-colors"
+                        :class="tileClass(table)"
+                        :style="placement(table)"
+                        @click="till.tapTable(table.id)"
+                    >
+                        <span class="text-base font-bold leading-none">{{ table.table_number }}</span>
 
-                    <span v-if="summary(table).count" class="font-mono text-[0.625rem] leading-none tabular-nums">
-                        {{ till.money(summary(table).total) }}
-                    </span>
+                        <span v-if="summary(table).count" class="font-mono text-[0.625rem] leading-none tabular-nums">
+                            {{ till.money(summary(table).total) }}
+                        </span>
 
-                    <span v-else class="text-[0.625rem] leading-none opacity-70">
-                        {{ till.choice('floor.seats', table.seats) }}
-                    </span>
-                </button>
+                        <span v-else class="text-[0.625rem] leading-none opacity-70">
+                            {{ till.choice('floor.seats', table.seats) }}
+                        </span>
+                    </button>
+                </div>
             </div>
 
             <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-3 p-3">

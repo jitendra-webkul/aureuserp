@@ -1178,6 +1178,7 @@ export class Till {
             id: floor.id,
             name: floor.name,
             background_color: floor.background_color ?? '',
+            background_image: floor.background_image ?? null,
             tables: floor.tables.map((table) => ({ ...table, key: `t${table.id}` })),
         }
 
@@ -1420,6 +1421,81 @@ export class Till {
             this.state.planConfirmDelete = false
         } finally {
             this.state.planSaving = false
+        }
+    }
+
+    backgroundEndpoint(floorId) {
+        return this.config.floor_plan.background_endpoint.replace('__floor__', floorId)
+    }
+
+    async uploadFloorImage(file) {
+        const draft = this.state.planDraft
+
+        if (!draft || !file || this.state.planSaving) {
+            return
+        }
+
+        this.state.planSaving = true
+        this.state.planError = null
+
+        const form = new FormData()
+
+        form.append('image', file)
+
+        try {
+            const response = await fetch(this.backgroundEndpoint(draft.id), {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: form,
+            })
+
+            const payload = await response.json().catch(() => ({}))
+
+            if (!response.ok) {
+                throw new Error(payload.message ?? this.t('floor-plan.failed', { status: response.status }))
+            }
+
+            this.applyFloorImage(payload.data)
+        } catch (error) {
+            this.state.planError = error.message
+        } finally {
+            this.state.planSaving = false
+        }
+    }
+
+    async removeFloorImage() {
+        const draft = this.state.planDraft
+
+        if (!draft || this.state.planSaving) {
+            return
+        }
+
+        this.state.planSaving = true
+        this.state.planError = null
+
+        try {
+            const body = await this.requestPlan(this.backgroundEndpoint(draft.id), 'DELETE')
+
+            this.applyFloorImage(body.data)
+        } catch (error) {
+            this.state.planError = error.message
+        } finally {
+            this.state.planSaving = false
+        }
+    }
+
+    applyFloorImage(payload) {
+        const floor = this.floors.find((entry) => entry.id === payload.id)
+
+        if (floor) {
+            floor.background_image = payload.background_image
+        }
+
+        if (this.state.planDraft?.id === payload.id) {
+            this.state.planDraft.background_image = payload.background_image
         }
     }
 

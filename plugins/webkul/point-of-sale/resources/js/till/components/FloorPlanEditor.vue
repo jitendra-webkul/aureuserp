@@ -1,5 +1,7 @@
 <script setup>
-import { inject, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
+import FloorZoom from './FloorZoom.vue'
+import { useFloorCanvas } from './floor-canvas.js'
 
 const till = inject('till')
 
@@ -13,20 +15,25 @@ const palette = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6
 
 const backgrounds = ['#ffffff', '#f5f5f4', '#fef3c7', '#dcfce7', '#dbeafe', '#ede9fe', '#fce7f3', '#e7e5e4']
 
-const canvas = computed(() => {
-    const tables = till.planTables
+const scroller = ref(null)
 
-    const width = Math.max(800, ...tables.map((table) => table.position_h + table.width + 200))
-    const height = Math.max(500, ...tables.map((table) => table.position_v + table.height + 200))
+const picker = ref(null)
 
-    const style = { width: `${width}px`, height: `${height}px` }
+const tables = computed(() => till.planTables)
 
-    if (draft.value?.background_color) {
-        style.backgroundColor = draft.value.background_color
+const canvas = useFloorCanvas(scroller, draft, tables, { margin: 200 })
+
+const backdrop = computed(() => (draft.value?.background_color ? { backgroundColor: draft.value.background_color } : {}))
+
+function pickImage(event) {
+    const [file] = event.target.files ?? []
+
+    event.target.value = ''
+
+    if (file) {
+        till.uploadFloorImage(file)
     }
-
-    return style
-})
+}
 
 const button = 'flex min-h-10 flex-none items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800'
 
@@ -88,8 +95,8 @@ function track(event) {
         return
     }
 
-    const dx = event.clientX - gesture.x
-    const dy = event.clientY - gesture.y
+    const dx = (event.clientX - gesture.x) / canvas.scale.value
+    const dy = (event.clientY - gesture.y) / canvas.scale.value
 
     if (gesture.mode === 'move') {
         till.movePlanTable(gesture.key, gesture.left + dx, gesture.top + dy)
@@ -137,6 +144,22 @@ function release() {
                 </button>
             </div>
 
+            <input ref="picker" type="file" accept="image/*" class="hidden" @change="pickImage">
+
+            <button type="button" :class="button" :disabled="state.planSaving" @click="picker?.click()">
+                {{ draft.background_image ? till.t('floor-plan.change-image') : till.t('floor-plan.add-image') }}
+            </button>
+
+            <button
+                v-if="draft.background_image"
+                type="button"
+                :class="button"
+                :disabled="state.planSaving"
+                @click="till.removeFloorImage()"
+            >
+                {{ till.t('floor-plan.remove-image') }}
+            </button>
+
             <span class="mx-1 h-6 w-px bg-gray-200 dark:bg-gray-700"></span>
 
             <button type="button" :class="button" @click="till.addPlanTable()">
@@ -167,6 +190,8 @@ function release() {
             </button>
 
             <span class="flex-1"></span>
+
+            <FloorZoom :canvas="canvas" />
 
             <button type="button" :class="button" :disabled="state.planSaving" @click="till.cancelPlanEdit()">
                 {{ till.t('common.cancel') }}
@@ -252,39 +277,45 @@ function release() {
             {{ till.t('floor-plan.hint') }}
         </p>
 
-        <div class="min-h-0 flex-auto overflow-auto rounded-xl border-2 border-dashed border-primary-300 bg-gray-50 dark:border-primary-500/40 dark:bg-gray-950">
-            <div
-                class="relative bg-[radial-gradient(circle,rgb(0_0_0/0.08)_1px,transparent_1px)] bg-size-[20px_20px] dark:bg-[radial-gradient(circle,rgb(255_255_255/0.08)_1px,transparent_1px)]"
-                :style="canvas"
-                @pointerdown.self="state.planSelectedKey = null"
-            >
+        <div
+            ref="scroller"
+            class="min-h-0 flex-auto overflow-auto rounded-xl border-2 border-dashed border-primary-300 bg-gray-50 dark:border-primary-500/40 dark:bg-gray-950"
+            :style="backdrop"
+        >
+            <div class="relative" :style="canvas.frameStyle.value">
                 <div
-                    v-for="table in till.planTables"
-                    :key="table.key"
-                    class="absolute flex touch-none cursor-move select-none flex-col items-center justify-center border-4 bg-white/80 text-gray-900 shadow-sm dark:bg-gray-900/80 dark:text-gray-100"
-                    :class="[
-                        table.shape === 'round' ? 'rounded-full' : 'rounded-xl',
-                        table.color ? '' : 'border-gray-300 dark:border-gray-600',
-                        state.planSelectedKey === table.key ? 'ring-4 ring-primary-500/50' : '',
-                    ]"
-                    :style="placement(table)"
-                    @pointerdown="startMove($event, table)"
-                    @pointermove="track"
-                    @pointerup="release"
-                    @pointercancel="release"
+                    class="absolute left-0 top-0 origin-top-left bg-[radial-gradient(circle,rgb(0_0_0/0.08)_1px,transparent_1px)] bg-size-[20px_20px] dark:bg-[radial-gradient(circle,rgb(255_255_255/0.08)_1px,transparent_1px)]"
+                    :style="canvas.planStyle.value"
+                    @pointerdown.self="state.planSelectedKey = null"
                 >
-                    <span class="text-base font-bold leading-none">{{ table.table_number }}</span>
-
-                    <span class="text-[0.625rem] leading-none opacity-70">{{ till.choice('floor.seats', table.seats) }}</span>
-
-                    <span
-                        v-if="state.planSelectedKey === table.key"
-                        class="absolute -bottom-2 -right-2 size-5 cursor-se-resize rounded-full border-2 border-white bg-primary-600 dark:border-gray-900"
-                        @pointerdown="startResize($event, table)"
+                    <div
+                        v-for="table in till.planTables"
+                        :key="table.key"
+                        class="absolute flex touch-none cursor-move select-none flex-col items-center justify-center border-4 bg-white/80 text-gray-900 shadow-sm dark:bg-gray-900/80 dark:text-gray-100"
+                        :class="[
+                            table.shape === 'round' ? 'rounded-full' : 'rounded-xl',
+                            table.color ? '' : 'border-gray-300 dark:border-gray-600',
+                            state.planSelectedKey === table.key ? 'ring-4 ring-primary-500/50' : '',
+                        ]"
+                        :style="placement(table)"
+                        @pointerdown="startMove($event, table)"
                         @pointermove="track"
                         @pointerup="release"
                         @pointercancel="release"
-                    ></span>
+                    >
+                        <span class="text-base font-bold leading-none">{{ table.table_number }}</span>
+
+                        <span class="text-[0.625rem] leading-none opacity-70">{{ till.choice('floor.seats', table.seats) }}</span>
+
+                        <span
+                            v-if="state.planSelectedKey === table.key"
+                            class="absolute -bottom-2 -right-2 size-5 cursor-se-resize rounded-full border-2 border-white bg-primary-600 dark:border-gray-900"
+                            @pointerdown="startResize($event, table)"
+                            @pointermove="track"
+                            @pointerup="release"
+                            @pointercancel="release"
+                        ></span>
+                    </div>
                 </div>
             </div>
         </div>

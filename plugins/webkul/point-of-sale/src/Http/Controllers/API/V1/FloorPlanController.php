@@ -3,6 +3,7 @@
 namespace Webkul\PointOfSale\Http\Controllers\API\V1;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
@@ -39,6 +40,28 @@ class FloorPlanController extends Controller
         } catch (Throwable $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
+
+        return response()->json(['data' => $this->boot->floorPayload($floor)]);
+    }
+
+    public function storeBackground(Request $request, Floor $floor): JsonResponse
+    {
+        abort_unless($this->reachesFloor($floor) && Gate::allows('update', $floor), 403);
+
+        $image = $request->validate([
+            'image' => ['required', 'image', 'max:5120'],
+        ])['image'];
+
+        $floor = PointOfSale::setFloorBackgroundImage($floor, $image);
+
+        return response()->json(['data' => $this->boot->floorPayload($floor)]);
+    }
+
+    public function destroyBackground(Floor $floor): JsonResponse
+    {
+        abort_unless($this->reachesFloor($floor) && Gate::allows('update', $floor), 403);
+
+        $floor = PointOfSale::removeFloorBackgroundImage($floor);
 
         return response()->json(['data' => $this->boot->floorPayload($floor)]);
     }

@@ -342,6 +342,12 @@ return [
         'hint'                 => 'Faites glisser les tables pour les déplacer, la poignée d’angle pour les redimensionner, et touchez une table pour la modifier.',
         'new-floor'            => 'Étage :number',
         'failed'               => 'Impossible d’enregistrer le plan (:status).',
+        'add-image'            => 'Ajouter une image',
+        'change-image'         => 'Changer l’image',
+        'remove-image'         => 'Retirer l’image',
+        'zoom-in'              => 'Zoomer',
+        'zoom-out'             => 'Dézoomer',
+        'fit'                  => 'Ajuster à l’écran',
     ],
 
     'receipt' => [

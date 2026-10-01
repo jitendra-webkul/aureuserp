@@ -342,6 +342,12 @@ return [
         'hint'                 => 'Drag tables to move them, drag the corner handle to resize, tap a table to edit it.',
         'new-floor'            => 'Floor :number',
         'failed'               => 'Could not save the floor plan (:status).',
+        'add-image'            => 'Add image',
+        'change-image'         => 'Change image',
+        'remove-image'         => 'Remove image',
+        'zoom-in'              => 'Zoom in',
+        'zoom-out'             => 'Zoom out',
+        'fit'                  => 'Fit to screen',
     ],
 
     'receipt' => [

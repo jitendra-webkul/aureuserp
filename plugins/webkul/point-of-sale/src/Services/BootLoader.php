@@ -795,11 +795,12 @@ class BootLoader
         $user = Auth::user();
 
         return [
-            'can_update'      => (bool) $user?->can('update', new Floor),
-            'can_create'      => (bool) $user?->can('create', Floor::class),
-            'can_delete'      => (bool) $user?->can('delete', new Floor),
-            'create_endpoint' => route('point-of-sale.till.configs.floors.store', ['config' => $config->id]),
-            'floor_endpoint'  => route('point-of-sale.till.floors.update', ['floor' => '__floor__']),
+            'can_update'          => (bool) $user?->can('update', new Floor),
+            'can_create'          => (bool) $user?->can('create', Floor::class),
+            'can_delete'          => (bool) $user?->can('delete', new Floor),
+            'create_endpoint'     => route('point-of-sale.till.configs.floors.store', ['config' => $config->id]),
+            'floor_endpoint'      => route('point-of-sale.till.floors.update', ['floor' => '__floor__']),
+            'background_endpoint' => route('point-of-sale.till.floors.background.store', ['floor' => '__floor__']),
         ];
     }
 

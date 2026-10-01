@@ -2,6 +2,7 @@
 
 namespace Webkul\PointOfSale;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Webkul\Account\Models\Move;
 use Webkul\Inventory\Models\Operation;
@@ -153,6 +154,16 @@ class PointOfSaleManager
     public function saveFloor(Floor $floor, array $data): Floor
     {
         return app(FloorPlanEditor::class)->saveFloor($floor, $data);
+    }
+
+    public function setFloorBackgroundImage(Floor $floor, UploadedFile $image): Floor
+    {
+        return app(FloorPlanEditor::class)->setBackgroundImage($floor, $image);
+    }
+
+    public function removeFloorBackgroundImage(Floor $floor): Floor
+    {
+        return app(FloorPlanEditor::class)->removeBackgroundImage($floor);
     }
 
     public function deleteFloor(Floor $floor): void

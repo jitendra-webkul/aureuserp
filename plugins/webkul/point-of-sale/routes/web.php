@@ -22,6 +22,8 @@ Route::name('point-of-sale.till.')
         Route::post('configs/{config}/floors', [FloorPlanController::class, 'store'])->name('configs.floors.store');
         Route::put('floors/{floor}', [FloorPlanController::class, 'update'])->name('floors.update');
         Route::delete('floors/{floor}', [FloorPlanController::class, 'destroy'])->name('floors.destroy');
+        Route::post('floors/{floor}/background', [FloorPlanController::class, 'storeBackground'])->name('floors.background.store');
+        Route::delete('floors/{floor}/background', [FloorPlanController::class, 'destroyBackground'])->name('floors.background.destroy');
         Route::get('sessions/{session}/boot', [BootController::class, 'show'])->name('sessions.boot');
         Route::post('configs/{config}/products', [TerminalProductController::class, 'store'])->name('configs.products.store');
     });

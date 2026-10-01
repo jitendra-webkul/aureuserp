@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\TableShape;
@@ -265,4 +267,20 @@ it('deletes a floor without open orders and detaches it from the terminal', func
 
     expect($this->floor->refresh()->trashed())->toBeTrue()
         ->and($this->config->refresh()->floors)->toBeEmpty();
+});
+
+it('stores and removes the background image of a floor', function () {
+    Storage::fake('public');
+
+    $floor = PointOfSale::setFloorBackgroundImage($this->floor, UploadedFile::fake()->image('plan.png', 800, 500));
+
+    Storage::disk('public')->assertExists($floor->background_image);
+
+    $path = $floor->background_image;
+
+    $floor = PointOfSale::removeFloorBackgroundImage($floor);
+
+    expect($floor->background_image)->toBeNull();
+
+    Storage::disk('public')->assertMissing($path);
 });
