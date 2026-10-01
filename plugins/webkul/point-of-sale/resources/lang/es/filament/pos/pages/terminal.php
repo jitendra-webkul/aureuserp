@@ -295,6 +295,25 @@ return [
         'hint'    => 'Sustituye cualquier descuento ya aplicado al pedido.',
     ],
 
+    'booking' => [
+        'book'    => 'Reservar mesa',
+        'release' => 'Liberar mesa',
+    ],
+
+    'transfer' => [
+        'label'        => 'Transferir / Fusionar',
+        'prompt'       => 'Selecciona una mesa para transferir :order',
+        'has-payments' => 'Este pedido tiene pagos. Elimínalos antes de fusionarlo con otra mesa.',
+    ],
+
+    'table-selector' => [
+        'label'       => 'Mesa',
+        'heading'     => 'Selector de mesa',
+        'hint'        => 'Introduce un número de mesa o un nombre para un pedido sin mesa.',
+        'placeholder' => 'Número de mesa o nombre',
+        'jump'        => 'Ir',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',
