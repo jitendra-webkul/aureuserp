@@ -2189,6 +2189,7 @@ export class Till {
             uuid: uuidv4(),
             order_uuid: order.uuid,
             product_id: productId,
+            uom_id: product.uom_id,
             qty,
             price_unit: this.priceFor(productId),
             price_overridden: false,

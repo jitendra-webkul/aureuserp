@@ -121,6 +121,16 @@ return [
                 ],
             ],
 
+            'extra-info' => [
+                'title'   => 'معلومات إضافية',
+                'entries' => [
+                    'receipt-number'  => 'رقم الإيصال',
+                    'tracking-number' => 'رقم التتبع',
+                    'email'           => 'البريد الإلكتروني',
+                    'mobile'          => 'الجوال',
+                ],
+            ],
+
             'other-information' => [
                 'title'   => 'معلومات أخرى',
                 'entries' => [

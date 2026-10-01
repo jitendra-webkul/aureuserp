@@ -17,6 +17,10 @@ function productName(productId) {
     return till.master.products.get(productId)?.name ?? ''
 }
 
+function uomName(line) {
+    return till.master.uoms.get(line.uom_id)?.name ?? ''
+}
+
 function productImage(productId) {
     if (!till.config.show_product_images) {
         return null
@@ -82,7 +86,7 @@ function productImage(productId) {
                     </span>
 
                     <span class="block font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
-                        {{ line.qty }} &times; {{ till.money(line.price_unit) }}
+                        {{ line.qty }} &times; {{ till.money(line.price_unit) }}<template v-if="uomName(line)"> / {{ uomName(line) }}</template>
                         <template v-if="line.discount"> &middot; &minus;{{ till.t('cart.discount', { percentage: line.discount }) }}</template>
                     </span>
 

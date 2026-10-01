@@ -121,6 +121,16 @@ return [
                 ],
             ],
 
+            'extra-info' => [
+                'title'   => 'Informations supplémentaires',
+                'entries' => [
+                    'receipt-number'  => 'Numéro de reçu',
+                    'tracking-number' => 'Numéro de suivi',
+                    'email'           => 'E-mail',
+                    'mobile'          => 'Mobile',
+                ],
+            ],
+
             'other-information' => [
                 'title'   => 'Autres informations',
                 'entries' => [

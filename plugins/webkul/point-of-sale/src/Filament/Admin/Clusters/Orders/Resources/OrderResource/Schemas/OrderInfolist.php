@@ -183,6 +183,26 @@ class OrderInfolist
                                     ]),
                             ]),
 
+                        Tab::make(__('point-of-sale::filament/admin/clusters/orders/resources/order.infolist.tabs.extra-info.title'))
+                            ->icon('heroicon-o-information-circle')
+                            ->schema([
+                                Grid::make()
+                                    ->schema([
+                                        TextEntry::make('reference')
+                                            ->placeholder('-')
+                                            ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.infolist.tabs.extra-info.entries.receipt-number')),
+                                        TextEntry::make('tracking_number')
+                                            ->placeholder('-')
+                                            ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.infolist.tabs.extra-info.entries.tracking-number')),
+                                        TextEntry::make('email')
+                                            ->placeholder('-')
+                                            ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.infolist.tabs.extra-info.entries.email')),
+                                        TextEntry::make('mobile')
+                                            ->placeholder('-')
+                                            ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.infolist.tabs.extra-info.entries.mobile')),
+                                    ])->columns(2),
+                            ]),
+
                         Tab::make(__('point-of-sale::filament/admin/clusters/orders/resources/order.infolist.tabs.other-information.title'))
                             ->icon('heroicon-o-information-circle')
                             ->schema([
