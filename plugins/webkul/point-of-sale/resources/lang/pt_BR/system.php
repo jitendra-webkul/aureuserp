@@ -66,6 +66,10 @@ return [
         'line-discount-disabled' => 'Os descontos por linha estão desativados neste ponto de venda.',
     ],
 
+    'floor-plan' => [
+        'tables-in-use' => 'As mesas :tables ainda têm pedidos abertos. Pague, libere ou mova-os primeiro.',
+    ],
+
     'session-preflight' => [
         'draft-orders'       => 'Pague ou cancele estes pedidos antes de fechar a sessão: :orders.',
 

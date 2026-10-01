@@ -115,6 +115,13 @@ export class Till {
             globalDiscountModalOpen: false,
             transferOrderUuid: null,
             sessionClosed: false,
+            planEditing: false,
+            planDraft: null,
+            planSelectedKey: null,
+            planSaving: false,
+            planError: null,
+            planConfirmDelete: false,
+            floorView: 'map',
             openingTable: false,
             transferError: null,
             tableSelectorOpen: false,
@@ -192,9 +199,9 @@ export class Till {
         this.stock = { ...(boot.stock ?? {}) }
         this.prices = boot.prices ?? { 0: {} }
 
-        this.floors = boot.floors ?? []
+        this.floors = reactive(boot.floors ?? [])
 
-        this.tableById = new Map(this.floors.flatMap((floor) => floor.tables.map((table) => [table.id, table])))
+        this.indexTables()
 
         this.variantsByProduct = new Map((boot.variants ?? []).map((entry) => [entry.product_id, entry]))
 
@@ -244,6 +251,8 @@ export class Till {
         this.startKeyboard()
 
         this.startIdleWatch()
+
+        this.loadFloorView()
 
         this.startDraftRefresh()
 
@@ -1113,7 +1122,325 @@ export class Till {
     }
 
     selectFloor(floorId) {
+        if (this.state.planEditing) {
+            return
+        }
+
         this.state.floorId = floorId
+    }
+
+    indexTables() {
+        this.tableById = new Map(this.floors.flatMap((floor) => floor.tables.map((table) => [table.id, table])))
+    }
+
+    get floorViewKey() {
+        return `pos.floor-view.${this.config.id}`
+    }
+
+    loadFloorView() {
+        try {
+            this.state.floorView = window.localStorage.getItem(this.floorViewKey) === 'grid' ? 'grid' : 'map'
+        } catch {
+            this.state.floorView = 'map'
+        }
+    }
+
+    toggleFloorView() {
+        this.state.floorView = this.state.floorView === 'grid' ? 'map' : 'grid'
+
+        try {
+            window.localStorage.setItem(this.floorViewKey, this.state.floorView)
+        } catch {
+            return
+        }
+    }
+
+    get canEditPlan() {
+        return Boolean(this.isRestaurant && this.config.floor_plan?.can_update && !this.state.transferOrderUuid)
+    }
+
+    get planTables() {
+        return this.state.planDraft?.tables ?? []
+    }
+
+    get planSelectedTable() {
+        return this.planTables.find((table) => table.key === this.state.planSelectedKey) ?? null
+    }
+
+    startPlanEdit() {
+        const floor = this.activeFloor
+
+        if (!floor || !this.canEditPlan) {
+            return
+        }
+
+        this.state.planDraft = {
+            id: floor.id,
+            name: floor.name,
+            background_color: floor.background_color ?? '',
+            tables: floor.tables.map((table) => ({ ...table, key: `t${table.id}` })),
+        }
+
+        this.state.planSelectedKey = null
+        this.state.planError = null
+        this.state.planConfirmDelete = false
+        this.state.planEditing = true
+    }
+
+    cancelPlanEdit() {
+        this.state.planEditing = false
+        this.state.planDraft = null
+        this.state.planSelectedKey = null
+        this.state.planError = null
+        this.state.planConfirmDelete = false
+    }
+
+    selectPlanTable(key) {
+        this.state.planSelectedKey = this.state.planSelectedKey === key ? null : key
+    }
+
+    nextTableNumber() {
+        const numbers = this.floors
+            .flatMap((floor) => floor.id === this.state.planDraft?.id ? [] : floor.tables)
+            .concat(this.planTables)
+            .map((table) => Number.parseInt(table.table_number, 10))
+            .filter((number) => Number.isFinite(number))
+
+        return String(numbers.length ? Math.max(...numbers) + 1 : 1)
+    }
+
+    freePlanSpot(width, height) {
+        const columns = 6
+
+        for (let index = 0; index < 120; index += 1) {
+            const left = 20 + (index % columns) * 120
+            const top = 20 + Math.floor(index / columns) * 120
+
+            const overlaps = this.planTables.some((table) => left < table.position_h + table.width
+                && left + width > table.position_h
+                && top < table.position_v + table.height
+                && top + height > table.position_v)
+
+            if (!overlaps) {
+                return { position_h: left, position_v: top }
+            }
+        }
+
+        return { position_h: 20, position_v: 20 }
+    }
+
+    addPlanTable(source = null) {
+        if (!this.state.planDraft) {
+            return
+        }
+
+        const width = source?.width ?? 90
+        const height = source?.height ?? 90
+
+        const table = {
+            id: null,
+            key: uuidv4(),
+            floor_id: this.state.planDraft.id,
+            table_number: this.nextTableNumber(),
+            shape: source?.shape ?? 'square',
+            seats: source?.seats ?? 4,
+            color: source?.color ?? null,
+            width,
+            height,
+            ...this.freePlanSpot(width, height),
+        }
+
+        this.state.planDraft.tables.push(table)
+
+        this.state.planSelectedKey = table.key
+    }
+
+    duplicatePlanTable() {
+        if (this.planSelectedTable) {
+            this.addPlanTable(this.planSelectedTable)
+        }
+    }
+
+    removePlanTable() {
+        if (!this.state.planDraft || !this.state.planSelectedKey) {
+            return
+        }
+
+        this.state.planDraft.tables = this.planTables.filter((table) => table.key !== this.state.planSelectedKey)
+
+        this.state.planSelectedKey = null
+    }
+
+    updatePlanTable(changes) {
+        const table = this.planSelectedTable
+
+        if (!table) {
+            return
+        }
+
+        Object.assign(table, changes)
+
+        table.seats = Math.max(1, Math.trunc(Number(table.seats) || 1))
+    }
+
+    movePlanTable(key, left, top) {
+        const table = this.planTables.find((entry) => entry.key === key)
+
+        if (!table) {
+            return
+        }
+
+        table.position_h = Math.max(0, Math.round(left / 5) * 5)
+        table.position_v = Math.max(0, Math.round(top / 5) * 5)
+    }
+
+    resizePlanTable(key, width, height) {
+        const table = this.planTables.find((entry) => entry.key === key)
+
+        if (!table) {
+            return
+        }
+
+        table.width = Math.max(40, Math.round(width / 5) * 5)
+        table.height = Math.max(40, Math.round(height / 5) * 5)
+    }
+
+    floorEndpoint(floorId) {
+        return this.config.floor_plan.floor_endpoint.replace('__floor__', floorId)
+    }
+
+    replaceFloor(payload) {
+        const index = this.floors.findIndex((floor) => floor.id === payload.id)
+
+        if (index === -1) {
+            this.floors.push(payload)
+        } else {
+            this.floors.splice(index, 1, payload)
+        }
+
+        this.indexTables()
+    }
+
+    async savePlan() {
+        const draft = this.state.planDraft
+
+        if (!draft || this.state.planSaving) {
+            return
+        }
+
+        this.state.planSaving = true
+        this.state.planError = null
+
+        try {
+            const body = await this.requestPlan(this.floorEndpoint(draft.id), 'PUT', {
+                name: draft.name,
+                background_color: draft.background_color || null,
+                tables: draft.tables.map((table) => ({
+                    id: table.id,
+                    table_number: String(table.table_number).trim(),
+                    shape: table.shape,
+                    position_h: table.position_h,
+                    position_v: table.position_v,
+                    width: table.width,
+                    height: table.height,
+                    seats: table.seats,
+                    color: table.color || null,
+                })),
+            })
+
+            this.replaceFloor(body.data)
+
+            this.cancelPlanEdit()
+        } catch (error) {
+            this.state.planError = error.message
+        } finally {
+            this.state.planSaving = false
+        }
+    }
+
+    async addFloor() {
+        if (!this.config.floor_plan?.can_create || this.state.planSaving) {
+            return
+        }
+
+        this.state.planSaving = true
+        this.state.planError = null
+
+        try {
+            const body = await this.requestPlan(this.config.floor_plan.create_endpoint, 'POST', {
+                name: this.t('floor-plan.new-floor', { number: this.floors.length + 1 }),
+            })
+
+            this.replaceFloor(body.data)
+
+            this.cancelPlanEdit()
+
+            this.state.floorId = body.data.id
+
+            this.startPlanEdit()
+        } catch (error) {
+            this.state.planError = error.message
+        } finally {
+            this.state.planSaving = false
+        }
+    }
+
+    async deleteFloor() {
+        const draft = this.state.planDraft
+
+        if (!draft || !this.config.floor_plan?.can_delete || this.state.planSaving) {
+            return
+        }
+
+        if (!this.state.planConfirmDelete) {
+            this.state.planConfirmDelete = true
+
+            return
+        }
+
+        this.state.planSaving = true
+        this.state.planError = null
+
+        try {
+            await this.requestPlan(this.floorEndpoint(draft.id), 'DELETE')
+
+            const index = this.floors.findIndex((floor) => floor.id === draft.id)
+
+            if (index !== -1) {
+                this.floors.splice(index, 1)
+            }
+
+            this.indexTables()
+
+            this.cancelPlanEdit()
+
+            this.state.floorId = this.floors[0]?.id ?? null
+        } catch (error) {
+            this.state.planError = error.message
+            this.state.planConfirmDelete = false
+        } finally {
+            this.state.planSaving = false
+        }
+    }
+
+    async requestPlan(url, method, body = null) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            },
+            body: body ? JSON.stringify(body) : null,
+        })
+
+        const payload = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+            throw new Error(payload.message ?? this.t('floor-plan.failed', { status: response.status }))
+        }
+
+        return payload
     }
 
     async tapTable(tableId) {

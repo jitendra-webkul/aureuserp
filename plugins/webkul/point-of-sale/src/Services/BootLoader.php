@@ -154,6 +154,7 @@ class BootLoader
             'product_endpoint'              => route('point-of-sale.till.configs.products.store', ['config' => $config->id]),
             'order_cancel_endpoint'         => route('point-of-sale.till.orders.cancel'),
             'draft_endpoint'                => route('point-of-sale.till.orders.drafts.store'),
+            'floor_plan'                    => $this->floorPlanAccess($config),
             'tracking_options'              => $this->trackingOptions(),
             'use_create_lots'               => (bool) $config->operationType?->use_create_lots,
             'use_existing_lots'             => (bool) $config->operationType?->use_existing_lots,
@@ -760,24 +761,46 @@ class BootLoader
             ->orderBy('sort')
             ->orderBy('id')
             ->get()
-            ->map(fn (Floor $floor): array => [
-                'id'               => $floor->id,
-                'name'             => $floor->name,
-                'background_color' => $floor->background_color,
-                'background_image' => $floor->background_image ? Storage::url($floor->background_image) : null,
-                'tables'           => $floor->tables->map(fn (Table $table): array => [
-                    'id'           => $table->id,
-                    'floor_id'     => $table->floor_id,
-                    'table_number' => $table->table_number,
-                    'shape'        => $table->shape?->value ?? $table->shape,
-                    'position_h'   => (float) $table->position_h,
-                    'position_v'   => (float) $table->position_v,
-                    'width'        => (float) $table->width,
-                    'height'       => (float) $table->height,
-                    'seats'        => (int) $table->seats,
-                    'color'        => $table->color,
-                ])->values()->all(),
-            ])->values()->all();
+            ->map(fn (Floor $floor): array => $this->floorPayload($floor))
+            ->values()
+            ->all();
+    }
+
+    public function floorPayload(Floor $floor): array
+    {
+        $floor->loadMissing(['tables' => fn ($query) => $query->orderBy('table_number')]);
+
+        return [
+            'id'               => $floor->id,
+            'name'             => $floor->name,
+            'background_color' => $floor->background_color,
+            'background_image' => $floor->background_image ? Storage::url($floor->background_image) : null,
+            'tables'           => $floor->tables->map(fn (Table $table): array => [
+                'id'           => $table->id,
+                'floor_id'     => $table->floor_id,
+                'table_number' => $table->table_number,
+                'shape'        => $table->shape?->value ?? $table->shape,
+                'position_h'   => (float) $table->position_h,
+                'position_v'   => (float) $table->position_v,
+                'width'        => (float) $table->width,
+                'height'       => (float) $table->height,
+                'seats'        => (int) $table->seats,
+                'color'        => $table->color,
+            ])->values()->all(),
+        ];
+    }
+
+    protected function floorPlanAccess(Config $config): array
+    {
+        $user = Auth::user();
+
+        return [
+            'can_update'      => (bool) $user?->can('update', new Floor),
+            'can_create'      => (bool) $user?->can('create', Floor::class),
+            'can_delete'      => (bool) $user?->can('delete', new Floor),
+            'create_endpoint' => route('point-of-sale.till.configs.floors.store', ['config' => $config->id]),
+            'floor_endpoint'  => route('point-of-sale.till.floors.update', ['floor' => '__floor__']),
+        ];
     }
 
     public function drafts(Session $session): array

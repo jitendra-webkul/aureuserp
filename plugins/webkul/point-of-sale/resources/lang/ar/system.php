@@ -66,6 +66,10 @@ return [
         'line-discount-disabled' => 'خصومات البنود معطلة في نقطة البيع هذه.',
     ],
 
+    'floor-plan' => [
+        'tables-in-use' => 'لا تزال الطاولات :tables تحتوي على طلبات مفتوحة. ادفعها أو حررها أو انقلها أولاً.',
+    ],
+
     'session-preflight' => [
         'draft-orders'       => 'ادفع هذه الطلبات أو ألغِها قبل إغلاق الجلسة: :orders.',
 

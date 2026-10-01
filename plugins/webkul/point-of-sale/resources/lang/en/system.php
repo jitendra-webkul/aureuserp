@@ -66,6 +66,10 @@ return [
         'line-discount-disabled' => 'Line discounts are turned off on this point of sale.',
     ],
 
+    'floor-plan' => [
+        'tables-in-use' => 'Tables :tables still have open orders. Pay, release or move them first.',
+    ],
+
     'session-preflight' => [
         'draft-orders' => 'Pay or cancel these orders before closing the session: :orders.',
 

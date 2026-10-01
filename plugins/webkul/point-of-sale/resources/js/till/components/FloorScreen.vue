@@ -1,5 +1,6 @@
 <script setup>
 import { inject, computed } from 'vue'
+import FloorPlanEditor from './FloorPlanEditor.vue'
 
 const till = inject('till')
 
@@ -7,7 +8,7 @@ const floor = computed(() => till.activeFloor)
 
 const tables = computed(() => floor.value?.tables ?? [])
 
-const isMapped = computed(() => tables.value.some((table) => table.position_h > 0 || table.position_v > 0))
+const isMapped = computed(() => till.state.floorView === 'map' && tables.value.some((table) => table.position_h > 0 || table.position_v > 0))
 
 const canvas = computed(() => {
     const width = Math.max(0, ...tables.value.map((table) => table.position_h + table.width))
@@ -118,7 +119,26 @@ function tileClass(table) {
             </div>
 
             <button
-                v-if="till.parkedOrders.length"
+                v-if="!till.state.planEditing && tables.length"
+                type="button"
+                class="flex flex-none items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600"
+                :title="till.t('floor-plan.switch-view')"
+                @click="till.toggleFloorView()"
+            >
+                {{ till.state.floorView === 'grid' ? till.t('floor-plan.view-map') : till.t('floor-plan.view-grid') }}
+            </button>
+
+            <button
+                v-if="till.canEditPlan && !till.state.planEditing"
+                type="button"
+                class="flex flex-none items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600"
+                @click="floor ? till.startPlanEdit() : till.addFloor()"
+            >
+                {{ till.t('floor-plan.edit') }}
+            </button>
+
+            <button
+                v-if="till.parkedOrders.length && !till.state.planEditing"
                 type="button"
                 class="flex flex-none items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600"
                 @click="till.openOrders()"
@@ -129,7 +149,10 @@ function tileClass(table) {
             </button>
         </div>
 
+        <FloorPlanEditor v-if="till.state.planEditing" class="min-h-0 flex-auto" />
+
         <div
+            v-else
             class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 bg-local bg-left-top bg-no-repeat dark:border-gray-700 dark:bg-gray-950"
             :style="backdrop"
         >

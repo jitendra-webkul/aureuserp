@@ -8,11 +8,13 @@ use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\Warehouse as InventoryWarehouse;
 use Webkul\PointOfSale\Models\CashMovement;
 use Webkul\PointOfSale\Models\Config;
+use Webkul\PointOfSale\Models\Floor;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Warehouse;
 use Webkul\PointOfSale\Services\BillSplitter;
 use Webkul\PointOfSale\Services\FiscalPositionResolver;
+use Webkul\PointOfSale\Services\FloorPlanEditor;
 use Webkul\PointOfSale\Services\GlobalDiscountApplier;
 use Webkul\PointOfSale\Services\OrderCalculator;
 use Webkul\PointOfSale\Services\OrderProcessor;
@@ -141,6 +143,21 @@ class PointOfSaleManager
     public function saveDraftOrder(array $payload): Order
     {
         return $this->processor->saveDraft($payload);
+    }
+
+    public function createFloor(Config $config, string $name): Floor
+    {
+        return app(FloorPlanEditor::class)->createFloor($config, $name);
+    }
+
+    public function saveFloor(Floor $floor, array $data): Floor
+    {
+        return app(FloorPlanEditor::class)->saveFloor($floor, $data);
+    }
+
+    public function deleteFloor(Floor $floor): void
+    {
+        app(FloorPlanEditor::class)->deleteFloor($floor);
     }
 
     public function saveDraftOrders(array $orders): array

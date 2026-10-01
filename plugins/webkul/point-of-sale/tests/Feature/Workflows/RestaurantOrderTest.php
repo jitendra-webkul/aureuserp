@@ -3,6 +3,7 @@
 use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\TableShape;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Services\FiscalPositionResolver;
@@ -215,4 +216,53 @@ it('keeps a dine-in order off the takeaway fiscal position', function () {
     ]);
 
     expect(app(FiscalPositionResolver::class)->resolveFor($order->refresh()))->toBeNull();
+});
+
+it('adds a floor to the terminal from the floor plan editor', function () {
+    $floor = PointOfSale::createFloor($this->config, 'Terrace');
+
+    expect($floor->name)->toBe('Terrace')
+        ->and($this->config->refresh()->floors->pluck('id'))->toContain($floor->id);
+});
+
+it('saves the tables of a floor and removes the ones left out', function () {
+    $kept = PosHelper::table($this->floor, ['table_number' => 'T5']);
+
+    $floor = PointOfSale::saveFloor($this->floor, [
+        'name'             => 'Main hall',
+        'background_color' => '#f5f5f4',
+        'tables'           => [
+            ['id' => $kept->id, 'table_number' => 'T5', 'shape' => 'round', 'position_h' => 120, 'position_v' => 40, 'width' => 90, 'height' => 90, 'seats' => 6],
+            ['id' => null, 'table_number' => 'T9', 'position_h' => 300, 'position_v' => 40],
+        ],
+    ]);
+
+    $tables = $floor->tables()->orderBy('table_number')->get();
+
+    expect($floor->name)->toBe('Main hall')
+        ->and($floor->background_color)->toBe('#f5f5f4')
+        ->and($tables->pluck('table_number')->all())->toBe(['T5', 'T9'])
+        ->and($tables->first()->shape)->toBe(TableShape::ROUND)
+        ->and($tables->first()->seats)->toBe(6)
+        ->and($this->table->refresh()->trashed())->toBeTrue();
+});
+
+it('refuses to remove a table that still has an open order', function () {
+    Order::create([
+        'session_id' => $this->session->id,
+        'config_id'  => $this->config->id,
+        'table_id'   => $this->table->id,
+    ]);
+
+    expect(fn () => PointOfSale::saveFloor($this->floor, ['tables' => []]))
+        ->toThrow(PosConfigurationException::class);
+
+    expect($this->table->refresh()->trashed())->toBeFalse();
+});
+
+it('deletes a floor without open orders and detaches it from the terminal', function () {
+    PointOfSale::deleteFloor($this->floor);
+
+    expect($this->floor->refresh()->trashed())->toBeTrue()
+        ->and($this->config->refresh()->floors)->toBeEmpty();
 });
