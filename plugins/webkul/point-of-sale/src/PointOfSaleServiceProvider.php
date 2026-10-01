@@ -138,6 +138,25 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
                     }
 
                     DB::transaction(function () use ($operationTypeIds) {
+                        $operationIds = DB::table('inventories_operations')
+                            ->whereIn('operation_type_id', $operationTypeIds)
+                            ->pluck('id')
+                            ->all();
+
+                        if (! empty($operationIds)) {
+                            DB::table('inventories_move_lines')
+                                ->whereIn('operation_id', $operationIds)
+                                ->delete();
+
+                            DB::table('inventories_moves')
+                                ->whereIn('operation_id', $operationIds)
+                                ->delete();
+
+                            DB::table('inventories_operations')
+                                ->whereIn('id', $operationIds)
+                                ->delete();
+                        }
+
                         OperationType::withTrashed()
                             ->whereIn('id', $operationTypeIds)
                             ->forceDelete();
