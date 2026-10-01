@@ -314,6 +314,12 @@ return [
         'jump'        => 'Ir',
     ],
 
+    'session-closed' => [
+        'heading' => 'Caixa fechado',
+        'body'    => 'Este caixa foi fechado em outra janela ou dispositivo. Os pedidos abertos neste dispositivo não foram enviados; reabra o caixa para continuar.',
+        'back'    => 'Voltar aos caixas',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel.:',
         'served-by' => 'Atendido por :cashier',

@@ -97,5 +97,25 @@ const state = till.state
         <GlobalDiscountModal />
 
         <TableSelectorModal />
+
+        <div
+            v-if="state.sessionClosed"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4"
+            role="alertdialog"
+            aria-modal="true"
+        >
+            <div class="w-full max-w-md rounded-xl bg-white p-6 text-center shadow-xl dark:bg-gray-900">
+                <p class="text-lg font-semibold text-gray-950 dark:text-white">{{ till.t('session-closed.heading') }}</p>
+
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">{{ till.t('session-closed.body') }}</p>
+
+                <a
+                    :href="till.boot.session.registers_url"
+                    class="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary-600 px-6 text-sm font-semibold text-white hover:bg-primary-700"
+                >
+                    {{ till.t('session-closed.back') }}
+                </a>
+            </div>
+        </div>
     </div>
 </template>

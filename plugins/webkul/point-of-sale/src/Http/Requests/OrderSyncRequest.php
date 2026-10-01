@@ -5,6 +5,7 @@ namespace Webkul\PointOfSale\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
+use Webkul\PointOfSale\Enums\PriceType;
 use Webkul\PointOfSale\Support\PosAccess;
 
 class OrderSyncRequest extends FormRequest
@@ -49,6 +50,8 @@ class OrderSyncRequest extends FormRequest
             'orders.*.is_to_invoice'                  => ['nullable', 'boolean'],
             'orders.*.is_takeaway'                    => ['nullable', 'boolean'],
             'orders.*.customer_count'                 => ['nullable', 'integer', 'min:0'],
+            'orders.*.floating_name'                  => ['nullable', 'string', 'max:64'],
+            'orders.*.is_booked'                      => ['nullable', 'boolean'],
             'orders.*.note'                           => ['nullable', 'string'],
             'orders.*.email'                          => ['nullable', 'email', 'max:255'],
             'orders.*.mobile'                         => ['nullable', 'string', 'max:64'],
@@ -58,6 +61,7 @@ class OrderSyncRequest extends FormRequest
             'orders.*.lines.*.product_id'             => ['required', 'integer', 'exists:products_products,id'],
             'orders.*.lines.*.qty'                    => ['required', 'numeric', 'not_in:0'],
             'orders.*.lines.*.price_unit'             => ['nullable', 'numeric'],
+            'orders.*.lines.*.price_type'             => ['nullable', Rule::enum(PriceType::class)],
             'orders.*.lines.*.discount'               => ['nullable', 'numeric', 'min:0', 'max:100'],
             'orders.*.lines.*.note'                   => ['nullable', 'string'],
             'orders.*.lines.*.customer_note'          => ['nullable', 'string'],

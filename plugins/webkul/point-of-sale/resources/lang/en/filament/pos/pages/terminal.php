@@ -314,6 +314,12 @@ return [
         'jump'        => 'Jump',
     ],
 
+    'session-closed' => [
+        'heading' => 'Register closed',
+        'body'    => 'This register was closed from another window or device. Open orders on this device were not sent; reopen the register to continue.',
+        'back'    => 'Back to registers',
+    ],
+
     'receipt' => [
         'phone'     => 'Tel:',
         'served-by' => 'Served by :cashier',

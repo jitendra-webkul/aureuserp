@@ -18,6 +18,8 @@ use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Settings\TraceabilitySettings;
 use Webkul\Partner\Models\Partner;
+use Webkul\PointOfSale\Enums\PriceType;
+use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Category;
 use Webkul\PointOfSale\Models\Config;
@@ -151,6 +153,7 @@ class BootLoader
             'can_edit_price'                => $this->canEditPrice($config),
             'product_endpoint'              => route('point-of-sale.till.configs.products.store', ['config' => $config->id]),
             'order_cancel_endpoint'         => route('point-of-sale.till.orders.cancel'),
+            'draft_endpoint'                => route('point-of-sale.till.orders.drafts.store'),
             'tracking_options'              => $this->trackingOptions(),
             'use_create_lots'               => (bool) $config->operationType?->use_create_lots,
             'use_existing_lots'             => (bool) $config->operationType?->use_existing_lots,
@@ -210,6 +213,8 @@ class BootLoader
             'cash_register_balance_start' => (float) $session->cash_balance_start,
             'sequence_number'             => max((int) ($session->order_count ?? 0), (int) Order::withoutGlobalScopes()->where('session_id', $session->id)->max('sequence_number')),
             'login_number'                => (int) ($session->login_number ?? 0),
+            'drafts_endpoint'             => route('point-of-sale.till.sessions.drafts', ['session' => $session->id]),
+            'registers_url'               => Registers::getUrl(panel: 'pos'),
         ];
     }
 
@@ -775,6 +780,11 @@ class BootLoader
             ])->values()->all();
     }
 
+    public function drafts(Session $session): array
+    {
+        return $this->openOrders($session);
+    }
+
     protected function openOrders(Session $session): array
     {
         return Order::query()
@@ -783,27 +793,32 @@ class BootLoader
             ->where('state', 'draft')
             ->get()
             ->map(fn (Order $order): array => [
-                'id'             => $order->id,
-                'uuid'           => $order->uuid,
-                'pos_reference'  => $order->reference,
-                'tracking_number' => $order->tracking_number,
-                'sequence_number' => $order->sequence_number,
-                'partner_id'     => $order->partner_id,
-                'state'          => $order->state?->value,
-                'note'           => $order->note,
-                'is_takeaway'    => (bool) $order->is_takeaway,
-                'table_id'       => $order->table_id,
-                'customer_count' => (int) $order->customer_count,
-                'to_invoice'     => (bool) $order->is_to_invoice,
-                'shipped_at'     => $order->shipped_at?->toDateString(),
-                'lines'          => $order->lines->map(fn ($line): array => [
-                    'uuid'       => $line->uuid,
-                    'product_id' => $line->product_id,
-                    'qty'        => (float) $line->qty,
-                    'price_unit' => (float) $line->price_unit,
-                    'discount'   => (float) $line->discount,
-                    'note'       => $line->note,
-                    'tax_ids'    => $line->taxes->pluck('id')->all(),
+                'id'                 => $order->id,
+                'uuid'               => $order->uuid,
+                'pos_reference'      => $order->reference,
+                'tracking_number'    => $order->tracking_number,
+                'sequence_number'    => $order->sequence_number,
+                'partner_id'         => $order->partner_id,
+                'state'              => $order->state?->value,
+                'note'               => $order->note,
+                'is_takeaway'        => (bool) $order->is_takeaway,
+                'table_id'           => $order->table_id,
+                'floating_name'      => $order->floating_name,
+                'is_booked'          => (bool) $order->is_booked,
+                'customer_count'     => (int) $order->customer_count,
+                'price_list_id'      => $order->price_list_id,
+                'fiscal_position_id' => $order->fiscal_position_id,
+                'to_invoice'         => (bool) $order->is_to_invoice,
+                'shipped_at'         => $order->shipped_at?->toDateString(),
+                'lines'              => $order->lines->map(fn ($line): array => [
+                    'uuid'             => $line->uuid,
+                    'product_id'       => $line->product_id,
+                    'qty'              => (float) $line->qty,
+                    'price_unit'       => (float) $line->price_unit,
+                    'price_overridden' => $line->price_type === PriceType::MANUAL,
+                    'discount'         => (float) $line->discount,
+                    'note'             => $line->note,
+                    'tax_ids'          => $line->taxes->pluck('id')->all(),
                 ])->values()->all(),
                 'payments'      => $order->payments->map(fn ($payment): array => [
                     'uuid'              => $payment->uuid,

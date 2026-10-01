@@ -17,6 +17,10 @@ const KEYBOARD_BURST_LIMIT = 2
 
 const FLOOR_IDLE_TIMEOUT = 180000
 
+const DRAFT_REFRESH_INTERVAL = 20000
+
+const TABLE_REFRESH_TIMEOUT = 1500
+
 const BUFFER_KEYS = new Set(['Backspace', 'Delete', '+', '-', '.', ',', ...'0123456789'.split('')])
 
 const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock'])
@@ -110,6 +114,8 @@ export class Till {
             autoPrintOrderUuid: null,
             globalDiscountModalOpen: false,
             transferOrderUuid: null,
+            sessionClosed: false,
+            openingTable: false,
             transferError: null,
             tableSelectorOpen: false,
             tableSelectorDraft: '',
@@ -239,6 +245,8 @@ export class Till {
 
         this.startIdleWatch()
 
+        this.startDraftRefresh()
+
         this.state.ready = true
     }
 
@@ -310,7 +318,9 @@ export class Till {
     }
 
     mergeServerOrders() {
-        const serverOrders = this.boot.orders ?? []
+        const removed = new Set(this.removedDrafts())
+
+        const serverOrders = (this.boot.orders ?? []).filter((order) => !removed.has(order.uuid))
 
         const serverUuids = new Set(serverOrders.map((order) => order.uuid))
 
@@ -401,6 +411,7 @@ export class Till {
             floating_name: order.floating_name ?? '',
             is_booked: Boolean(order.is_booked),
             last_screen: order.last_screen ?? 'products',
+            draft_dirty: Boolean(order.draft_dirty),
             to_invoice: Boolean(order.to_invoice),
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
@@ -498,6 +509,7 @@ export class Till {
                 floating_name: order.floating_name ?? '',
                 is_booked: Boolean(order.is_booked),
                 last_screen: order.last_screen ?? 'products',
+                draft_dirty: Boolean(order.draft_dirty),
                 to_invoice: order.to_invoice,
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
@@ -1104,14 +1116,41 @@ export class Till {
         this.state.floorId = floorId
     }
 
-    tapTable(tableId) {
+    async tapTable(tableId) {
         if (this.state.transferOrderUuid) {
             this.transferTo(tableId)
 
             return
         }
 
+        if (this.state.openingTable) {
+            return
+        }
+
+        this.state.openingTable = true
+
+        try {
+            await this.refreshBeforeOpening()
+        } finally {
+            this.state.openingTable = false
+        }
+
+        if (this.state.sessionClosed) {
+            return
+        }
+
         this.openTable(tableId)
+    }
+
+    refreshBeforeOpening() {
+        if (!this.sharesDrafts || !navigator.onLine) {
+            return Promise.resolve()
+        }
+
+        return Promise.race([
+            this.pullDrafts(),
+            new Promise((resolve) => window.setTimeout(resolve, TABLE_REFRESH_TIMEOUT)),
+        ])
     }
 
     get canBookTable() {
@@ -1190,15 +1229,15 @@ export class Till {
             return
         }
 
-        if (source.table_id === tableId) {
+        const target = this.drafts.find((order) => order.table_id === tableId && order.uuid !== source.uuid)
+
+        if (!target && source.table_id === tableId) {
             this.cancelTransfer()
 
             this.selectOrder(source.uuid)
 
             return
         }
-
-        const target = this.drafts.find((order) => order.table_id === tableId && order.uuid !== source.uuid)
 
         if (!target) {
             source.table_id = tableId
@@ -1207,6 +1246,8 @@ export class Till {
             this.cancelTransfer()
 
             this.selectOrder(source.uuid)
+
+            this.shareDrafts(source)
 
             return
         }
@@ -1241,6 +1282,8 @@ export class Till {
         this.cancelTransfer()
 
         this.selectOrder(target.uuid)
+
+        this.shareDrafts(target)
     }
 
     openTableSelector() {
@@ -1327,6 +1370,8 @@ export class Till {
         if (order?.state === 'draft' && !this.orderHasContent(order)) {
             this.dropOrder(order)
         }
+
+        this.shareDrafts(order?.state === 'draft' && this.orderHasContent(order) ? order : null)
     }
 
     finishOrder() {
@@ -1340,11 +1385,219 @@ export class Till {
     }
 
     dropOrder(order) {
+        this.removeDraftOnServer(order)
+
         this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
         this.database.remove('pos.payment', order.payments.map((payment) => payment.uuid))
         this.database.remove('pos.order', [order.uuid])
 
         this.state.orders = this.state.orders.filter((entry) => entry.uuid !== order.uuid)
+    }
+
+    get sharesDrafts() {
+        return this.isRestaurant && Boolean(this.config.draft_endpoint) && Boolean(this.boot.session.drafts_endpoint)
+    }
+
+    async requestJson(url, { method = 'GET', body = null } = {}) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            },
+            body: body ? JSON.stringify(body) : null,
+        })
+
+        if (!response.ok) {
+            throw new Error(String(response.status))
+        }
+
+        return response.json()
+    }
+
+    draftPayload(order) {
+        const payload = this.orderPayload(order)
+
+        delete payload.payments
+        delete payload.amount_total
+
+        return payload
+    }
+
+    async pushDraft(order) {
+        if (!this.sharesDrafts || !order || order.state !== 'draft' || !navigator.onLine) {
+            return
+        }
+
+        try {
+            const body = await this.requestJson(this.config.draft_endpoint, {
+                method: 'POST',
+                body: { orders: [this.draftPayload(order)] },
+            })
+
+            const saved = (body.data ?? []).find((entry) => entry.uuid === order.uuid)
+
+            if (saved) {
+                order.serverId = saved.id
+                order.draft_dirty = false
+            }
+
+            if ((body.errors ?? []).some((entry) => entry.uuid === order.uuid)) {
+                await this.pullDrafts()
+            }
+        } catch {
+            return
+        }
+    }
+
+    get removedDraftsKey() {
+        return `pos.removed-drafts.${this.config.id}`
+    }
+
+    removedDrafts() {
+        try {
+            return JSON.parse(window.localStorage.getItem(this.removedDraftsKey) ?? '[]')
+        } catch {
+            return []
+        }
+    }
+
+    rememberRemovedDrafts(uuids) {
+        try {
+            window.localStorage.setItem(this.removedDraftsKey, JSON.stringify([...new Set(uuids)]))
+        } catch {
+            return
+        }
+    }
+
+    removeDraftOnServer(order) {
+        if (!this.sharesDrafts || !order?.serverId || order.state !== 'draft') {
+            return
+        }
+
+        this.rememberRemovedDrafts([...this.removedDrafts(), order.uuid])
+
+        this.flushRemovedDrafts()
+    }
+
+    async flushRemovedDrafts() {
+        if (!navigator.onLine) {
+            return
+        }
+
+        for (const uuid of this.removedDrafts()) {
+            try {
+                await this.requestJson(this.boot.config.order_cancel_endpoint, {
+                    method: 'POST',
+                    body: { uuid },
+                })
+
+                this.rememberRemovedDrafts(this.removedDrafts().filter((entry) => entry !== uuid))
+            } catch (error) {
+                if (/^4\d\d$/.test(error.message)) {
+                    this.rememberRemovedDrafts(this.removedDrafts().filter((entry) => entry !== uuid))
+                }
+            }
+        }
+    }
+
+    pullDrafts() {
+        if (!this.sharesDrafts || !navigator.onLine) {
+            return Promise.resolve()
+        }
+
+        this.draftPull ??= this.requestJson(this.boot.session.drafts_endpoint)
+            .then((body) => this.mergeDrafts(body.data ?? []))
+            .catch((error) => {
+                if (error.message === '409') {
+                    this.state.sessionClosed = true
+                }
+            })
+            .finally(() => {
+                this.draftPull = null
+            })
+
+        return this.draftPull
+    }
+
+    mergeDrafts(orders) {
+        const removed = new Set(this.removedDrafts())
+
+        const serverOrders = orders.filter((order) => !removed.has(order.uuid))
+
+        const serverUuids = new Set(serverOrders.map((order) => order.uuid))
+
+        const busy = (order) => order.uuid === this.state.activeOrderUuid
+            || order.uuid === this.state.transferOrderUuid
+            || order.state !== 'draft'
+            || order.draft_dirty
+
+        for (const order of this.state.orders.filter((entry) => entry.serverId && !busy(entry) && !serverUuids.has(entry.uuid))) {
+            this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
+            this.database.remove('pos.payment', order.payments.map((payment) => payment.uuid))
+            this.database.remove('pos.order', [order.uuid])
+
+            this.state.orders = this.state.orders.filter((entry) => entry.uuid !== order.uuid)
+        }
+
+        for (const serverOrder of serverOrders) {
+            const index = this.state.orders.findIndex((entry) => entry.uuid === serverOrder.uuid)
+
+            if (index === -1) {
+                this.state.orders.push(this.hydrateServerOrder(serverOrder))
+
+                continue
+            }
+
+            const local = this.state.orders[index]
+
+            if (busy(local)) {
+                continue
+            }
+
+            const fresh = this.hydrateServerOrder({ ...serverOrder, payments: local.payments })
+
+            fresh.last_screen = local.last_screen
+
+            const kept = new Set(fresh.lines.map((line) => line.uuid))
+
+            this.database.remove('pos.order.line', local.lines.map((line) => line.uuid).filter((uuid) => !kept.has(uuid)))
+
+            this.state.orders.splice(index, 1, fresh)
+        }
+    }
+
+    async shareDrafts(order = null) {
+        if (!this.sharesDrafts || this.state.sessionClosed) {
+            return
+        }
+
+        if (order) {
+            order.draft_dirty = true
+        }
+
+        await this.flushRemovedDrafts()
+
+        for (const pending of this.state.orders.filter((entry) => entry.draft_dirty && entry.state === 'draft')) {
+            await this.pushDraft(pending)
+        }
+
+        await this.pullDrafts()
+    }
+
+    startDraftRefresh() {
+        if (this.draftRefresh || !this.sharesDrafts) {
+            return
+        }
+
+        this.draftRefresh = window.setInterval(() => {
+            if (this.state.screen === 'floor' && !document.hidden) {
+                this.shareDrafts()
+            }
+        }, DRAFT_REFRESH_INTERVAL)
+
+        this.shareDrafts()
     }
 
     openGuests() {
@@ -1936,6 +2189,8 @@ export class Till {
         if (!order) {
             return
         }
+
+        this.removeDraftOnServer(order)
 
         this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
         this.database.remove('pos.payment', order.payments.map((payment) => payment.uuid))
@@ -2820,6 +3075,12 @@ export class Till {
             this.keyboard = null
         }
 
+        if (this.draftRefresh) {
+            window.clearInterval(this.draftRefresh)
+
+            this.draftRefresh = null
+        }
+
         if (this.idleWatch) {
             window.removeEventListener('pointerdown', this.idleWatch)
             window.removeEventListener('keydown', this.idleWatch)
@@ -3087,6 +3348,8 @@ export class Till {
             config_id: this.config.id,
             session_id: this.boot.session.id,
             partner_id: partnerDraft ? null : order.partner_id,
+            floating_name: order.floating_name || null,
+            is_booked: Boolean(order.is_booked),
             partner: partnerDraft,
             price_list_id: order.price_list_id,
             fiscal_position_id: order.fiscal_position_id,
@@ -3111,6 +3374,7 @@ export class Till {
 
                 if (line.price_overridden) {
                     payload.price_unit = line.price_unit
+                    payload.price_type = 'manual'
                 }
 
                 if (line.refunded_order_line_id) {

@@ -16,6 +16,7 @@ use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
 use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Exceptions\RefundExceedsSoldQuantityException;
+use Webkul\PointOfSale\Exceptions\SessionNotOpenException;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
@@ -48,11 +49,17 @@ class OrderProcessor
         }
 
         return DB::transaction(function () use ($payload, $uuid, $existing): Order {
-            $order = $existing ?? $this->createOrder($payload, $uuid);
+            $order = $existing
+                ? $this->refreshDraft($existing, $payload)
+                : $this->createOrder($payload, $uuid);
 
             $this->assertLineRules($order, $payload['lines'] ?? []);
 
             $this->syncLines($order, $payload['lines'] ?? []);
+
+            if ($existing) {
+                $this->pruneLines($order, $payload['lines'] ?? []);
+            }
 
             $this->syncTip($order);
 
@@ -116,13 +123,12 @@ class OrderProcessor
             return $existing;
         }
 
-        return DB::transaction(function () use ($payload, $uuid, $existing): Order {
-            $order = $existing ?? $this->createOrder($payload, $uuid);
+        $this->assertDraftSessionOpen($existing?->session ?? Session::withoutGlobalScopes()->find($payload['session_id'] ?? null));
 
-            $order->forceFill(array_merge(
-                Arr::only($payload, ['note']),
-                ['partner_id' => $this->partners->resolve($payload, $order->config)],
-            ))->save();
+        return DB::transaction(function () use ($payload, $uuid, $existing): Order {
+            $order = $existing
+                ? $this->refreshDraft($existing, $payload)
+                : $this->createOrder($payload, $uuid);
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
@@ -130,6 +136,59 @@ class OrderProcessor
 
             return $this->calculator->recompute($order->refresh());
         });
+    }
+
+    public function saveDraftBatch(array $orders): array
+    {
+        $data = [];
+
+        $errors = [];
+
+        foreach ($orders as $payload) {
+            try {
+                $data[] = $this->saveDraft($payload);
+            } catch (Throwable $exception) {
+                $errors[] = [
+                    'uuid'    => $payload['uuid'] ?? null,
+                    'message' => $exception->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'data'   => $data,
+            'errors' => $errors,
+        ];
+    }
+
+    protected function assertDraftSessionOpen(?Session $session): void
+    {
+        if ($session?->isLive()) {
+            return;
+        }
+
+        throw new SessionNotOpenException(
+            __('point-of-sale::system.session-workflow.assert-open.not-open', ['session' => $session?->name ?? ''])
+        );
+    }
+
+    protected function refreshDraft(Order $order, array $payload): Order
+    {
+        $config = $order->config;
+
+        $order->forceFill([
+            'partner_id'         => $this->partners->resolve($payload, $config),
+            'note'               => $payload['note'] ?? $order->note,
+            'price_list_id'      => $payload['price_list_id'] ?? $order->price_list_id,
+            'fiscal_position_id' => $this->resolveFiscalPositionId($config, $payload),
+            'table_id'           => $this->resolveTableId($config, $payload['table_id'] ?? null),
+            'customer_count'     => (int) ($payload['customer_count'] ?? 0),
+            'is_takeaway'        => (bool) ($payload['is_takeaway'] ?? false),
+            'is_booked'          => (bool) ($payload['is_booked'] ?? false),
+            'floating_name'      => filled($payload['floating_name'] ?? null) ? $payload['floating_name'] : null,
+        ])->save();
+
+        return $order;
     }
 
     public function discardDraft(Order $order): void
@@ -226,6 +285,8 @@ class OrderProcessor
                 'is_to_invoice',
                 'customer_count',
                 'is_takeaway',
+                'is_booked',
+                'floating_name',
                 'table_id',
                 'refunded_order_id',
             ]),

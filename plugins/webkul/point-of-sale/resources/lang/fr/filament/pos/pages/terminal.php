@@ -314,6 +314,12 @@ return [
         'jump'        => 'Aller',
     ],
 
+    'session-closed' => [
+        'heading' => 'Caisse fermée',
+        'body'    => 'Cette caisse a été fermée depuis une autre fenêtre ou un autre appareil. Les commandes ouvertes sur cet appareil n’ont pas été envoyées ; rouvrez la caisse pour continuer.',
+        'back'    => 'Retour aux caisses',
+    ],
+
     'receipt' => [
         'phone'     => 'Tél. :',
         'served-by' => 'Servi par :cashier',

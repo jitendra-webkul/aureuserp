@@ -143,6 +143,11 @@ class PointOfSaleManager
         return $this->processor->saveDraft($payload);
     }
 
+    public function saveDraftOrders(array $orders): array
+    {
+        return $this->processor->saveDraftBatch($orders);
+    }
+
     public function discardDraftOrder(Order $order): void
     {
         $this->processor->discardDraft($order);
