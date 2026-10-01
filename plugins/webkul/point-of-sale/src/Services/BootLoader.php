@@ -786,6 +786,8 @@ class BootLoader
                 'id'             => $order->id,
                 'uuid'           => $order->uuid,
                 'pos_reference'  => $order->reference,
+                'tracking_number' => $order->tracking_number,
+                'sequence_number' => $order->sequence_number,
                 'partner_id'     => $order->partner_id,
                 'state'          => $order->state?->value,
                 'note'           => $order->note,

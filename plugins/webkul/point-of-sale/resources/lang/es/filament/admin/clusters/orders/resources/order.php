@@ -121,6 +121,16 @@ return [
                 ],
             ],
 
+            'extra-info' => [
+                'title'   => 'Información adicional',
+                'entries' => [
+                    'receipt-number'  => 'Número de recibo',
+                    'tracking-number' => 'Número de seguimiento',
+                    'email'           => 'Correo electrónico',
+                    'mobile'          => 'Móvil',
+                ],
+            ],
+
             'other-information' => [
                 'title'   => 'Otra información',
                 'entries' => [
@@ -153,7 +163,7 @@ return [
             'has-failed-operation' => 'Operación fallida',
             'is-invoiced'          => 'Facturado',
             'is-edited'            => 'Editado',
-            'sequence-number'      => 'Número de pedido',
+            'tracking-number'      => 'Número de seguimiento',
             'state'                => 'Estado',
         ],
 

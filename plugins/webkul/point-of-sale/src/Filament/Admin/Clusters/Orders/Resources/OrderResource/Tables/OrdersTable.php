@@ -59,8 +59,8 @@ class OrdersTable
                 TextColumn::make('state')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.state'))
                     ->badge(),
-                TextColumn::make('sequence_number')
-                    ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.sequence-number'))
+                TextColumn::make('tracking_number')
+                    ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.tracking-number'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_edited')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/resources/order.table.columns.is-edited'))

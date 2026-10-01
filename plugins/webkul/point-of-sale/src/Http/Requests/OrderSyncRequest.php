@@ -29,6 +29,7 @@ class OrderSyncRequest extends FormRequest
             'orders.*.uuid'                           => ['required', 'uuid'],
             'orders.*.reference'                      => ['nullable', 'string', 'max:64'],
             'orders.*.tracking_number'                => ['nullable', 'string', 'max:32'],
+            'orders.*.sequence_number'                => ['nullable', 'integer', 'min:1'],
             'orders.*.config_id'                      => ['required', 'integer', $this->reachable('pos_configs')],
             'orders.*.session_id'                     => ['nullable', 'integer', $this->reachable('pos_sessions')],
             'orders.*.partner_id'                     => ['nullable', 'integer', 'exists:partners_partners,id'],

@@ -121,6 +121,16 @@ return [
                 ],
             ],
 
+            'extra-info' => [
+                'title'   => 'Extra Info',
+                'entries' => [
+                    'receipt-number'  => 'Receipt Number',
+                    'tracking-number' => 'Tracking Number',
+                    'email'           => 'Email',
+                    'mobile'          => 'Mobile',
+                ],
+            ],
+
             'other-information' => [
                 'title'   => 'Other Information',
                 'entries' => [
@@ -153,7 +163,7 @@ return [
             'has-failed-operation' => 'Failed Operation',
             'is-invoiced'          => 'Invoiced',
             'is-edited'            => 'Edited',
-            'sequence-number'      => 'Order Number',
+            'tracking-number'      => 'Tracking Number',
             'state'                => 'Status',
         ],
 

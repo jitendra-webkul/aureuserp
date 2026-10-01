@@ -267,6 +267,7 @@ export class Till {
             if (order.state === 'draft' && !order.serverId && order.pos_reference && !order.pos_reference.startsWith(prefix)) {
                 order.pos_reference = null
                 order.tracking_number = null
+                order.sequence_number = null
             }
         }
 
@@ -286,14 +287,18 @@ export class Till {
         ])
 
         for (const order of restored) {
-            order.tracking_number ??= this.nextTrackingNumber()
+            order.sequence_number ??= this.sequenceFromReference(order.pos_reference) ?? this.nextSequenceNumber()
 
-            order.pos_reference ||= this.nextReference(this.state.sequenceNumber)
+            order.tracking_number ??= this.trackingNumberFor(order.sequence_number)
+
+            order.pos_reference ||= this.nextReference(order.sequence_number)
 
             if (!order.serverId && seen.has(order.pos_reference)) {
-                order.tracking_number = this.nextTrackingNumber()
+                order.sequence_number = this.nextSequenceNumber()
 
-                order.pos_reference = this.nextReference(this.state.sequenceNumber)
+                order.tracking_number = this.trackingNumberFor(order.sequence_number)
+
+                order.pos_reference = this.nextReference(order.sequence_number)
             }
 
             seen.add(order.pos_reference)
@@ -379,13 +384,14 @@ export class Till {
     }
 
     hydrateServerOrder(order) {
-        const trackingNumber = order.tracking_number ?? this.nextTrackingNumber()
+        const sequenceNumber = order.sequence_number || this.sequenceFromReference(order.pos_reference) || this.nextSequenceNumber()
 
         return reactive({
             uuid: order.uuid ?? uuidv4(),
             serverId: order.id ?? null,
-            pos_reference: order.pos_reference || this.nextReference(this.state.sequenceNumber),
-            tracking_number: trackingNumber,
+            sequence_number: sequenceNumber,
+            pos_reference: order.pos_reference || this.nextReference(sequenceNumber),
+            tracking_number: order.tracking_number || this.trackingNumberFor(sequenceNumber),
             partner_id: order.partner_id ?? null,
             state: order.state ?? 'draft',
             note: order.note ?? '',
@@ -482,6 +488,7 @@ export class Till {
                 serverId: order.serverId,
                 pos_reference: order.pos_reference,
                 tracking_number: order.tracking_number,
+                sequence_number: order.sequence_number,
                 partner_id: order.partner_id,
                 state: order.state,
                 note: order.note,
@@ -720,10 +727,10 @@ export class Till {
         }
 
         if (order.partner_id) {
-            return this.master.partners.get(order.partner_id)?.name ?? order.pos_reference
+            return this.master.partners.get(order.partner_id)?.name ?? order.tracking_number
         }
 
-        return order.pos_reference ?? order.tracking_number
+        return order.tracking_number ?? order.pos_reference
     }
 
     orderQuantity(order) {
@@ -1005,10 +1012,20 @@ export class Till {
         return `${session}-${login}-${String(sequence).padStart(4, '0')}`
     }
 
-    nextTrackingNumber() {
+    nextSequenceNumber() {
         this.state.sequenceNumber += 1
 
-        return String(((this.boot.session.id % 10) * 100) + (this.state.sequenceNumber % 100))
+        return this.state.sequenceNumber
+    }
+
+    sequenceFromReference(reference) {
+        const number = parseInt(String(reference ?? '').split('-').at(-1), 10)
+
+        return Number.isNaN(number) || number < 1 ? null : number
+    }
+
+    trackingNumberFor(sequence) {
+        return String(((this.boot.session.id % 10) * 100) + (sequence % 100)).padStart(3, '0')
     }
 
     newOrder(tableId = null) {
@@ -2390,6 +2407,7 @@ export class Till {
             uuid: uuidv4(),
             order_uuid: order.uuid,
             product_id: productId,
+            uom_id: product.uom_id,
             qty,
             price_unit: this.priceFor(productId),
             price_overridden: false,
@@ -3066,6 +3084,7 @@ export class Till {
             uuid: order.uuid,
             reference: order.pos_reference,
             tracking_number: order.tracking_number,
+            sequence_number: order.sequence_number,
             config_id: this.config.id,
             session_id: this.boot.session.id,
             partner_id: partnerDraft ? null : order.partner_id,
