@@ -60,8 +60,8 @@
                             <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.customer') }}</th>
                             <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.cashier') }}</th>
                             <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.tracking') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ __($prefix.'columns.total') }}</th>
-                            <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.status') }}</th>
+                            <th class="px-3 py-2 text-center font-medium">{{ __($prefix.'columns.total') }}</th>
+                            <th class="px-3 py-2 text-center font-medium">{{ __($prefix.'columns.status') }}</th>
                         </tr>
                     </thead>
 
@@ -92,11 +92,11 @@
 
                                 <td class="whitespace-nowrap px-3 py-2 font-mono text-xs tabular-nums">{{ $order->tracking_number ?? '—' }}</td>
 
-                                <td class="whitespace-nowrap px-3 py-2 text-end font-mono tabular-nums font-semibold">
+                                <td class="whitespace-nowrap px-3 py-2 text-center font-mono tabular-nums font-semibold">
                                     {{ $this->money((float) $order->amount_total, $order) }}
                                 </td>
 
-                                <td class="px-3 py-2">{{ $order->state->getLabel() }}</td>
+                                <td class="px-3 py-2 text-center">{{ $order->state->getLabel() }}</td>
                             </tr>
                         @empty
                             <tr>
