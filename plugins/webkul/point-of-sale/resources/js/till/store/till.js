@@ -349,7 +349,7 @@ export class Till {
 
         for (const order of serverOrders) {
             if (!localUuids.has(order.uuid)) {
-                this.state.orders.push(this.hydrateServerOrder(order))
+                this.state.orders.push(this.hydrateSyncedDraft(order))
             }
         }
     }
@@ -420,7 +420,7 @@ export class Till {
             floating_name: order.floating_name ?? '',
             is_booked: Boolean(order.is_booked),
             last_screen: order.last_screen ?? 'products',
-            draft_dirty: Boolean(order.draft_dirty),
+            synced_signature: order.synced_signature ?? null,
             to_invoice: Boolean(order.to_invoice),
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
@@ -518,7 +518,7 @@ export class Till {
                 floating_name: order.floating_name ?? '',
                 is_booked: Boolean(order.is_booked),
                 last_screen: order.last_screen ?? 'products',
-                draft_dirty: Boolean(order.draft_dirty),
+                synced_signature: order.synced_signature ?? null,
                 to_invoice: order.to_invoice,
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
@@ -1650,7 +1650,7 @@ export class Till {
 
             this.selectOrder(source.uuid)
 
-            this.shareDrafts(source)
+            this.shareDrafts()
 
             return
         }
@@ -1686,7 +1686,7 @@ export class Till {
 
         this.selectOrder(target.uuid)
 
-        this.shareDrafts(target)
+        this.shareDrafts()
     }
 
     openTableSelector() {
@@ -1774,7 +1774,7 @@ export class Till {
             this.dropOrder(order)
         }
 
-        this.shareDrafts(order?.state === 'draft' && this.orderHasContent(order) ? order : null)
+        this.shareDrafts()
     }
 
     finishOrder() {
@@ -1828,22 +1828,42 @@ export class Till {
         return payload
     }
 
+    draftSignature(order) {
+        return JSON.stringify(this.draftPayload(order))
+    }
+
+    isDraftDirty(order) {
+        return order.state === 'draft'
+            && (Boolean(order.serverId) || this.orderHasContent(order))
+            && order.synced_signature !== this.draftSignature(order)
+    }
+
+    hydrateSyncedDraft(serverOrder) {
+        const order = this.hydrateServerOrder(serverOrder)
+
+        order.synced_signature = this.draftSignature(order)
+
+        return order
+    }
+
     async pushDraft(order) {
         if (!this.sharesDrafts || !order || order.state !== 'draft' || !navigator.onLine) {
             return
         }
 
+        const payload = this.draftPayload(order)
+
         try {
             const body = await this.requestJson(this.config.draft_endpoint, {
                 method: 'POST',
-                body: { orders: [this.draftPayload(order)] },
+                body: { orders: [payload] },
             })
 
             const saved = (body.data ?? []).find((entry) => entry.uuid === order.uuid)
 
             if (saved) {
                 order.serverId = saved.id
-                order.draft_dirty = false
+                order.synced_signature = JSON.stringify(payload)
             }
 
             if ((body.errors ?? []).some((entry) => entry.uuid === order.uuid)) {
@@ -1934,7 +1954,7 @@ export class Till {
         const busy = (order) => order.uuid === this.state.activeOrderUuid
             || order.uuid === this.state.transferOrderUuid
             || order.state !== 'draft'
-            || order.draft_dirty
+            || this.isDraftDirty(order)
 
         for (const order of this.state.orders.filter((entry) => entry.serverId && !busy(entry) && !serverUuids.has(entry.uuid))) {
             this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
@@ -1948,7 +1968,7 @@ export class Till {
             const index = this.state.orders.findIndex((entry) => entry.uuid === serverOrder.uuid)
 
             if (index === -1) {
-                this.state.orders.push(this.hydrateServerOrder(serverOrder))
+                this.state.orders.push(this.hydrateSyncedDraft(serverOrder))
 
                 continue
             }
@@ -1959,7 +1979,7 @@ export class Till {
                 continue
             }
 
-            const fresh = this.hydrateServerOrder({ ...serverOrder, payments: local.payments })
+            const fresh = this.hydrateSyncedDraft({ ...serverOrder, payments: local.payments })
 
             fresh.last_screen = local.last_screen
 
@@ -1971,18 +1991,14 @@ export class Till {
         }
     }
 
-    async shareDrafts(order = null) {
+    async shareDrafts() {
         if (!this.sharesDrafts || this.state.sessionClosed) {
             return
         }
 
-        if (order) {
-            order.draft_dirty = true
-        }
-
         await this.flushRemovedDrafts()
 
-        for (const pending of this.state.orders.filter((entry) => entry.draft_dirty && entry.state === 'draft')) {
+        for (const pending of this.state.orders.filter((entry) => this.isDraftDirty(entry))) {
             await this.pushDraft(pending)
         }
 
@@ -2476,6 +2492,8 @@ export class Till {
     }
 
     selectOrder(uuid) {
+        const leaving = this.activeOrder
+
         this.state.activeOrderUuid = uuid
         this.state.activeLineUuid = null
         this.state.screen = this.resumeScreenFor(this.activeOrder)
@@ -2485,6 +2503,10 @@ export class Till {
         this.state.priceListId = this.activeOrder?.price_list_id ?? this.config.price_list_id ?? null
 
         this.flushDeferredEvictions()
+
+        if (leaving && leaving.uuid !== uuid) {
+            this.shareDrafts()
+        }
     }
 
     get priceLists() {
