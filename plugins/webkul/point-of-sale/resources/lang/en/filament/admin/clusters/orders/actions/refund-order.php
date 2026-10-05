@@ -1,13 +1,16 @@
 <?php
 
 return [
-    'label' => 'Return Products',
+    'label'          => 'Return Products',
+    'refunded-label' => 'Refunded',
 
     'form' => [
         'fields' => [
             'payment-method' => 'Refund Payment Method',
             'lines'          => 'Lines to refund',
+            'selected'       => 'Refund',
             'product'        => 'Product',
+            'refundable'     => 'Refundable',
             'quantity'       => 'Quantity',
         ],
     ],
