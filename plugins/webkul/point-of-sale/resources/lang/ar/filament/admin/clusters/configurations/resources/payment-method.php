@@ -61,6 +61,7 @@ return [
             'name'               => 'الاسم',
             'type'               => 'النوع',
             'journal'            => 'دفتر اليومية',
+            'configs'            => 'POS',
             'terminal-type'      => 'التكامل',
             'receivable-account' => 'الحساب الوسيط',
             'is-cash-count'      => 'درج النقد',

@@ -61,6 +61,7 @@ return [
             'name'               => 'Nombre',
             'type'               => 'Tipo',
             'journal'            => 'Diario',
+            'configs'            => 'POS',
             'terminal-type'      => 'Integración',
             'receivable-account' => 'Cuenta intermedia',
             'is-cash-count'      => 'Cajón de efectivo',

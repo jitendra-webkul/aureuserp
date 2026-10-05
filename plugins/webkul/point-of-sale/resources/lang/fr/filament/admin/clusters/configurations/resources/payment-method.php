@@ -61,6 +61,7 @@ return [
             'name'               => 'Nom',
             'type'               => 'Type',
             'journal'            => 'Journal',
+            'configs'            => 'POS',
             'terminal-type'      => 'Intégration',
             'receivable-account' => 'Compte intermédiaire',
             'is-cash-count'      => 'Tiroir-caisse',
