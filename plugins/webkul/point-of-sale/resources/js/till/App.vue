@@ -26,6 +26,7 @@ import VariantModal from './components/VariantModal.vue'
 import LotModal from './components/LotModal.vue'
 import MissingLotsModal from './components/MissingLotsModal.vue'
 import ShipLaterModal from './components/ShipLaterModal.vue'
+import RejectedOrderModal from './components/RejectedOrderModal.vue'
 import StatusBar from './components/StatusBar.vue'
 import ScannerButton from './components/ScannerButton.vue'
 
@@ -97,6 +98,8 @@ const state = till.state
         <GlobalDiscountModal />
 
         <TableSelectorModal />
+
+        <RejectedOrderModal />
 
         <div
             v-if="state.sessionClosed"

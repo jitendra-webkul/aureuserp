@@ -376,6 +376,18 @@ return [
         'stop'          => 'Arrêter',
     ],
 
+    'rejected' => [
+        'settled-heading' => 'Payé sur une autre caisse',
+        'failed-heading'  => 'Cette commande n\'a pas été enregistrée',
+        'order'           => 'Commande :order',
+        'table'           => 'Table :table',
+        'settled-body'    => ':order a déjà été payée sur une autre caisse. Cette vente n\'a pas été enregistrée.',
+        'give-back'       => 'Rendez :amount au client.',
+        'failed-body'     => ':order n\'a pas pu être enregistrée sur le serveur.',
+        'returned'        => 'Argent rendu',
+        'dismiss'         => 'Ignorer',
+    ],
+
     'offline' => [
         'banner'              => 'Hors ligne — les ventes continuent et se synchronisent au retour de la connexion',
         'waiting'             => ':count commande(s) en attente de synchronisation',

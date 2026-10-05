@@ -187,5 +187,8 @@ it('accepts a replayed payment but refuses a new payment on an order another til
     expect(fn () => PointOfSale::syncOrder($second))
         ->toThrow(OrderAlreadyPaidException::class, Str::before(__('point-of-sale::system.order-workflow.mark-paid.already-settled'), ':'));
 
-    expect($paid->refresh()->payments)->toHaveCount(1);
+    $result = PointOfSale::syncOrders([$second]);
+
+    expect($result['errors'][0]['code'])->toBe('already-settled')
+        ->and($paid->refresh()->payments)->toHaveCount(1);
 });

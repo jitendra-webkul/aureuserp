@@ -376,6 +376,18 @@ return [
         'stop'          => 'إيقاف',
     ],
 
+    'rejected' => [
+        'settled-heading' => 'مدفوع في صندوق آخر',
+        'failed-heading'  => 'لم يتم حفظ هذا الطلب',
+        'order'           => 'الطلب :order',
+        'table'           => 'الطاولة :table',
+        'settled-body'    => 'تم دفع :order بالفعل في صندوق آخر. لم يتم تسجيل هذا البيع.',
+        'give-back'       => 'أعد :amount إلى العميل.',
+        'failed-body'     => 'تعذر حفظ :order على الخادم.',
+        'returned'        => 'تمت إعادة المبلغ',
+        'dismiss'         => 'تجاهل',
+    ],
+
     'offline' => [
         'banner'              => 'غير متصل — تستمر المبيعات وتُزامَن عند عودة الاتصال',
         'waiting'             => ':count طلب في انتظار المزامنة',

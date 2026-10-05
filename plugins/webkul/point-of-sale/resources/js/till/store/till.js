@@ -542,6 +542,46 @@ export class Till {
         await this.database.write('pos.payment', payments)
     }
 
+    get rejectionAlert() {
+        const pending = this.queue.state.pending.find((entry) => entry.rejected && !entry.acknowledged)
+
+        if (!pending) {
+            return null
+        }
+
+        const order = this.state.orders.find((entry) => entry.uuid === pending.uuid)
+
+        const methods = [...new Set((pending.payload?.payments ?? [])
+            .map((payment) => this.master.payment_methods.get(payment.payment_method_id)?.name)
+            .filter(Boolean))]
+
+        return {
+            uuid: pending.uuid,
+            settledElsewhere: this.queue.isSettledElsewhere(pending),
+            order: order ? this.orderLabel(order) : (pending.payload?.reference ?? pending.uuid),
+            table: this.tableById.get(pending.payload?.table_id)?.table_number ?? null,
+            amount: this.money(Number(pending.payload?.amount_total ?? 0)),
+            methods: methods.join(', '),
+            message: pending.lastError,
+        }
+    }
+
+    acknowledgeRejection(uuid) {
+        this.queue.acknowledge(uuid)
+    }
+
+    dismissRejection(uuid) {
+        this.queue.dismiss(uuid)
+
+        this.evictSynced([uuid])
+    }
+
+    async retryRejection(uuid) {
+        this.queue.acknowledge(uuid)
+
+        await this.queue.retryRejected()
+    }
+
     flushDeferredEvictions() {
         const deferred = this.deferredEvictions
 

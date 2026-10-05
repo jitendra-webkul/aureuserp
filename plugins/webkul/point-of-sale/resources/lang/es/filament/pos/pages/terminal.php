@@ -376,6 +376,18 @@ return [
         'stop'          => 'Detener',
     ],
 
+    'rejected' => [
+        'settled-heading' => 'Pagado en otra caja',
+        'failed-heading'  => 'Este pedido no se guardó',
+        'order'           => 'Pedido :order',
+        'table'           => 'Mesa :table',
+        'settled-body'    => ':order ya se pagó en otra caja. Esta venta no se registró.',
+        'give-back'       => 'Devuelva :amount al cliente.',
+        'failed-body'     => 'No se pudo guardar :order en el servidor.',
+        'returned'        => 'Dinero devuelto',
+        'dismiss'         => 'Descartar',
+    ],
+
     'offline' => [
         'banner'              => 'Sin conexión — las ventas continúan y se sincronizan cuando vuelva la conexión',
         'waiting'             => ':count pedido(s) pendientes de sincronizar',

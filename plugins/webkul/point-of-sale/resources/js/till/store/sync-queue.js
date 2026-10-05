@@ -2,6 +2,8 @@ import { reactive } from 'vue'
 
 const FLUSH_INTERVAL = 15000
 
+export const SETTLED_ELSEWHERE = 'already-settled'
+
 function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
 }
@@ -115,7 +117,7 @@ export class SyncQueue {
     }
 
     retryRejected() {
-        for (const pending of this.rejected) {
+        for (const pending of this.rejected.filter((entry) => !this.isSettledElsewhere(entry))) {
             pending.rejected = false
         }
 
@@ -124,10 +126,30 @@ export class SyncQueue {
         return this.flush()
     }
 
-    reject(pending, message) {
+    reject(pending, message, code = null) {
         pending.rejected = true
         pending.attempts += 1
         pending.lastError = message ?? 'unknown error'
+        pending.code = code
+        pending.acknowledged = false
+    }
+
+    isSettledElsewhere(pending) {
+        return pending.code === SETTLED_ELSEWHERE
+    }
+
+    acknowledge(uuid) {
+        const pending = this.state.pending.find((entry) => entry.uuid === uuid)
+
+        if (pending) {
+            pending.acknowledged = true
+
+            this.persist()
+        }
+    }
+
+    dismiss(uuid) {
+        this.remove(uuid)
     }
 
     invalidEntries(batch, errors) {
@@ -214,7 +236,7 @@ export class SyncQueue {
                 const pending = this.state.pending.find((entry) => entry.uuid === failure.uuid)
 
                 if (pending) {
-                    this.reject(pending, failure.message)
+                    this.reject(pending, failure.message, failure.code ?? null)
 
                     failed += 1
                 }

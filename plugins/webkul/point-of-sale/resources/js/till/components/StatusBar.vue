@@ -114,10 +114,20 @@ onMounted(() => {
                         <span class="block text-gray-600 dark:text-gray-300">
                             {{ failure.lastError }}
                         </span>
+
+                        <button
+                            v-if="till.queue.isSettledElsewhere(failure)"
+                            type="button"
+                            class="mt-1.5 font-semibold text-danger-600 hover:underline dark:text-danger-400"
+                            @click="till.dismissRejection(failure.uuid)"
+                        >
+                            {{ till.t('rejected.dismiss') }}
+                        </button>
                     </li>
                 </ul>
 
                 <button
+                    v-if="failures.some((failure) => !till.queue.isSettledElsewhere(failure))"
                     type="button"
                     class="flex min-h-9 items-center justify-center rounded-lg bg-primary-600 px-3 text-sm font-semibold text-white hover:bg-primary-700"
                     @click="retryFailures"

@@ -376,6 +376,18 @@ return [
         'stop'          => 'Stop',
     ],
 
+    'rejected' => [
+        'settled-heading' => 'Paid at another till',
+        'failed-heading'  => 'This order was not saved',
+        'order'           => 'Order :order',
+        'table'           => 'Table :table',
+        'settled-body'    => ':order was already paid at another till. This sale was not recorded.',
+        'give-back'       => 'Give back :amount to the customer.',
+        'failed-body'     => ':order could not be saved on the server.',
+        'returned'        => 'Money returned',
+        'dismiss'         => 'Dismiss',
+    ],
+
     'offline' => [
         'banner'              => 'Offline — sales continue and sync when the connection returns',
         'waiting'             => ':count order(s) waiting to sync',

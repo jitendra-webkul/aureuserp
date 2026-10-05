@@ -268,6 +268,7 @@ class OrderProcessor
                 $errors[] = [
                     'uuid'    => $payload['uuid'] ?? null,
                     'message' => $exception->getMessage(),
+                    'code'    => $exception instanceof OrderAlreadyPaidException ? 'already-settled' : null,
                 ];
             }
         }
