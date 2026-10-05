@@ -376,6 +376,11 @@ return [
         'stop'          => 'Stop',
     ],
 
+    'drafts' => [
+        'not-shared' => 'This order is not shared with the other tills',
+        'rejected'   => 'The server refused this order.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Paid at another till',
         'failed-heading'  => 'This order was not saved',

@@ -61,6 +61,18 @@ return [
         'cash' => 'Cash',
     ],
 
+    'order-sync' => [
+        'product-missing'         => 'A product on this order no longer exists. Remove it and try again.',
+        'customer-missing'        => 'The customer on this order no longer exists. Choose another customer.',
+        'table-missing'           => 'The table of this order no longer exists. Move the order to another table.',
+        'price-list-missing'      => 'The pricelist of this order no longer exists.',
+        'fiscal-position-missing' => 'The fiscal position of this order no longer exists.',
+        'payment-method-missing'  => 'A payment method on this order no longer exists.',
+        'refunded-order-missing'  => 'The order being refunded can no longer be found.',
+        'customer-email-invalid'  => 'The customer email address is not valid.',
+        'discount-invalid'        => 'Line discounts must be between 0 and 100%.',
+    ],
+
     'order-processor' => [
         'price-locked'           => 'Price changes on :product need a manager.',
         'line-discount-disabled' => 'Line discounts are turned off on this point of sale.',

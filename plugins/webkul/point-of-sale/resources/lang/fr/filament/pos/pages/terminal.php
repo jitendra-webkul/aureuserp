@@ -376,6 +376,11 @@ return [
         'stop'          => 'Arrêter',
     ],
 
+    'drafts' => [
+        'not-shared' => 'Cette commande n\'est pas partagée avec les autres caisses',
+        'rejected'   => 'Le serveur a refusé cette commande.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Payé sur une autre caisse',
         'failed-heading'  => 'Cette commande n\'a pas été enregistrée',

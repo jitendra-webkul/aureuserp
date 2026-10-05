@@ -424,6 +424,8 @@ export class Till {
             is_booked: Boolean(order.is_booked),
             last_screen: order.last_screen ?? 'products',
             synced_signature: order.synced_signature ?? null,
+            rejected_signature: order.rejected_signature ?? null,
+            draft_error: order.draft_error ?? null,
             to_invoice: Boolean(order.to_invoice),
             shipped_at: order.shipped_at ?? null,
             price_list_id: order.price_list_id ?? this.state.priceListId,
@@ -522,6 +524,8 @@ export class Till {
                 is_booked: Boolean(order.is_booked),
                 last_screen: order.last_screen ?? 'products',
                 synced_signature: order.synced_signature ?? null,
+                rejected_signature: order.rejected_signature ?? null,
+                draft_error: order.draft_error ?? null,
                 to_invoice: order.to_invoice,
                 shipped_at: order.shipped_at,
                 price_list_id: order.price_list_id,
@@ -1856,7 +1860,14 @@ export class Till {
         })
 
         if (!response.ok) {
-            throw new Error(String(response.status))
+            const error = new Error(String(response.status))
+
+            const body = await response.json().catch(() => ({}))
+
+            error.status = response.status
+            error.detail = body.message ?? Object.values(body.errors ?? {}).flat()[0] ?? null
+
+            throw error
         }
 
         return response.json()
@@ -1896,6 +1907,8 @@ export class Till {
 
         const payload = this.draftPayload(order)
 
+        const signature = JSON.stringify(payload)
+
         try {
             const body = await this.requestJson(this.config.draft_endpoint, {
                 method: 'POST',
@@ -1904,18 +1917,43 @@ export class Till {
 
             const saved = (body.data ?? []).find((entry) => entry.uuid === order.uuid)
 
+            const failure = (body.errors ?? []).find((entry) => entry.uuid === order.uuid)
+
             if (saved) {
                 order.serverId = saved.id
-                order.synced_signature = JSON.stringify(payload)
+                order.synced_signature = signature
                 order.pushed_epoch = ++this.draftEpoch
+                order.draft_error = null
+                order.rejected_signature = null
             }
 
-            if ((body.errors ?? []).some((entry) => entry.uuid === order.uuid)) {
+            if (failure) {
+                order.draft_error = failure.message ?? this.t('drafts.rejected')
+                order.rejected_signature = signature
+
                 await this.pullDrafts()
             }
-        } catch {
+        } catch (error) {
+            if (error.status >= 400 && error.status < 500 && ![401, 409, 419].includes(error.status)) {
+                order.draft_error = error.detail ?? this.t('drafts.rejected')
+                order.rejected_signature = signature
+            }
+        }
+    }
+
+    isDraftRejected(order) {
+        return Boolean(order.rejected_signature) && order.rejected_signature === this.draftSignature(order)
+    }
+
+    retryDraft(order = this.activeOrder) {
+        if (!order) {
             return
         }
+
+        order.draft_error = null
+        order.rejected_signature = null
+
+        this.shareDrafts()
     }
 
     get removedDraftsKey() {
@@ -2061,7 +2099,7 @@ export class Till {
 
         await this.flushRemovedDrafts()
 
-        for (const pending of this.state.orders.filter((entry) => this.isDraftDirty(entry))) {
+        for (const pending of this.state.orders.filter((entry) => this.isDraftDirty(entry) && !this.isDraftRejected(entry))) {
             await this.pushDraft(pending)
         }
 

@@ -61,6 +61,18 @@ return [
         'cash' => 'Dinheiro',
     ],
 
+    'order-sync' => [
+        'product-missing'         => 'Um produto deste pedido não existe mais. Remova-o e tente novamente.',
+        'customer-missing'        => 'O cliente deste pedido não existe mais. Escolha outro cliente.',
+        'table-missing'           => 'A mesa deste pedido não existe mais. Mova o pedido para outra mesa.',
+        'price-list-missing'      => 'A lista de preços deste pedido não existe mais.',
+        'fiscal-position-missing' => 'A posição fiscal deste pedido não existe mais.',
+        'payment-method-missing'  => 'Uma forma de pagamento deste pedido não existe mais.',
+        'refunded-order-missing'  => 'O pedido sendo reembolsado não foi encontrado.',
+        'customer-email-invalid'  => 'O endereço de e-mail do cliente não é válido.',
+        'discount-invalid'        => 'Os descontos de linha devem estar entre 0 e 100%.',
+    ],
+
     'order-processor' => [
         'price-locked'           => 'Alterar o preço de :product exige um gerente.',
         'line-discount-disabled' => 'Os descontos por linha estão desativados neste ponto de venda.',

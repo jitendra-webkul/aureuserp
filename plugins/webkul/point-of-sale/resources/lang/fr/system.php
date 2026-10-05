@@ -61,6 +61,18 @@ return [
         'cash' => 'Espèces',
     ],
 
+    'order-sync' => [
+        'product-missing'         => 'Un produit de cette commande n\'existe plus. Supprimez-le et réessayez.',
+        'customer-missing'        => 'Le client de cette commande n\'existe plus. Choisissez un autre client.',
+        'table-missing'           => 'La table de cette commande n\'existe plus. Déplacez la commande vers une autre table.',
+        'price-list-missing'      => 'La liste de prix de cette commande n\'existe plus.',
+        'fiscal-position-missing' => 'La position fiscale de cette commande n\'existe plus.',
+        'payment-method-missing'  => 'Un mode de paiement de cette commande n\'existe plus.',
+        'refunded-order-missing'  => 'La commande remboursée est introuvable.',
+        'customer-email-invalid'  => 'L\'adresse e-mail du client n\'est pas valide.',
+        'discount-invalid'        => 'Les remises de ligne doivent être comprises entre 0 et 100 %.',
+    ],
+
     'order-processor' => [
         'price-locked'           => 'Modifier le prix de :product nécessite un responsable.',
         'line-discount-disabled' => 'Les remises par ligne sont désactivées sur ce point de vente.',

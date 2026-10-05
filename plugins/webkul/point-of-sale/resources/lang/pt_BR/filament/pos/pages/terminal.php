@@ -376,6 +376,11 @@ return [
         'stop'          => 'Parar',
     ],
 
+    'drafts' => [
+        'not-shared' => 'Este pedido não está compartilhado com os outros caixas',
+        'rejected'   => 'O servidor recusou este pedido.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Pago em outro caixa',
         'failed-heading'  => 'Este pedido não foi salvo',

@@ -77,4 +77,22 @@ class OrderSyncRequest extends FormRequest
             'orders.*.payments.*.amount'              => ['required', 'numeric'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'orders.*.lines.*.product_id.exists'             => __('point-of-sale::system.order-sync.product-missing'),
+            'orders.*.partner_id.exists'                     => __('point-of-sale::system.order-sync.customer-missing'),
+            'orders.*.table_id.exists'                       => __('point-of-sale::system.order-sync.table-missing'),
+            'orders.*.price_list_id.exists'                  => __('point-of-sale::system.order-sync.price-list-missing'),
+            'orders.*.fiscal_position_id.exists'             => __('point-of-sale::system.order-sync.fiscal-position-missing'),
+            'orders.*.payments.*.payment_method_id.exists'   => __('point-of-sale::system.order-sync.payment-method-missing'),
+            'orders.*.refunded_order_id.exists'              => __('point-of-sale::system.order-sync.refunded-order-missing'),
+            'orders.*.lines.*.refunded_order_line_id.exists' => __('point-of-sale::system.order-sync.refunded-order-missing'),
+            'orders.*.partner.email.email'                   => __('point-of-sale::system.order-sync.customer-email-invalid'),
+            'orders.*.email.email'                           => __('point-of-sale::system.order-sync.customer-email-invalid'),
+            'orders.*.lines.*.discount.max'                  => __('point-of-sale::system.order-sync.discount-invalid'),
+            'orders.*.lines.*.discount.min'                  => __('point-of-sale::system.order-sync.discount-invalid'),
+        ];
+    }
 }

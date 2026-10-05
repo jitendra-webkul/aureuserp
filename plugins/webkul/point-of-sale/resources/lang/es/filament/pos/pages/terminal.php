@@ -376,6 +376,11 @@ return [
         'stop'          => 'Detener',
     ],
 
+    'drafts' => [
+        'not-shared' => 'Este pedido no se comparte con las otras cajas',
+        'rejected'   => 'El servidor rechazó este pedido.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Pagado en otra caja',
         'failed-heading'  => 'Este pedido no se guardó',

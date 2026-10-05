@@ -49,6 +49,26 @@ function productImage(productId) {
         </div>
 
         <div v-else class="min-h-[clamp(4rem,12vh,7rem)] flex-auto overflow-y-auto">
+            <div
+                v-if="order?.draft_error"
+                role="alert"
+                class="flex items-start gap-3 border-b border-danger-200 bg-danger-50 px-3 py-2.5 text-sm text-danger-800 dark:border-danger-500/40 dark:bg-danger-500/10 dark:text-danger-200"
+            >
+                <div class="min-w-0 flex-1">
+                    <p class="font-semibold">{{ till.t('drafts.not-shared') }}</p>
+
+                    <p class="text-xs">{{ order.draft_error }}</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="flex-none rounded-lg border border-danger-300 bg-white px-3 py-1.5 text-xs font-semibold text-danger-700 hover:bg-danger-100 dark:border-danger-500/40 dark:bg-gray-900 dark:text-danger-300 dark:hover:bg-gray-800"
+                    @click="till.retryDraft(order)"
+                >
+                    {{ till.t('offline.retry') }}
+                </button>
+            </div>
+
             <div v-if="!order?.lines.length" class="flex flex-col items-center gap-3 p-6 text-center">
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ till.t('cart.empty.description') }}

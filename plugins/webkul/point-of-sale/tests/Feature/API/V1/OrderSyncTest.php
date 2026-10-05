@@ -89,6 +89,19 @@ it('rejects a payload without lines', function () {
     ])->assertStatus(422);
 });
 
+it('explains a missing product in words the cashier understands', function () {
+    $payload = PosHelper::orderPayload(
+        $this->config,
+        $this->session,
+        [PosHelper::line(999999, 1, 50.0)],
+        [PosHelper::payment($this->cash, 50.0)],
+    );
+
+    $this->postJson(route('admin.api.v1.point-of-sale.orders.sync'), ['orders' => [$payload]])
+        ->assertStatus(422)
+        ->assertJsonPath('errors', fn (array $errors): bool => collect($errors)->flatten()->contains(__('point-of-sale::system.order-sync.product-missing')));
+});
+
 it('returns the current session for a terminal', function () {
     $this->getJson(route('admin.api.v1.point-of-sale.configs.session', ['config' => $this->config->id]))
         ->assertOk()
