@@ -175,3 +175,31 @@ it('settles two invoices of the same customer when the session closes', function
     $invoices->each(fn ($invoice) => expect($invoice->refresh()->payment_state)
         ->toBeIn([PaymentState::PAID, PaymentState::IN_PAYMENT]));
 });
+
+it('invoices a shared draft when the paying till asks for an invoice', function () {
+    $line = PosHelper::line($this->product->id, 1, 100.0);
+
+    $draft = PosHelper::orderPayload($this->config->refresh(), $this->session, [$line], [], ['partner_id' => $this->partner->id]);
+
+    unset($draft['payments']);
+
+    PointOfSale::saveDraftOrders([$draft]);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [$line],
+        [PosHelper::payment($this->cash, 100.0)],
+        [
+            'uuid'          => $draft['uuid'],
+            'partner_id'    => $this->partner->id,
+            'is_to_invoice' => true,
+            'email'         => 'guest@example.com',
+        ],
+    ))->refresh();
+
+    expect($order->is_to_invoice)->toBeTrue()
+        ->and($order->is_invoiced)->toBeTrue()
+        ->and($order->state)->toBe(OrderState::INVOICED)
+        ->and($order->email)->toBe('guest@example.com');
+});

@@ -186,6 +186,13 @@ class OrderProcessor
             'is_takeaway'        => (bool) ($payload['is_takeaway'] ?? false),
             'is_booked'          => (bool) ($payload['is_booked'] ?? false),
             'floating_name'      => filled($payload['floating_name'] ?? null) ? $payload['floating_name'] : null,
+            ...Arr::only($payload, [
+                'email',
+                'mobile',
+                'shipped_at',
+                'refunded_order_id',
+            ]),
+            'is_to_invoice'      => (bool) ($payload['is_to_invoice'] ?? $order->is_to_invoice),
         ])->save();
 
         return $order;
