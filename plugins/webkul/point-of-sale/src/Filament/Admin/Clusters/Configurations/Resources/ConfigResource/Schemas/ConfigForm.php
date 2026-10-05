@@ -239,6 +239,10 @@ class ConfigForm
                     ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->live()
                     ->columnSpanFull(),
+                Toggle::make('show_margins_and_costs')
+                    ->label(static::label('sections.configurations.tabs.products.fields.show-margins-and-costs'))
+                    ->helperText(static::label('sections.configurations.tabs.products.fields.show-margins-and-costs-helper-text'))
+                    ->columnSpanFull(),
 
                 Select::make('categories')
                     ->label(static::label('sections.configurations.tabs.products.fields.categories'))

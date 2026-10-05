@@ -1,13 +1,16 @@
 <?php
 
 return [
-    'label'        => 'إرجاع المنتجات',
+    'label'          => 'إرجاع المنتجات',
+    'refunded-label' => 'تم الاسترداد',
 
     'form' => [
         'fields' => [
             'payment-method' => 'طريقة دفع الاسترداد',
             'lines'          => 'البنود المراد استردادها',
+            'selected'       => 'استرداد',
             'product'        => 'المنتج',
+            'refundable'     => 'قابل للاسترداد',
             'quantity'       => 'الكمية',
         ],
     ],

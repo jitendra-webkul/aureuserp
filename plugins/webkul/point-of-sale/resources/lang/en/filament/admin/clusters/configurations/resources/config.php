@@ -78,10 +78,12 @@ return [
                         'title' => 'Product & PoS categories',
 
                         'fields' => [
-                            'limit-categories'             => 'Restrict Categories',
-                            'limit-categories-helper-text' => 'Pick which product PoS categories are available.',
-                            'locked-by-session'            => 'Locked while a session is open',
-                            'categories'                   => 'Available PoS Product Categories',
+                            'show-margins-and-costs'             => 'Show margins & costs',
+                            'show-margins-and-costs-helper-text' => 'Show margins & costs on product information.',
+                            'limit-categories'                   => 'Restrict Categories',
+                            'limit-categories-helper-text'       => 'Pick which product PoS categories are available.',
+                            'locked-by-session'                  => 'Locked while a session is open',
+                            'categories'                         => 'Available PoS Product Categories',
                         ],
                     ],
 

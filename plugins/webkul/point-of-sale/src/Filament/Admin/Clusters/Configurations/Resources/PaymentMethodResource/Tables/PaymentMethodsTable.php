@@ -41,6 +41,11 @@ class PaymentMethodsTable
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.columns.journal'))
                     ->placeholder('—')
                     ->searchable(),
+                TextColumn::make('configs.name')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.columns.configs'))
+                    ->badge()
+                    ->placeholder('—')
+                    ->searchable(),
                 TextColumn::make('terminal_type')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.columns.terminal-type'))
                     ->badge()

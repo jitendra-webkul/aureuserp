@@ -109,8 +109,6 @@ export function useFloorCanvas(container, floor, tables, { margin = 40 } = {}) {
         return style
     })
 
-    const isFitted = computed(() => zoom.value === null)
-
     function zoomIn() {
         zoom.value = Math.min(scale.value * 1.25, MAX_ZOOM)
     }
@@ -123,5 +121,5 @@ export function useFloorCanvas(container, floor, tables, { margin = 40 } = {}) {
         zoom.value = null
     }
 
-    return { scale, frameStyle, planStyle, isFitted, zoomIn, zoomOut, fit }
+    return { scale, frameStyle, planStyle, zoomIn, zoomOut, fit }
 }

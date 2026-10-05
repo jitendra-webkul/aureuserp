@@ -4,10 +4,13 @@ namespace Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Actions;
 
 use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Throwable;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Facades\PointOfSale;
@@ -30,7 +33,10 @@ class RefundOrderAction extends Action
         parent::setUp();
 
         $this
-            ->label(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.label'))
+            ->label(fn (Order $record): string => $this->hasRefundableLines($record)
+                ? __('point-of-sale::filament/admin/clusters/orders/actions/refund-order.label')
+                : __('point-of-sale::filament/admin/clusters/orders/actions/refund-order.refunded-label'))
+            ->disabled(fn (Order $record): bool => ! $this->hasRefundableLines($record))
             ->icon('heroicon-o-arrow-uturn-left')
             ->color('danger')
             ->modalWidth('2xl')
@@ -41,9 +47,11 @@ class RefundOrderAction extends Action
                 'lines' => $record->lines
                     ->filter(fn (OrderLine $line): bool => float_compare($line->refundableQty(), 0, precisionDigits: 4) > 0)
                     ->map(fn (OrderLine $line): array => [
-                        'line_id'  => $line->id,
-                        'product'  => $line->full_product_name ?? $line->product?->name,
-                        'quantity' => $line->refundableQty(),
+                        'line_id'     => $line->id,
+                        'is_selected' => true,
+                        'product'     => $line->full_product_name ?? $line->product?->name,
+                        'refundable'  => $line->refundableQty(),
+                        'quantity'    => $line->refundableQty(),
                     ])
                     ->values()
                     ->all(),
@@ -59,28 +67,51 @@ class RefundOrderAction extends Action
 
                 Repeater::make('lines')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.lines'))
-                    ->table([
-                        TableColumn::make(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.product')),
-                        TableColumn::make(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.quantity')),
-                    ])
-                    ->schema([
-                        TextInput::make('product')
-                            ->disabled()
-                            ->dehydrated(false),
-
-                        TextInput::make('quantity')
-                            ->numeric()
-                            ->minValue(0),
-
-                        Hidden::make('line_id'),
-                    ])
                     ->addable(false)
                     ->deletable(false)
+                    ->reorderable(false)
+                    ->compact()
+                    ->table([
+                        TableColumn::make('is_selected')
+                            ->label(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.selected')),
+
+                        TableColumn::make('product')
+                            ->label(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.product')),
+
+                        TableColumn::make('refundable')
+                            ->label(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.refundable')),
+
+                        TableColumn::make('quantity')
+                            ->label(__('point-of-sale::filament/admin/clusters/orders/actions/refund-order.form.fields.quantity')),
+                    ])
+                    ->schema([
+                        Hidden::make('line_id'),
+
+                        Checkbox::make('is_selected')
+                            ->hiddenLabel()
+                            ->live(),
+
+                        TextEntry::make('product')
+                            ->hiddenLabel(),
+
+                        TextEntry::make('refundable')
+                            ->hiddenLabel()
+                            ->numeric(decimalPlaces: 4),
+
+                        TextInput::make('quantity')
+                            ->hiddenLabel()
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(fn (Get $get): float => (float) $get('refundable'))
+                            ->required(fn (Get $get): bool => (bool) $get('is_selected'))
+                            ->disabled(fn (Get $get): bool => ! $get('is_selected')),
+                    ])
                     ->columnSpanFull(),
             ])
             ->action(function (Order $record, array $data): void {
                 try {
                     $quantities = collect($data['lines'] ?? [])
+                        ->filter(fn (array $line): bool => (bool) ($line['is_selected'] ?? false))
                         ->mapWithKeys(fn (array $line): array => [
                             (int) $line['line_id'] => (float) ($line['quantity'] ?? 0),
                         ])
@@ -105,5 +136,10 @@ class RefundOrderAction extends Action
                 }
             })
             ->visible(fn (Order $record): bool => $record->state->isSettled() && ! $record->isRefund());
+    }
+
+    protected function hasRefundableLines(Order $record): bool
+    {
+        return $record->lines->contains(fn (OrderLine $line): bool => float_compare($line->refundableQty(), 0, precisionDigits: 4) > 0);
     }
 }

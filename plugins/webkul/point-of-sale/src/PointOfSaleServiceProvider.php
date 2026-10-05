@@ -76,6 +76,7 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
                 '2026_09_17_100029_alter_pos_bills_and_pos_notes_tables',
                 '2026_09_17_100030_add_global_discount_percentage_to_pos_configs_table',
                 '2026_09_17_100031_add_floating_name_and_is_booked_to_pos_orders_table',
+                '2026_09_17_100032_add_show_margins_and_costs_to_pos_configs_table',
             ])
             ->runsMigrations()
             ->hasSettings([

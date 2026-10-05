@@ -56,17 +56,19 @@ const reference = computed(() => [info.value?.reference, info.value?.barcode].fi
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.price) }}</span>
                     </div>
 
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.cost') }}</span>
-                        <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.cost) }}</span>
-                    </div>
+                    <template v-if="till.config.show_margins_and_costs">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.cost') }}</span>
+                            <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.cost) }}</span>
+                        </div>
 
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.margin') }}</span>
-                        <span class="font-mono tabular-nums text-gray-950 dark:text-white">
-                            {{ till.money(info.margin) }} ({{ info.margin_ratio.toFixed(2) }}%)
-                        </span>
-                    </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.margin') }}</span>
+                            <span class="font-mono tabular-nums text-gray-950 dark:text-white">
+                                {{ till.money(info.margin) }} ({{ info.margin_ratio.toFixed(2) }}%)
+                            </span>
+                        </div>
+                    </template>
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -82,7 +84,7 @@ const reference = computed(() => [info.value?.reference, info.value?.barcode].fi
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.total_price) }}</span>
                     </div>
 
-                    <div class="flex items-center justify-between text-sm">
+                    <div v-if="till.config.show_margins_and_costs" class="flex items-center justify-between text-sm">
                         <span class="text-gray-500 dark:text-gray-400">{{ till.t('product-info.total-margin') }}</span>
                         <span class="font-mono tabular-nums text-gray-950 dark:text-white">{{ till.money(info.total_margin) }}</span>
                     </div>

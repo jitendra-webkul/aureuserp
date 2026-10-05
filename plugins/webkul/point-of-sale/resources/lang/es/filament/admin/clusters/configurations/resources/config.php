@@ -78,10 +78,12 @@ return [
                         'title'  => 'Productos y categorías del TPV',
 
                         'fields' => [
-                            'limit-categories'             => 'Restringir categorías',
-                            'limit-categories-helper-text' => 'Elige qué categorías de productos del TPV están disponibles.',
-                            'locked-by-session'            => 'Bloqueado mientras haya una sesión abierta',
-                            'categories'                   => 'Categorías de productos del TPV disponibles',
+                            'show-margins-and-costs'             => 'Mostrar márgenes y costes',
+                            'show-margins-and-costs-helper-text' => 'Mostrar márgenes y costes en la información del producto.',
+                            'limit-categories'                   => 'Restringir categorías',
+                            'limit-categories-helper-text'       => 'Elige qué categorías de productos del TPV están disponibles.',
+                            'locked-by-session'                  => 'Bloqueado mientras haya una sesión abierta',
+                            'categories'                         => 'Categorías de productos del TPV disponibles',
                         ],
                     ],
 

@@ -16,10 +16,7 @@ const button = 'flex size-9 items-center justify-center rounded-lg border border
 
         <button
             type="button"
-            class="flex h-9 min-w-16 items-center justify-center rounded-lg border px-2 font-mono text-xs tabular-nums transition-colors"
-            :class="canvas.isFitted.value
-                ? 'border-primary-600 bg-primary-50 text-primary-700 dark:border-primary-500 dark:bg-primary-500/15 dark:text-primary-200'
-                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800'"
+            class="flex h-9 min-w-16 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 font-mono text-xs text-gray-700 tabular-nums transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
             :title="till.t('floor-plan.fit')"
             @click="canvas.fit()"
         >

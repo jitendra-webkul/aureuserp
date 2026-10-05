@@ -1,13 +1,16 @@
 <?php
 
 return [
-    'label'        => 'Devolver produtos',
+    'label'          => 'Devolver produtos',
+    'refunded-label' => 'Reembolsado',
 
     'form' => [
         'fields' => [
             'payment-method' => 'Método de pagamento do reembolso',
             'lines'          => 'Linhas a reembolsar',
+            'selected'       => 'Reembolsar',
             'product'        => 'Produto',
+            'refundable'     => 'Reembolsável',
             'quantity'       => 'Quantidade',
         ],
     ],

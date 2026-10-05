@@ -91,6 +91,7 @@ class Config extends Model implements Sortable
         'limit_categories',
         'show_product_images',
         'show_category_images',
+        'show_margins_and_costs',
         'warehouse_id',
         'operation_type_id',
         'return_operation_type_id',
@@ -142,6 +143,7 @@ class Config extends Model implements Sortable
         'limit_categories'              => 'boolean',
         'show_product_images'           => 'boolean',
         'show_category_images'          => 'boolean',
+        'show_margins_and_costs'        => 'boolean',
     ];
 
     protected $attributes = [
@@ -173,6 +175,7 @@ class Config extends Model implements Sortable
         'limit_categories'              => false,
         'show_product_images'           => true,
         'show_category_images'          => true,
+        'show_margins_and_costs'        => true,
     ];
 
     public $sortable = [
