@@ -14,6 +14,8 @@ export class SyncQueue {
         this.endpoint = endpoint
         this.flushing = false
         this.timer = null
+        this.removed = new Set()
+        this.onStorage = (event) => this.adoptStored(event)
 
         this.state = reactive({
             offline: !navigator.onLine,
@@ -50,40 +52,71 @@ export class SyncQueue {
     }
 
     remove(uuid) {
+        this.removed.add(uuid)
+
         const position = this.state.pending.findIndex((pending) => pending.uuid === uuid)
 
         if (position !== -1) {
             this.state.pending.splice(position, 1)
+        }
 
-            this.persist()
+        this.persist()
+    }
+
+    get storageKey() {
+        return `pos.sync-queue.${this.endpoint}`
+    }
+
+    readStored(raw = window.localStorage.getItem(this.storageKey)) {
+        try {
+            const entries = JSON.parse(raw ?? '[]')
+
+            return Array.isArray(entries) ? entries : []
+        } catch {
+            return []
         }
     }
 
     persist() {
         try {
-            window.localStorage.setItem(
-                `pos.sync-queue.${this.endpoint}`,
-                JSON.stringify(this.state.pending),
-            )
+            const local = new Set(this.state.pending.map((pending) => pending.uuid))
+
+            const others = this.readStored().filter((entry) => !local.has(entry.uuid) && !this.removed.has(entry.uuid))
+
+            window.localStorage.setItem(this.storageKey, JSON.stringify([...others, ...this.state.pending]))
         } catch {
             this.state.lastError = 'queue could not be persisted'
         }
     }
 
     restore() {
-        try {
-            const raw = window.localStorage.getItem(`pos.sync-queue.${this.endpoint}`)
+        this.state.pending = this.readStored().filter((entry) => !this.removed.has(entry.uuid))
+    }
 
-            if (raw) {
-                this.state.pending = JSON.parse(raw)
-            }
-        } catch {
-            this.state.pending = []
+    adoptStored(event) {
+        if (event.key !== this.storageKey) {
+            return
+        }
+
+        const stored = this.readStored(event.newValue).filter((entry) => !this.removed.has(entry.uuid))
+
+        const storedUuids = new Set(stored.map((entry) => entry.uuid))
+
+        const settled = this.state.pending.map((pending) => pending.uuid).filter((uuid) => !storedUuids.has(uuid))
+
+        this.state.pending = stored
+
+        if (settled.length) {
+            window.dispatchEvent(new CustomEvent('point-of-sale:queue-flushed', {
+                detail: { synced: settled.length, failed: 0, pending: this.pendingCount, uuids: settled },
+            }))
         }
     }
 
     watch() {
         this.restore()
+
+        window.addEventListener('storage', this.onStorage)
 
         window.addEventListener('online', () => {
             this.state.offline = false
@@ -101,6 +134,8 @@ export class SyncQueue {
     }
 
     stop() {
+        window.removeEventListener('storage', this.onStorage)
+
         if (this.timer) {
             window.clearInterval(this.timer)
 
@@ -132,6 +167,8 @@ export class SyncQueue {
         pending.lastError = message ?? 'unknown error'
         pending.code = code
         pending.acknowledged = false
+
+        this.persist()
     }
 
     isSettledElsewhere(pending) {
