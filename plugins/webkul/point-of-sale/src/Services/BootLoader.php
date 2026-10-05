@@ -149,6 +149,7 @@ class BootLoader
             'enable_takeaway'               => (bool) $config->enable_takeaway,
             'show_product_images'           => (bool) $config->show_product_images,
             'show_category_images'          => (bool) $config->show_category_images,
+            'show_margins_and_costs'        => (bool) $config->show_margins_and_costs,
             'cash_rounding'                 => $this->cashRounding($config),
             'can_edit_price'                => $this->canEditPrice($config),
             'product_endpoint'              => route('point-of-sale.till.configs.products.store', ['config' => $config->id]),

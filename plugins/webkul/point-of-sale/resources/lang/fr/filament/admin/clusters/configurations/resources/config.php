@@ -78,10 +78,12 @@ return [
                         'title'  => 'Produits et catégories PdV',
 
                         'fields' => [
-                            'limit-categories'             => 'Restreindre les catégories',
-                            'limit-categories-helper-text' => 'Choisissez les catégories de produits PdV disponibles.',
-                            'locked-by-session'            => 'Verrouillé tant qu\'une session est ouverte',
-                            'categories'                   => 'Catégories de produits PdV disponibles',
+                            'show-margins-and-costs'             => 'Afficher les marges et les coûts',
+                            'show-margins-and-costs-helper-text' => 'Afficher les marges et les coûts sur les informations du produit.',
+                            'limit-categories'                   => 'Restreindre les catégories',
+                            'limit-categories-helper-text'       => 'Choisissez les catégories de produits PdV disponibles.',
+                            'locked-by-session'                  => 'Verrouillé tant qu\'une session est ouverte',
+                            'categories'                         => 'Catégories de produits PdV disponibles',
                         ],
                     ],
 

@@ -78,10 +78,12 @@ return [
                         'title'  => 'المنتجات وفئات نقطة البيع',
 
                         'fields' => [
-                            'limit-categories'             => 'تقييد الفئات',
-                            'limit-categories-helper-text' => 'اختر فئات منتجات نقطة البيع المتاحة.',
-                            'locked-by-session'            => 'مقفل أثناء وجود جلسة مفتوحة',
-                            'categories'                   => 'فئات منتجات نقطة البيع المتاحة',
+                            'show-margins-and-costs'             => 'إظهار الهوامش والتكاليف',
+                            'show-margins-and-costs-helper-text' => 'إظهار الهوامش والتكاليف في معلومات المنتج.',
+                            'limit-categories'                   => 'تقييد الفئات',
+                            'limit-categories-helper-text'       => 'اختر فئات منتجات نقطة البيع المتاحة.',
+                            'locked-by-session'                  => 'مقفل أثناء وجود جلسة مفتوحة',
+                            'categories'                         => 'فئات منتجات نقطة البيع المتاحة',
                         ],
                     ],
 

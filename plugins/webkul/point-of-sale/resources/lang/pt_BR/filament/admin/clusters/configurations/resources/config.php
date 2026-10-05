@@ -78,10 +78,12 @@ return [
                         'title'  => 'Produtos e categorias do PDV',
 
                         'fields' => [
-                            'limit-categories'             => 'Restringir categorias',
-                            'limit-categories-helper-text' => 'Escolha quais categorias de produtos do PDV ficam disponíveis.',
-                            'locked-by-session'            => 'Bloqueado enquanto houver uma sessão aberta',
-                            'categories'                   => 'Categorias de produtos do PDV disponíveis',
+                            'show-margins-and-costs'             => 'Mostrar margens e custos',
+                            'show-margins-and-costs-helper-text' => 'Mostrar margens e custos nas informações do produto.',
+                            'limit-categories'                   => 'Restringir categorias',
+                            'limit-categories-helper-text'       => 'Escolha quais categorias de produtos do PDV ficam disponíveis.',
+                            'locked-by-session'                  => 'Bloqueado enquanto houver uma sessão aberta',
+                            'categories'                         => 'Categorias de produtos do PDV disponíveis',
                         ],
                     ],
 
