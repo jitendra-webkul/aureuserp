@@ -13,6 +13,7 @@ use Webkul\Account\Enums\TypeTaxUse;
 use Webkul\Account\Models\Product as AccountProduct;
 use Webkul\Account\Models\Tax;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
 use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
 use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Exceptions\RefundExceedsSoldQuantityException;
@@ -42,16 +43,20 @@ class OrderProcessor
     {
         $uuid = $payload['uuid'] ?? Str::uuid()->toString();
 
-        $existing = Order::withoutGlobalScopes()->where('uuid', $uuid)->first();
+        return DB::transaction(function () use ($payload, $uuid): Order {
+            $existing = $this->lockOrder($uuid);
 
-        if ($existing && $existing->state !== OrderState::DRAFT) {
-            return $existing;
-        }
+            if ($existing && $existing->state !== OrderState::DRAFT) {
+                return $this->settledOrder($existing, $payload);
+            }
 
-        return DB::transaction(function () use ($payload, $uuid, $existing): Order {
             $order = $existing
                 ? $this->refreshDraft($existing, $payload)
                 : $this->createOrder($payload, $uuid);
+
+            if ($order->state !== OrderState::DRAFT) {
+                return $this->settledOrder($order, $payload);
+            }
 
             $this->assertLineRules($order, $payload['lines'] ?? []);
 
@@ -117,18 +122,22 @@ class OrderProcessor
     {
         $uuid = $payload['uuid'] ?? Str::uuid()->toString();
 
-        $existing = Order::withoutGlobalScopes()->where('uuid', $uuid)->first();
+        return DB::transaction(function () use ($payload, $uuid): Order {
+            $existing = $this->lockOrder($uuid);
 
-        if ($existing && $existing->state !== OrderState::DRAFT) {
-            return $existing;
-        }
+            if ($existing && $existing->state !== OrderState::DRAFT) {
+                return $existing;
+            }
 
-        $this->assertDraftSessionOpen($existing?->session ?? Session::withoutGlobalScopes()->find($payload['session_id'] ?? null));
+            $this->assertDraftSessionOpen($existing?->session ?? Session::withoutGlobalScopes()->find($payload['session_id'] ?? null));
 
-        return DB::transaction(function () use ($payload, $uuid, $existing): Order {
             $order = $existing
                 ? $this->refreshDraft($existing, $payload)
                 : $this->createOrder($payload, $uuid);
+
+            if ($order->state !== OrderState::DRAFT) {
+                return $order;
+            }
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
@@ -159,6 +168,29 @@ class OrderProcessor
             'data'   => $data,
             'errors' => $errors,
         ];
+    }
+
+    protected function settledOrder(Order $order, array $payload): Order
+    {
+        $incoming = collect($payload['payments'] ?? [])->pluck('uuid');
+
+        $recorded = $order->payments()->pluck('uuid');
+
+        if ($incoming->diff($recorded)->isEmpty()) {
+            return $order;
+        }
+
+        throw new OrderAlreadyPaidException(
+            __('point-of-sale::system.order-workflow.mark-paid.already-settled', ['order' => $order->reference])
+        );
+    }
+
+    protected function lockOrder(string $uuid): ?Order
+    {
+        return Order::withoutGlobalScopes()
+            ->where('uuid', $uuid)
+            ->lockForUpdate()
+            ->first();
     }
 
     protected function assertDraftSessionOpen(?Session $session): void
@@ -200,11 +232,13 @@ class OrderProcessor
 
     public function discardDraft(Order $order): void
     {
-        if ($order->state !== OrderState::DRAFT) {
-            return;
-        }
-
         DB::transaction(function () use ($order): void {
+            $order = $this->lockOrder($order->uuid);
+
+            if ($order?->state !== OrderState::DRAFT) {
+                return;
+            }
+
             $order->lines()->each(fn (OrderLine $line) => $line->delete());
 
             $order->delete();
@@ -308,9 +342,12 @@ class OrderProcessor
         );
 
         try {
-            return Order::create($attributes);
+            return DB::transaction(fn (): Order => Order::create($attributes));
         } catch (UniqueConstraintViolationException) {
-            return Order::withoutGlobalScopes()->where('uuid', $uuid)->firstOrFail();
+            return Order::withoutGlobalScopes()
+                ->where('uuid', $uuid)
+                ->lockForUpdate()
+                ->firstOrFail();
         }
     }
 

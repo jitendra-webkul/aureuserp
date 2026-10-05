@@ -1,8 +1,10 @@
 <?php
 
+use Illuminate\Support\Str;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\PriceType;
 use Webkul\PointOfSale\Enums\SessionState;
+use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Services\BootLoader;
@@ -131,4 +133,59 @@ it('refuses to save a draft into a closed session', function () {
 
     expect($result['errors'])->toHaveCount(1)
         ->and(Order::where('uuid', $payload['uuid'])->exists())->toBeFalse();
+});
+
+it('leaves a paid order untouched when another till saves it as a draft', function () {
+    $line = PosHelper::line($this->product->id, 1, 40.0);
+
+    $payload = posDraftPayload($this, [$line], ['table_id' => $this->table->id]);
+
+    PointOfSale::saveDraftOrders([$payload]);
+
+    $paid = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [$line],
+        [PosHelper::payment($this->cash, 40.0)],
+        ['uuid' => $payload['uuid'], 'table_id' => $this->table->id],
+    ));
+
+    $payload['lines'] = [$line, PosHelper::line($this->product->id, 3, 40.0)];
+
+    PointOfSale::saveDraftOrders([$payload]);
+
+    $order = Order::where('uuid', $payload['uuid'])->firstOrFail();
+
+    expect($order->id)->toBe($paid->id)
+        ->and($order->state)->not->toBe(OrderState::DRAFT)
+        ->and($order->lines)->toHaveCount(1)
+        ->and($order->payments)->toHaveCount(1)
+        ->and((float) $order->amount_total)->toBe(40.0);
+});
+
+it('accepts a replayed payment but refuses a new payment on an order another till already paid', function () {
+    $line = PosHelper::line($this->product->id, 1, 40.0);
+
+    $payload = posDraftPayload($this, [$line], ['table_id' => $this->table->id]);
+
+    PointOfSale::saveDraftOrders([$payload]);
+
+    $first = PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [$line],
+        [PosHelper::payment($this->cash, 40.0)],
+        ['uuid' => $payload['uuid'], 'table_id' => $this->table->id],
+    );
+
+    $paid = PointOfSale::syncOrder($first);
+
+    expect(PointOfSale::syncOrder($first)->id)->toBe($paid->id);
+
+    $second = array_merge($first, ['payments' => [PosHelper::payment($this->cash, 40.0)]]);
+
+    expect(fn () => PointOfSale::syncOrder($second))
+        ->toThrow(OrderAlreadyPaidException::class, Str::before(__('point-of-sale::system.order-workflow.mark-paid.already-settled'), ':'));
+
+    expect($paid->refresh()->payments)->toHaveCount(1);
 });
