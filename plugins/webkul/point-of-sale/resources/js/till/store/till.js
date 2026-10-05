@@ -94,6 +94,9 @@ export class Till {
         this.syncEndpoint = syncEndpoint
         this.accessToken = accessToken
         this.deferredEvictions = []
+        this.draftEpoch = 0
+        this.draftPullEpoch = -1
+        this.removedDraftEpochs = new Map()
 
         this.master = createRecordSets(
             Object.fromEntries(Object.entries(MASTER_INDEXES).map(([name, indexes]) => [name, { key: 'id', indexes }])),
@@ -1904,6 +1907,7 @@ export class Till {
             if (saved) {
                 order.serverId = saved.id
                 order.synced_signature = JSON.stringify(payload)
+                order.pushed_epoch = ++this.draftEpoch
             }
 
             if ((body.errors ?? []).some((entry) => entry.uuid === order.uuid)) {
@@ -1956,13 +1960,19 @@ export class Till {
                     body: { uuid },
                 })
 
-                this.rememberRemovedDrafts(this.removedDrafts().filter((entry) => entry !== uuid))
+                this.forgetRemovedDraft(uuid)
             } catch (error) {
                 if (/^4\d\d$/.test(error.message)) {
-                    this.rememberRemovedDrafts(this.removedDrafts().filter((entry) => entry !== uuid))
+                    this.forgetRemovedDraft(uuid)
                 }
             }
         }
+    }
+
+    forgetRemovedDraft(uuid) {
+        this.rememberRemovedDrafts(this.removedDrafts().filter((entry) => entry !== uuid))
+
+        this.removedDraftEpochs.set(uuid, ++this.draftEpoch)
     }
 
     pullDrafts() {
@@ -1970,30 +1980,43 @@ export class Till {
             return Promise.resolve()
         }
 
-        this.draftPull ??= this.requestJson(this.boot.session.drafts_endpoint)
-            .then((body) => this.mergeDrafts(body.data ?? []))
+        if (this.draftPull && this.draftPullEpoch === this.draftEpoch) {
+            return this.draftPull
+        }
+
+        const epoch = this.draftEpoch
+
+        const pull = this.requestJson(this.boot.session.drafts_endpoint)
+            .then((body) => this.mergeDrafts(body.data ?? [], epoch))
             .catch((error) => {
                 if (error.message === '409') {
                     this.state.sessionClosed = true
                 }
             })
             .finally(() => {
-                this.draftPull = null
+                if (this.draftPull === pull) {
+                    this.draftPull = null
+                }
             })
 
-        return this.draftPull
+        this.draftPull = pull
+        this.draftPullEpoch = epoch
+
+        return pull
     }
 
-    mergeDrafts(orders) {
+    mergeDrafts(orders, epoch = this.draftEpoch) {
         const removed = new Set(this.removedDrafts())
 
-        const serverOrders = orders.filter((order) => !removed.has(order.uuid))
+        const serverOrders = orders.filter((order) => !removed.has(order.uuid)
+            && (this.removedDraftEpochs.get(order.uuid) ?? -1) <= epoch)
 
         const serverUuids = new Set(serverOrders.map((order) => order.uuid))
 
         const busy = (order) => order.uuid === this.state.activeOrderUuid
             || order.uuid === this.state.transferOrderUuid
             || order.state !== 'draft'
+            || (order.pushed_epoch ?? -1) > epoch
             || this.isDraftDirty(order)
 
         for (const order of this.state.orders.filter((entry) => entry.serverId && !busy(entry) && !serverUuids.has(entry.uuid))) {
