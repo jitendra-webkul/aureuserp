@@ -12,11 +12,15 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
+use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\SessionState;
+use Webkul\PointOfSale\Exceptions\SessionHasDraftOrdersException;
 use Webkul\PointOfSale\Facades\PointOfSale;
+use Webkul\PointOfSale\Filament\Pos\Pages\Orders;
 use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
 use Webkul\PointOfSale\Models\Bill;
 use Webkul\PointOfSale\Models\Config;
+use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Services\ClosingControlReport;
 use Webkul\PointOfSale\Services\SessionSalesDetailsReport;
@@ -319,12 +323,55 @@ class RegisterControls extends Component
             );
 
             $this->redirect(Registers::getUrl(), navigate: FilamentView::hasSpaMode());
+        } catch (SessionHasDraftOrdersException $exception) {
+            if (! $this->config->is_restaurant) {
+                Notification::make()
+                    ->danger()
+                    ->body($exception->getMessage())
+                    ->send();
+
+                return;
+            }
+
+            $this->dispatch('close-modal', id: 'pos-closing');
+
+            $this->dispatch('open-modal', id: 'pos-draft-orders');
         } catch (Throwable $exception) {
             Notification::make()
                 ->danger()
                 ->body($exception->getMessage())
                 ->send();
         }
+    }
+
+    public function ordersUrl(): string
+    {
+        return Orders::getUrl(['session' => $this->session->getKey()]);
+    }
+
+    public function cancelDraftOrders(): void
+    {
+        try {
+            $this->draftOrdersQuery()->get()->each(fn (Order $order) => PointOfSale::cancelOrder($order));
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->body($exception->getMessage())
+                ->send();
+
+            return;
+        }
+
+        $this->dispatch('close-modal', id: 'pos-draft-orders');
+
+        $this->closeRegister();
+    }
+
+    protected function draftOrdersQuery(): Builder
+    {
+        return Order::withoutGlobalScopes()
+            ->where('session_id', $this->session->id)
+            ->where('state', OrderState::DRAFT);
     }
 
     public function render(): View

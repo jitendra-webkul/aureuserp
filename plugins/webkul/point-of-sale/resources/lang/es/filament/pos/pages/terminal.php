@@ -102,6 +102,13 @@ return [
         'authorized-diff-exceeded' => 'La diferencia supera el límite permitido. Solo un responsable puede cerrar esta caja.',
     ],
 
+    'draft-orders' => [
+        'heading'       => 'Error',
+        'message'       => 'No puedes cerrar el PdV mientras haya pedidos en borrador.',
+        'review-orders' => 'Revisar pedidos',
+        'cancel-orders' => 'Cancelar pedidos',
+    ],
+
     'product-form' => [
         'heading'             => 'Nuevo producto',
         'name'                => 'Nombre del producto',

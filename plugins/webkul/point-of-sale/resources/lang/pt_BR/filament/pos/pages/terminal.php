@@ -102,6 +102,13 @@ return [
         'authorized-diff-exceeded' => 'A diferença está acima do limite permitido. Somente um gerente pode fechar este caixa.',
     ],
 
+    'draft-orders' => [
+        'heading'       => 'Erro',
+        'message'       => 'Você não pode fechar o PDV enquanto houver pedidos em rascunho.',
+        'review-orders' => 'Revisar pedidos',
+        'cancel-orders' => 'Cancelar pedidos',
+    ],
+
     'product-form' => [
         'heading'             => 'Novo produto',
         'name'                => 'Nome do produto',
