@@ -1250,6 +1250,8 @@ export class Till {
             name: floor.name,
             background_color: floor.background_color ?? '',
             background_image: floor.background_image ?? null,
+            image_file: null,
+            remove_image: false,
             tables: floor.tables.map((table) => ({ ...table, key: `t${table.id}` })),
         }
 
@@ -1260,6 +1262,8 @@ export class Till {
     }
 
     cancelPlanEdit() {
+        this.releaseImagePreview()
+
         this.state.planEditing = false
         this.state.planDraft = null
         this.state.planSelectedKey = null
@@ -1422,6 +1426,12 @@ export class Till {
 
             this.replaceFloor(body.data)
 
+            if (draft.image_file) {
+                this.replaceFloor(await this.sendFloorImage(draft.id, draft.image_file))
+            } else if (draft.remove_image) {
+                this.replaceFloor((await this.requestPlan(this.backgroundEndpoint(draft.id), 'DELETE')).data)
+            }
+
             this.cancelPlanEdit()
         } catch (error) {
             this.state.planError = error.message
@@ -1503,75 +1513,63 @@ export class Till {
         return this.config.floor_plan.background_endpoint.replace('__floor__', floorId)
     }
 
-    async uploadFloorImage(file) {
+    uploadFloorImage(file) {
         const draft = this.state.planDraft
 
         if (!draft || !file || this.state.planSaving) {
             return
         }
 
-        this.state.planSaving = true
-        this.state.planError = null
+        this.releaseImagePreview()
 
-        const form = new FormData()
-
-        form.append('image', file)
-
-        try {
-            const response = await fetch(this.backgroundEndpoint(draft.id), {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
-                },
-                body: form,
-            })
-
-            const payload = await response.json().catch(() => ({}))
-
-            if (!response.ok) {
-                throw new Error(payload.message ?? this.t('floor-plan.failed', { status: response.status }))
-            }
-
-            this.applyFloorImage(payload.data)
-        } catch (error) {
-            this.state.planError = error.message
-        } finally {
-            this.state.planSaving = false
-        }
+        draft.background_image = URL.createObjectURL(file)
+        draft.image_file = file
+        draft.remove_image = false
     }
 
-    async removeFloorImage() {
+    removeFloorImage() {
         const draft = this.state.planDraft
 
         if (!draft || this.state.planSaving) {
             return
         }
 
-        this.state.planSaving = true
-        this.state.planError = null
+        this.releaseImagePreview()
 
-        try {
-            const body = await this.requestPlan(this.backgroundEndpoint(draft.id), 'DELETE')
+        draft.background_image = null
+        draft.image_file = null
+        draft.remove_image = true
+    }
 
-            this.applyFloorImage(body.data)
-        } catch (error) {
-            this.state.planError = error.message
-        } finally {
-            this.state.planSaving = false
+    releaseImagePreview() {
+        const image = this.state.planDraft?.background_image
+
+        if (image?.startsWith('blob:')) {
+            URL.revokeObjectURL(image)
         }
     }
 
-    applyFloorImage(payload) {
-        const floor = this.floors.find((entry) => entry.id === payload.id)
+    async sendFloorImage(floorId, file) {
+        const form = new FormData()
 
-        if (floor) {
-            floor.background_image = payload.background_image
+        form.append('image', file)
+
+        const response = await fetch(this.backgroundEndpoint(floorId), {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            },
+            body: form,
+        })
+
+        const payload = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+            throw new Error(payload.message ?? this.t('floor-plan.failed', { status: response.status }))
         }
 
-        if (this.state.planDraft?.id === payload.id) {
-            this.state.planDraft.background_image = payload.background_image
-        }
+        return payload.data
     }
 
     async requestPlan(url, method, body = null) {
