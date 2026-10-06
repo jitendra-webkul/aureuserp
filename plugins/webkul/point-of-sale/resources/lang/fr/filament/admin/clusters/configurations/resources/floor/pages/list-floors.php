@@ -6,4 +6,9 @@ return [
             'label' => 'Nouvel étage',
         ],
     ],
+
+    'tabs' => [
+        'active'   => 'Actifs',
+        'archived' => 'Archivés',
+    ],
 ];

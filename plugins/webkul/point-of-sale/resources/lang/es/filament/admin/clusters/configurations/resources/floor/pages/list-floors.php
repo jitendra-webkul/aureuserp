@@ -6,4 +6,9 @@ return [
             'label' => 'Nueva planta',
         ],
     ],
+
+    'tabs' => [
+        'active'   => 'Activos',
+        'archived' => 'Archivados',
+    ],
 ];

@@ -38,12 +38,12 @@ class ListConfigs extends ListRecords
                 ->icon('heroicon-s-computer-desktop')
                 ->favorite()
                 ->setAsDefault()
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_active', true)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->withoutTrashed()->where('is_active', true)),
 
             'restaurant' => PresetView::make(__('point-of-sale::filament/admin/clusters/configurations/resources/config/pages/list-configs.tabs.restaurant'))
                 ->icon('heroicon-s-building-storefront')
                 ->favorite()
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_restaurant', true)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->withoutTrashed()->where('is_restaurant', true)),
 
             'archived' => PresetView::make(__('point-of-sale::filament/admin/clusters/configurations/resources/config/pages/list-configs.tabs.archived'))
                 ->icon('heroicon-s-archive-box')

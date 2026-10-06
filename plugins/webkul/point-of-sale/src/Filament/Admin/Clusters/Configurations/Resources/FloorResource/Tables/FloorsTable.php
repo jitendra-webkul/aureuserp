@@ -12,6 +12,7 @@ use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Webkul\PointOfSale\Models\Floor;
 
 class FloorsTable
@@ -40,7 +41,12 @@ class FloorsTable
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.table.columns.background-color')),
             ])
             ->filters([
-                TrashedFilter::make(),
+                TrashedFilter::make()
+                    ->queries(
+                        true: fn (Builder $query) => $query->withTrashed(),
+                        false: fn (Builder $query) => $query->onlyTrashed(),
+                        blank: fn (Builder $query) => $query,
+                    ),
             ])
             ->recordTitleAttribute('name')
             ->recordActions([

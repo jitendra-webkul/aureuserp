@@ -14,7 +14,6 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Grouping\Group as TableGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -76,9 +75,6 @@ class ConfigsTable
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.groups.warehouse')),
                 TableGroup::make('company.name')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/config.table.groups.company')),
-            ])
-            ->filters([
-                TrashedFilter::make(),
             ])
             ->recordTitleAttribute('name')
             ->recordActions([
