@@ -4,6 +4,7 @@ namespace Webkul\PointOfSale\Filament\Pos\Pages;
 
 use BackedEnum;
 use Filament\Pages\Page;
+use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Services\BootLoader;
@@ -41,6 +42,8 @@ abstract class Terminal extends Page
 
             return;
         }
+
+        $this->session = PointOfSale::loginSession($session);
     }
 
     public function backUrl(): string

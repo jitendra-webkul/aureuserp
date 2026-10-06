@@ -162,6 +162,20 @@ class SessionWorkflow
         });
     }
 
+    public function login(Session $session): Session
+    {
+        return DB::transaction(function () use ($session): Session {
+            $locked = Session::withoutGlobalScopes()
+                ->whereKey($session->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $locked->forceFill(['login_number' => (int) $locked->login_number + 1])->saveQuietly();
+
+            return $session->setAttribute('login_number', $locked->login_number);
+        });
+    }
+
     public function cashIn(Session $session, float $amount, ?string $reason = null): CashMovement
     {
         return $this->recordCashMovement($session, CashMovementType::IN, $amount, $reason);

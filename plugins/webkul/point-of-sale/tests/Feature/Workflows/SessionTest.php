@@ -251,3 +251,14 @@ it('keeps sessions queryable by terminal and state', function () {
 
     expect($live->all())->toContain($session->id);
 });
+
+it('gives every till that opens a session its own login number', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $first = PointOfSale::loginSession(Session::find($session->id))->login_number;
+
+    $second = PointOfSale::loginSession(Session::find($session->id))->login_number;
+
+    expect($second)->toBe($first + 1)
+        ->and($session->refresh()->login_number)->toBe($second);
+});

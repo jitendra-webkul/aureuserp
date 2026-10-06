@@ -241,6 +241,11 @@ class PointOfSaleManager
         return $this->sessions->openRescueFor($session);
     }
 
+    public function loginSession(Session $session): Session
+    {
+        return $this->sessions->login($session);
+    }
+
     public function cashIn(Session $session, float $amount, ?string $reason = null): CashMovement
     {
         return $this->sessions->cashIn($session, $amount, $reason);
