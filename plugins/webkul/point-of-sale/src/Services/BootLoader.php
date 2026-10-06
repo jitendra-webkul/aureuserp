@@ -813,7 +813,7 @@ class BootLoader
     protected function openOrders(Session $session): array
     {
         return Order::query()
-            ->with(['lines', 'payments'])
+            ->with(['lines.lots', 'lines.taxes', 'payments'])
             ->where('session_id', $session->id)
             ->where('state', 'draft')
             ->get()
@@ -835,15 +835,23 @@ class BootLoader
                 'fiscal_position_id' => $order->fiscal_position_id,
                 'to_invoice'         => (bool) $order->is_to_invoice,
                 'shipped_at'         => $order->shipped_at?->toDateString(),
+                'refunded_order_id'  => $order->refunded_order_id,
+                'locked_partner_id'  => $order->refunded_order_id ? $order->partner_id : null,
                 'lines'              => $order->lines->map(fn ($line): array => [
-                    'uuid'             => $line->uuid,
-                    'product_id'       => $line->product_id,
-                    'qty'              => (float) $line->qty,
-                    'price_unit'       => (float) $line->price_unit,
-                    'price_overridden' => $line->price_type === PriceType::MANUAL,
-                    'discount'         => (float) $line->discount,
-                    'note'             => $line->note,
-                    'tax_ids'          => $line->taxes->pluck('id')->all(),
+                    'uuid'                   => $line->uuid,
+                    'product_id'             => $line->product_id,
+                    'qty'                    => (float) $line->qty,
+                    'price_unit'             => (float) $line->price_unit,
+                    'price_overridden'       => $line->price_type === PriceType::MANUAL,
+                    'discount'               => (float) $line->discount,
+                    'note'                   => $line->note,
+                    'tax_ids'                => $line->taxes->pluck('id')->all(),
+                    'refunded_order_line_id' => $line->refunded_order_line_id,
+                    'lots'                   => $line->lots->map(fn ($lot): array => [
+                        'lot_name' => $lot->lot_name,
+                        'lot_id'   => $lot->lot_id,
+                        'qty'      => (float) $lot->qty,
+                    ])->values()->all(),
                 ])->values()->all(),
                 'payments'      => $order->payments->map(fn ($payment): array => [
                     'uuid'              => $payment->uuid,
