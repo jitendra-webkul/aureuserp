@@ -97,6 +97,8 @@ export class Till {
         this.draftEpoch = 0
         this.draftPullEpoch = -1
         this.removedDraftEpochs = new Map()
+        this.savingDrafts = new Set()
+        this.releasedWhileSaving = new Set()
 
         this.master = createRecordSets(
             Object.fromEntries(Object.entries(MASTER_INDEXES).map(([name, indexes]) => [name, { key: 'id', indexes }])),
@@ -1909,6 +1911,8 @@ export class Till {
 
         const signature = JSON.stringify(payload)
 
+        this.savingDrafts.add(order.uuid)
+
         try {
             const body = await this.requestJson(this.config.draft_endpoint, {
                 method: 'POST',
@@ -1925,6 +1929,12 @@ export class Till {
                 order.pushed_epoch = ++this.draftEpoch
                 order.draft_error = null
                 order.rejected_signature = null
+
+                if (this.releasedWhileSaving.delete(order.uuid)) {
+                    this.removeDraftOnServer(order)
+
+                    return
+                }
             }
 
             if (failure) {
@@ -1938,6 +1948,9 @@ export class Till {
                 order.draft_error = error.detail ?? this.t('drafts.rejected')
                 order.rejected_signature = signature
             }
+        } finally {
+            this.savingDrafts.delete(order.uuid)
+            this.releasedWhileSaving.delete(order.uuid)
         }
     }
 
@@ -1977,6 +1990,12 @@ export class Till {
     }
 
     removeDraftOnServer(order) {
+        if (this.sharesDrafts && order && !order.serverId && this.savingDrafts.has(order.uuid)) {
+            this.releasedWhileSaving.add(order.uuid)
+
+            return
+        }
+
         if (!this.sharesDrafts || !order?.serverId || order.state !== 'draft') {
             return
         }
@@ -2047,6 +2066,7 @@ export class Till {
         const removed = new Set(this.removedDrafts())
 
         const serverOrders = orders.filter((order) => !removed.has(order.uuid)
+            && !this.releasedWhileSaving.has(order.uuid)
             && (this.removedDraftEpochs.get(order.uuid) ?? -1) <= epoch)
 
         const serverUuids = new Set(serverOrders.map((order) => order.uuid))
@@ -2100,7 +2120,9 @@ export class Till {
         await this.flushRemovedDrafts()
 
         for (const pending of this.state.orders.filter((entry) => this.isDraftDirty(entry) && !this.isDraftRejected(entry))) {
-            await this.pushDraft(pending)
+            if (this.state.orders.some((entry) => entry.uuid === pending.uuid)) {
+                await this.pushDraft(pending)
+            }
         }
 
         await this.pullDrafts()
