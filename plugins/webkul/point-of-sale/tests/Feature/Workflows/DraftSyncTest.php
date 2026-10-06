@@ -259,3 +259,16 @@ it('refuses to change an order of another register', function () {
         ->and($result['errors'][0]['message'])->toBe(__('point-of-sale::system.order-processor.foreign-order'))
         ->and(Order::where('uuid', $payload['uuid'])->firstOrFail()->lines)->toHaveCount(1);
 });
+
+it('refuses a draft for a register whose session it does not carry and opens no session there', function () {
+    $other = PosHelper::configWithCashMethod($this->warehouse);
+
+    $payload = posDraftPayload($this, [], ['config_id' => $other->id, 'is_booked' => true]);
+
+    $result = PointOfSale::saveDraftOrders([$payload]);
+
+    expect($result['errors'])->toHaveCount(1)
+        ->and($result['errors'][0]['message'])->toBe(__('point-of-sale::system.order-processor.foreign-order'))
+        ->and(Order::where('uuid', $payload['uuid'])->exists())->toBeFalse()
+        ->and(PointOfSale::liveSessionFor($other))->toBeNull();
+});

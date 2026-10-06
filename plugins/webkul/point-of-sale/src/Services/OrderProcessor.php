@@ -134,7 +134,10 @@ class OrderProcessor
                 return $existing;
             }
 
-            $this->assertDraftSessionOpen($existing?->session ?? Session::withoutGlobalScopes()->find($payload['session_id'] ?? null));
+            $this->assertDraftSessionOpen(
+                $existing?->session ?? Session::withoutGlobalScopes()->find($payload['session_id'] ?? null),
+                (int) ($payload['config_id'] ?? 0),
+            );
 
             $order = $existing
                 ? $this->refreshDraft($existing, $payload)
@@ -212,8 +215,12 @@ class OrderProcessor
             ->first();
     }
 
-    protected function assertDraftSessionOpen(?Session $session): void
+    protected function assertDraftSessionOpen(?Session $session, int $configId): void
     {
+        if ($session && (int) $session->config_id !== $configId) {
+            throw new PosConfigurationException(__('point-of-sale::system.order-processor.foreign-order'));
+        }
+
         if ($session?->isLive()) {
             return;
         }
