@@ -124,9 +124,12 @@ class Orders extends Page
 
         $search = trim($this->search);
 
+        $isRestaurant = $this->isRestaurant();
+
         return Order::withoutGlobalScopes()
             ->where('session_id', $this->session->getKey())
             ->with(['partner', 'user', 'currency'])
+            ->when($isRestaurant, fn (Builder $query) => $query->with('table.floor'))
             ->when(
                 $this->status === 'active',
                 fn (Builder $query) => $query->whereNot('state', OrderState::CANCELED),
@@ -137,10 +140,21 @@ class Orders extends Page
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('reference', 'like', "%{$search}%")
                     ->orWhere('receipt_code', 'like', "%{$search}%")
-                    ->orWhereHas('partner', fn (Builder $partner) => $partner->where('name', 'like', "%{$search}%")),
+                    ->orWhereHas('partner', fn (Builder $partner) => $partner->where('name', 'like', "%{$search}%"))
+                    ->when($isRestaurant, fn (Builder $matches) => $matches->orWhereHas(
+                        'table',
+                        fn (Builder $table) => $table
+                            ->where('table_number', 'like', "%{$search}%")
+                            ->orWhereHas('floor', fn (Builder $floor) => $floor->where('name', 'like', "%{$search}%")),
+                    )),
             ))
             ->orderByDesc('id')
             ->paginate($this->perPage);
+    }
+
+    public function isRestaurant(): bool
+    {
+        return (bool) $this->session?->config?->is_restaurant;
     }
 
     public function selectOrder(int $orderId): void

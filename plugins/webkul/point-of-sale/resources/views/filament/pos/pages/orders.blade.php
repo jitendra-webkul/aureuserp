@@ -2,6 +2,7 @@
     @php($orders = $this->getOrders())
     @php($selected = $this->getSelectedOrder())
     @php($prefix = 'point-of-sale::filament/pos/pages/orders.')
+    @php($isRestaurant = $this->isRestaurant())
 
     <div class="pos-screen fixed inset-x-0 bottom-0 top-16 grid min-h-0 grid-cols-[1fr] grid-rows-[minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[1fr_minmax(22rem,32%)]">
         <section class="flex min-h-0 min-w-0 flex-col gap-3">
@@ -19,7 +20,7 @@
                     <x-filament::input
                         type="search"
                         wire:model.live.debounce.300ms="search"
-                        :placeholder="__($prefix.'search')"
+                        :placeholder="__($prefix.($isRestaurant ? 'search-restaurant' : 'search'))"
                     />
                 </x-filament::input.wrapper>
 
@@ -60,6 +61,10 @@
                             <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.customer') }}</th>
                             <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.cashier') }}</th>
                             <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.tracking') }}</th>
+
+                            @if ($isRestaurant)
+                                <th class="px-3 py-2 text-start font-medium">{{ __($prefix.'columns.table') }}</th>
+                            @endif
                             <th class="px-3 py-2 text-center font-medium">{{ __($prefix.'columns.total') }}</th>
                             <th class="px-3 py-2 text-center font-medium">{{ __($prefix.'columns.status') }}</th>
                         </tr>
@@ -92,6 +97,12 @@
 
                                 <td class="whitespace-nowrap px-3 py-2 font-mono text-xs tabular-nums">{{ $order->tracking_number ?? '—' }}</td>
 
+                                @if ($isRestaurant)
+                                    <td class="whitespace-nowrap px-3 py-2">
+                                        {{ $order->table ? collect([$order->table->floor?->name, $order->table->table_number])->filter(fn ($part) => filled($part))->implode('/') : '—' }}
+                                    </td>
+                                @endif
+
                                 <td class="whitespace-nowrap px-3 py-2 text-center font-mono tabular-nums font-semibold">
                                     {{ $this->money((float) $order->amount_total, $order) }}
                                 </td>
@@ -100,7 +111,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-3 py-10 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="{{ $isRestaurant ? 9 : 8 }}" class="px-3 py-10 text-center text-gray-500 dark:text-gray-400">
                                     {{ __($prefix.'empty.heading') }}
                                 </td>
                             </tr>
