@@ -61,6 +61,8 @@ function startMove(event, table) {
 
     till.state.planSelectedKey = table.key
 
+    canvas.hold()
+
     gesture = {
         mode: 'move',
         key: table.key,
@@ -77,6 +79,8 @@ function startMove(event, table) {
 
 function startResize(event, table) {
     event.stopPropagation()
+
+    canvas.hold()
 
     gesture = {
         mode: 'resize',
@@ -107,6 +111,8 @@ function track(event) {
 
 function release() {
     gesture = null
+
+    canvas.release()
 }
 </script>
 

@@ -13,6 +13,8 @@ export function useFloorCanvas(container, floor, tables, { margin = 40 } = {}) {
 
     const zoom = ref(null)
 
+    const held = ref(null)
+
     let observer = null
 
     onMounted(() => {
@@ -85,7 +87,7 @@ export function useFloorCanvas(container, floor, tables, { margin = 40 } = {}) {
         return Math.min(width / plan.value.width, height / plan.value.height, MAX_FIT)
     })
 
-    const scale = computed(() => zoom.value ?? fitScale.value)
+    const scale = computed(() => held.value ?? zoom.value ?? fitScale.value)
 
     const frameStyle = computed(() => ({
         width: `${plan.value.width * scale.value}px`,
@@ -121,5 +123,13 @@ export function useFloorCanvas(container, floor, tables, { margin = 40 } = {}) {
         zoom.value = null
     }
 
-    return { scale, frameStyle, planStyle, zoomIn, zoomOut, fit }
+    function hold() {
+        held.value = scale.value
+    }
+
+    function release() {
+        held.value = null
+    }
+
+    return { scale, frameStyle, planStyle, zoomIn, zoomOut, fit, hold, release }
 }
