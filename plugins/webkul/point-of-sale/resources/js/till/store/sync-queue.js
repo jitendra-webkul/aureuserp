@@ -16,6 +16,14 @@ export class SyncQueue {
         this.timer = null
         this.removed = new Set()
         this.onStorage = (event) => this.adoptStored(event)
+        this.onOnline = () => {
+            this.state.offline = false
+
+            this.flush()
+        }
+        this.onOffline = () => {
+            this.state.offline = true
+        }
 
         this.state = reactive({
             offline: !navigator.onLine,
@@ -118,15 +126,9 @@ export class SyncQueue {
 
         window.addEventListener('storage', this.onStorage)
 
-        window.addEventListener('online', () => {
-            this.state.offline = false
+        window.addEventListener('online', this.onOnline)
 
-            this.flush()
-        })
-
-        window.addEventListener('offline', () => {
-            this.state.offline = true
-        })
+        window.addEventListener('offline', this.onOffline)
 
         this.timer = window.setInterval(() => this.flush(), FLUSH_INTERVAL)
 
@@ -135,6 +137,10 @@ export class SyncQueue {
 
     stop() {
         window.removeEventListener('storage', this.onStorage)
+
+        window.removeEventListener('online', this.onOnline)
+
+        window.removeEventListener('offline', this.onOffline)
 
         if (this.timer) {
             window.clearInterval(this.timer)

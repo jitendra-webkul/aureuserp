@@ -245,9 +245,9 @@ export class Till {
 
         this.queue.watch()
 
-        window.addEventListener('point-of-sale:queue-flushed', (event) => {
-            this.evictSynced(event.detail.uuids ?? [])
-        })
+        this.onQueueFlushed = (event) => this.evictSynced(event.detail.uuids ?? [])
+
+        window.addEventListener('point-of-sale:queue-flushed', this.onQueueFlushed)
 
         this.watchPersistence()
 
@@ -475,7 +475,7 @@ export class Till {
     }
 
     watchActiveOrder() {
-        watch(() => this.state.activeOrderUuid, (uuid) => {
+        this.stopActiveOrderWatch = watch(() => this.state.activeOrderUuid, (uuid) => {
             try {
                 if (uuid) {
                     window.localStorage.setItem(this.activeOrderStorageKey, uuid)
@@ -489,16 +489,16 @@ export class Till {
     }
 
     watchPersistence() {
-        let timer = null
-
-        watch(
+        this.stopPersistenceWatch = watch(
             () => JSON.stringify(this.state.orders),
             () => {
-                if (timer) {
-                    window.clearTimeout(timer)
-                }
+                window.clearTimeout(this.persistTimer)
 
-                timer = window.setTimeout(() => this.persist(), PERSIST_DEBOUNCE)
+                this.persistTimer = window.setTimeout(() => {
+                    this.persistTimer = null
+
+                    this.persist()
+                }, PERSIST_DEBOUNCE)
             },
             { deep: true },
         )
@@ -3609,6 +3609,22 @@ export class Till {
     }
 
     stop() {
+        this.queue.stop()
+
+        window.removeEventListener('point-of-sale:queue-flushed', this.onQueueFlushed)
+
+        this.stopActiveOrderWatch?.()
+
+        this.stopPersistenceWatch?.()
+
+        if (this.persistTimer) {
+            window.clearTimeout(this.persistTimer)
+
+            this.persistTimer = null
+
+            this.persist()
+        }
+
         if (this.wedge) {
             window.removeEventListener('keydown', this.wedge)
 
