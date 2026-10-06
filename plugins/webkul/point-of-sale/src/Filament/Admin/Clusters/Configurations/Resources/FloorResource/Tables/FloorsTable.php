@@ -29,6 +29,13 @@ class FloorsTable
                 TextColumn::make('tables_count')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.table.columns.tables'))
                     ->counts('tables'),
+                TextColumn::make('configs.name')
+                    ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.table.columns.configs'))
+                    ->badge()
+                    ->limitList(3)
+                    ->expandableLimitedList()
+                    ->toggleable()
+                    ->placeholder('—'),
                 ColorColumn::make('background_color')
                     ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.table.columns.background-color')),
             ])

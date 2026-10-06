@@ -4,9 +4,11 @@ namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\Fl
 
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class FloorForm
 {
@@ -21,6 +23,19 @@ class FloorForm
                             ->required()
                             ->maxLength(255)
                             ->autofocus(),
+
+                        Select::make('configs')
+                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.form.sections.general.fields.configs'))
+                            ->relationship(
+                                'configs',
+                                'name',
+                                modifyQueryUsing: fn (Builder $query): Builder => $query->where('is_restaurant', true),
+                            )
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->native(false)
+                            ->helperText(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.form.sections.general.fields.configs-helper-text')),
 
                         ColorPicker::make('background_color')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.form.sections.general.fields.background-color'))

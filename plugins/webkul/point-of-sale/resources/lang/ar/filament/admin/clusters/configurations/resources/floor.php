@@ -12,10 +12,12 @@ return [
                 'title'  => 'عام',
 
                 'fields' => [
-                    'name'             => 'الاسم',
-                    'company'          => 'الشركة',
-                    'background-color' => 'لون الخلفية',
-                    'background-image' => 'صورة الخلفية',
+                    'name'                => 'الاسم',
+                    'company'             => 'الشركة',
+                    'background-color'    => 'لون الخلفية',
+                    'configs'             => 'نقطة البيع',
+                    'configs-helper-text' => 'محطات وضع المطعم التي تستخدم هذا الطابق.',
+                    'background-image'    => 'صورة الخلفية',
                 ],
             ],
         ],
@@ -29,6 +31,7 @@ return [
                 'entries' => [
                     'name'             => 'الاسم',
                     'background-color' => 'لون الخلفية',
+                    'configs'          => 'نقطة البيع',
                     'company-name'     => 'الشركة',
                 ],
             ],
@@ -38,6 +41,7 @@ return [
     'table' => [
         'columns' => [
             'name'             => 'الاسم',
+            'configs'          => 'نقطة البيع',
             'tables'           => 'الطاولات',
             'background-color' => 'لون الخلفية',
             'company'          => 'الشركة',

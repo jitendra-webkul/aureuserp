@@ -19,6 +19,12 @@ class FloorInfolist
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.infolist.sections.general.entries.name'))
                             ->placeholder('—'),
 
+                        TextEntry::make('configs.name')
+                            ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.infolist.sections.general.entries.configs'))
+                            ->badge()
+                            ->placeholder('—'),
+                            
+
                         ColorEntry::make('background_color')
                             ->label(__('point-of-sale::filament/admin/clusters/configurations/resources/floor.infolist.sections.general.entries.background-color'))
                             ->placeholder('—'),

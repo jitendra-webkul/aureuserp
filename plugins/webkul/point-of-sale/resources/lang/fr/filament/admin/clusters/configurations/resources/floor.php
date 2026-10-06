@@ -12,10 +12,12 @@ return [
                 'title'  => 'Général',
 
                 'fields' => [
-                    'name'             => 'Nom',
-                    'company'          => 'Société',
-                    'background-color' => 'Couleur de fond',
-                    'background-image' => 'Image de fond',
+                    'name'                => 'Nom',
+                    'company'             => 'Société',
+                    'background-color'    => 'Couleur de fond',
+                    'configs'             => 'Point de vente',
+                    'configs-helper-text' => 'Terminaux en mode restaurant qui utilisent cet étage.',
+                    'background-image'    => 'Image de fond',
                 ],
             ],
         ],
@@ -29,6 +31,7 @@ return [
                 'entries' => [
                     'name'             => 'Nom',
                     'background-color' => 'Couleur de fond',
+                    'configs'          => 'Point de vente',
                     'company-name'     => 'Société',
                 ],
             ],
@@ -38,6 +41,7 @@ return [
     'table' => [
         'columns' => [
             'name'             => 'Nom',
+            'configs'          => 'Point de vente',
             'tables'           => 'Tables',
             'background-color' => 'Couleur de fond',
             'company'          => 'Société',
