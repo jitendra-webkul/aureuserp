@@ -192,3 +192,39 @@ it('accepts a replayed payment but refuses a new payment on an order another til
     expect($result['errors'][0]['code'])->toBe('already-settled')
         ->and($paid->refresh()->payments)->toHaveCount(1);
 });
+
+it('reads a refund draft back with its lots and refund links and keeps the order link when it is paid', function () {
+    $sold = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 40.0)],
+        [PosHelper::payment($this->cash, 40.0)],
+    ));
+
+    $original = $sold->lines()->first();
+
+    $line = PosHelper::line($this->product->id, -1, 40.0, [
+        'refunded_order_line_id' => $original->id,
+        'lots'                   => [['lot_name' => 'LOT-7', 'qty' => 1]],
+    ]);
+
+    $payload = posDraftPayload($this, [$line], ['refunded_order_id' => $sold->id]);
+
+    PointOfSale::saveDraftOrders([$payload]);
+
+    $draft = collect(app(BootLoader::class)->drafts($this->session))->firstWhere('uuid', $payload['uuid']);
+
+    expect($draft['refunded_order_id'])->toBe($sold->id)
+        ->and($draft['lines'][0]['refunded_order_line_id'])->toBe($original->id)
+        ->and($draft['lines'][0]['lots'][0]['lot_name'])->toBe('LOT-7');
+
+    $refund = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [$line],
+        [PosHelper::payment($this->cash, -40.0)],
+        ['uuid' => $payload['uuid'], 'refunded_order_id' => null],
+    ));
+
+    expect($refund->refresh()->refunded_order_id)->toBe($sold->id);
+});

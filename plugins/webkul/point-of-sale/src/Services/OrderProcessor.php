@@ -222,8 +222,8 @@ class OrderProcessor
                 'email',
                 'mobile',
                 'shipped_at',
-                'refunded_order_id',
             ]),
+            'refunded_order_id'  => $payload['refunded_order_id'] ?? $order->refunded_order_id,
             'is_to_invoice'      => (bool) ($payload['is_to_invoice'] ?? $order->is_to_invoice),
         ])->save();
 
