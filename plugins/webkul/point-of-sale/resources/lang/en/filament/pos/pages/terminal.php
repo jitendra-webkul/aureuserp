@@ -102,6 +102,13 @@ return [
         'authorized-diff-exceeded' => 'The difference is above the allowed limit. Only a manager can close this register.',
     ],
 
+    'draft-orders' => [
+        'heading'       => 'Error',
+        'message'       => 'You cannot close the POS when orders are still in draft.',
+        'review-orders' => 'Review Orders',
+        'cancel-orders' => 'Cancel Orders',
+    ],
+
     'product-form' => [
         'heading'             => 'New product',
         'name'                => 'Product name',

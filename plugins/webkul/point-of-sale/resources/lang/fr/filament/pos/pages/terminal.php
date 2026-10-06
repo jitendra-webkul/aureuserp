@@ -102,6 +102,13 @@ return [
         'authorized-diff-exceeded' => 'L’écart dépasse la limite autorisée. Seul un responsable peut fermer cette caisse.',
     ],
 
+    'draft-orders' => [
+        'heading'       => 'Erreur',
+        'message'       => 'Vous ne pouvez pas fermer le PdV tant que des commandes sont encore à l\'état brouillon.',
+        'review-orders' => 'Vérifier les commandes',
+        'cancel-orders' => 'Annuler les commandes',
+    ],
+
     'product-form' => [
         'heading'             => 'Nouveau produit',
         'name'                => 'Nom du produit',
