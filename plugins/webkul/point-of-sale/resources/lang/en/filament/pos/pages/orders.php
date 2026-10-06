@@ -11,6 +11,8 @@ return [
 
     'search' => 'Search by order, receipt or customer',
 
+    'search-restaurant' => 'Search by order, receipt, customer or table',
+
     'select-order' => 'Select an order to see its lines.',
 
     'taxes' => 'Taxes',
@@ -28,6 +30,7 @@ return [
         'customer' => 'Customer',
         'cashier'  => 'Cashier',
         'tracking' => 'Tracking number',
+        'table'    => 'Table',
         'total'    => 'Total',
         'status'   => 'Status',
     ],
