@@ -239,13 +239,14 @@ return [
     ],
 
     'floor' => [
-        'back'     => 'Plano',
-        'table'    => 'Mesa :table',
-        'no-table' => 'Sin mesa',
-        'empty'    => 'Aún no hay mesas en esta planta. Añádelas desde la administración.',
-        'seats'    => '{1} :count asiento|[2,*] :count asientos',
-        'orders'   => '{1} :count pedido|[2,*] :count pedidos',
-        'guests'   => '{1} :count comensal|[2,*] :count comensales',
+        'back'      => 'Plano',
+        'table'     => 'Mesa :table',
+        'no-table'  => 'Sin mesa',
+        'empty'     => 'Aún no hay mesas en esta planta. Añádelas desde la administración.',
+        'no-floors' => 'No hay plantas disponibles. Añada una planta nueva para empezar.',
+        'seats'     => '{1} :count asiento|[2,*] :count asientos',
+        'orders'    => '{1} :count pedido|[2,*] :count pedidos',
+        'guests'    => '{1} :count comensal|[2,*] :count comensales',
     ],
 
     'guests' => [

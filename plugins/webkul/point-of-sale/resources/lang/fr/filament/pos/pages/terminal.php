@@ -239,13 +239,14 @@ return [
     ],
 
     'floor' => [
-        'back'     => 'Plan',
-        'table'    => 'Table :table',
-        'no-table' => 'Sans table',
-        'empty'    => 'Aucune table sur cet étage pour l’instant. Ajoutez-les depuis l’administration.',
-        'seats'    => '{1} :count place|[2,*] :count places',
-        'orders'   => '{1} :count commande|[2,*] :count commandes',
-        'guests'   => '{1} :count couvert|[2,*] :count couverts',
+        'back'      => 'Plan',
+        'table'     => 'Table :table',
+        'no-table'  => 'Sans table',
+        'empty'     => 'Aucune table sur cet étage pour l’instant. Ajoutez-les depuis l’administration.',
+        'no-floors' => 'Aucun étage disponible. Ajoutez un nouvel étage pour commencer.',
+        'seats'     => '{1} :count place|[2,*] :count places',
+        'orders'    => '{1} :count commande|[2,*] :count commandes',
+        'guests'    => '{1} :count couvert|[2,*] :count couverts',
     ],
 
     'guests' => [

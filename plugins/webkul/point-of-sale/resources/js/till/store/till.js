@@ -1125,7 +1125,7 @@ export class Till {
     }
 
     get isRestaurant() {
-        return Boolean(this.config.is_restaurant) && this.floors.length > 0
+        return Boolean(this.config.is_restaurant)
     }
 
     get activeFloor() {

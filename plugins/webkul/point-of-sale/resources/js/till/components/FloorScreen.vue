@@ -116,12 +116,21 @@ function tileClass(table) {
             </button>
 
             <button
-                v-if="till.canEditPlan && !till.state.planEditing"
+                v-if="till.canEditPlan && !till.state.planEditing && (floor || till.config.floor_plan?.can_create)"
                 type="button"
                 class="flex flex-none items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600"
                 @click="floor ? till.startPlanEdit() : till.addFloor()"
             >
                 {{ till.t('floor-plan.edit') }}
+            </button>
+
+            <button
+                v-if="!till.state.planEditing && !till.state.transferOrderUuid"
+                type="button"
+                class="flex flex-none items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-600"
+                @click="till.newOrder(null)"
+            >
+                + {{ till.t('tabs.new') }}
             </button>
 
             <button
@@ -144,7 +153,11 @@ function tileClass(table) {
             class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950"
             :style="backdrop"
         >
-            <p v-if="!tables.length" class="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+            <p v-if="!floor" class="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                {{ till.t('floor.no-floors') }}
+            </p>
+
+            <p v-else-if="!tables.length" class="p-10 text-center text-sm text-gray-500 dark:text-gray-400">
                 {{ till.t('floor.empty') }}
             </p>
 
