@@ -21,7 +21,7 @@ class RestaurantFloorProvisioner
         }
 
         $floor = Floor::create([
-            'name' => $config->company?->name ?? $config->name,
+            'name' =>$config->name ?? $config->company?->name,
         ]);
 
         Table::create([
