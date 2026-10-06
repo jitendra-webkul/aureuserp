@@ -89,3 +89,9 @@
     padding-block: 0;
     overflow: hidden;
 }
+
+.fi-panel-pos *:focus,
+.fi-panel-pos *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
