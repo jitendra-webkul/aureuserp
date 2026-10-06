@@ -76,6 +76,8 @@ return [
     'order-processor' => [
         'price-locked'           => 'Price changes on :product need a manager.',
         'line-discount-disabled' => 'Line discounts are turned off on this point of sale.',
+        'foreign-order'          => 'This order belongs to another register and cannot be changed here.',
+        'foreign-line'           => 'An item on this order belongs to another order. Reload the till and try again.',
     ],
 
     'floor-plan' => [

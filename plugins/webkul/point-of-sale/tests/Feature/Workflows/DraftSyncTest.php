@@ -228,3 +228,34 @@ it('reads a refund draft back with its lots and refund links and keeps the order
 
     expect($refund->refresh()->refunded_order_id)->toBe($sold->id);
 });
+
+it('refuses to move a line that belongs to another order', function () {
+    $line = PosHelper::line($this->product->id, 1, 40.0);
+
+    $paid = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [$line],
+        [PosHelper::payment($this->cash, 40.0)],
+    ));
+
+    $result = PointOfSale::saveDraftOrders([posDraftPayload($this, [$line], ['table_id' => $this->table->id])]);
+
+    expect($result['errors'])->toHaveCount(1)
+        ->and($result['errors'][0]['message'])->toBe(__('point-of-sale::system.order-processor.foreign-line'))
+        ->and($paid->refresh()->lines)->toHaveCount(1);
+});
+
+it('refuses to change an order of another register', function () {
+    $payload = posDraftPayload($this, [PosHelper::line($this->product->id, 1, 40.0)], ['table_id' => $this->table->id]);
+
+    PointOfSale::saveDraftOrders([$payload]);
+
+    $other = PosHelper::configWithCashMethod($this->warehouse);
+
+    $result = PointOfSale::saveDraftOrders([array_merge($payload, ['config_id' => $other->id, 'lines' => []])]);
+
+    expect($result['errors'])->toHaveCount(1)
+        ->and($result['errors'][0]['message'])->toBe(__('point-of-sale::system.order-processor.foreign-order'))
+        ->and(Order::where('uuid', $payload['uuid'])->firstOrFail()->lines)->toHaveCount(1);
+});

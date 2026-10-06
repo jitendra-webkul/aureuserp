@@ -76,6 +76,8 @@ return [
     'order-processor' => [
         'price-locked'           => 'Alterar o preço de :product exige um gerente.',
         'line-discount-disabled' => 'Os descontos por linha estão desativados neste ponto de venda.',
+        'foreign-order'          => 'Este pedido pertence a outro caixa e não pode ser alterado aqui.',
+        'foreign-line'           => 'Um item deste pedido pertence a outro pedido. Recarregue o caixa e tente novamente.',
     ],
 
     'floor-plan' => [

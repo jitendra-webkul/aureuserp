@@ -9,15 +9,15 @@ return [
     'form' => [
         'sections' => [
             'general' => [
-                'title'  => 'Général',
+                'title' => 'Général',
 
                 'fields' => [
                     'name'                => 'Nom',
                     'company'             => 'Société',
                     'background-color'    => 'Couleur de fond',
+                    'background-image'    => 'Image de fond',
                     'configs'             => 'Point de vente',
                     'configs-helper-text' => 'Terminaux en mode restaurant qui utilisent cet étage.',
-                    'background-image'    => 'Image de fond',
                 ],
             ],
         ],
@@ -26,13 +26,13 @@ return [
     'infolist' => [
         'sections' => [
             'general' => [
-                'title'   => 'Général',
+                'title' => 'Général',
 
                 'entries' => [
                     'name'             => 'Nom',
                     'background-color' => 'Couleur de fond',
-                    'configs'          => 'Point de vente',
                     'company-name'     => 'Société',
+                    'configs'          => 'Point de vente',
                 ],
             ],
         ],
@@ -41,8 +41,8 @@ return [
     'table' => [
         'columns' => [
             'name'             => 'Nom',
-            'configs'          => 'Point de vente',
             'tables'           => 'Tables',
+            'configs'          => 'Point de vente',
             'background-color' => 'Couleur de fond',
             'company'          => 'Société',
         ],

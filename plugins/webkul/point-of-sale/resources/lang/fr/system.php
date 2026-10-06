@@ -76,6 +76,8 @@ return [
     'order-processor' => [
         'price-locked'           => 'Modifier le prix de :product nécessite un responsable.',
         'line-discount-disabled' => 'Les remises par ligne sont désactivées sur ce point de vente.',
+        'foreign-order'          => 'Cette commande appartient à une autre caisse et ne peut pas être modifiée ici.',
+        'foreign-line'           => 'Un article de cette commande appartient à une autre commande. Rechargez la caisse et réessayez.',
     ],
 
     'floor-plan' => [

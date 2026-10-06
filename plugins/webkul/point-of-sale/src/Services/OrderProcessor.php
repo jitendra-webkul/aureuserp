@@ -25,6 +25,7 @@ use Webkul\PointOfSale\Models\OrderLineLot;
 use Webkul\PointOfSale\Models\Payment;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Table;
+use Webkul\PointOfSale\Support\PosAccess;
 use Webkul\Product\Models\Product;
 
 class OrderProcessor
@@ -45,6 +46,8 @@ class OrderProcessor
 
         return DB::transaction(function () use ($payload, $uuid): Order {
             $existing = $this->lockOrder($uuid);
+
+            $this->assertOwnOrder($existing, $payload);
 
             if ($existing && $existing->state !== OrderState::DRAFT) {
                 return $this->settledOrder($existing, $payload);
@@ -125,6 +128,8 @@ class OrderProcessor
         return DB::transaction(function () use ($payload, $uuid): Order {
             $existing = $this->lockOrder($uuid);
 
+            $this->assertOwnOrder($existing, $payload);
+
             if ($existing && $existing->state !== OrderState::DRAFT) {
                 return $existing;
             }
@@ -183,6 +188,20 @@ class OrderProcessor
         throw new OrderAlreadyPaidException(
             __('point-of-sale::system.order-workflow.mark-paid.already-settled', ['order' => $order->reference])
         );
+    }
+
+    protected function assertOwnOrder(?Order $order, array $payload): void
+    {
+        if (! $order) {
+            return;
+        }
+
+        $foreign = (int) $order->config_id !== (int) ($payload['config_id'] ?? 0)
+            || (Auth::check() && ! PosAccess::reachesOrder($order));
+
+        if ($foreign) {
+            throw new PosConfigurationException(__('point-of-sale::system.order-processor.foreign-order'));
+        }
     }
 
     protected function lockOrder(string $uuid): ?Order
@@ -452,6 +471,17 @@ class OrderProcessor
 
     protected function syncLines(Order $order, array $lines): void
     {
+        $uuids = collect($lines)->pluck('uuid')->filter()->all();
+
+        $foreign = $uuids && OrderLine::withoutGlobalScopes()
+            ->whereIn('uuid', $uuids)
+            ->where('order_id', '!=', $order->id)
+            ->exists();
+
+        if ($foreign) {
+            throw new PosConfigurationException(__('point-of-sale::system.order-processor.foreign-line'));
+        }
+
         foreach ($lines as $line) {
             $model = OrderLine::updateOrCreate(
                 ['uuid' => $line['uuid'] ?? Str::uuid()->toString()],

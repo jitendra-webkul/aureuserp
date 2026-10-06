@@ -9,15 +9,15 @@ return [
     'form' => [
         'sections' => [
             'general' => [
-                'title'  => 'عام',
+                'title' => 'عام',
 
                 'fields' => [
                     'name'                => 'الاسم',
                     'company'             => 'الشركة',
                     'background-color'    => 'لون الخلفية',
+                    'background-image'    => 'صورة الخلفية',
                     'configs'             => 'نقطة البيع',
                     'configs-helper-text' => 'محطات وضع المطعم التي تستخدم هذا الطابق.',
-                    'background-image'    => 'صورة الخلفية',
                 ],
             ],
         ],
@@ -26,13 +26,13 @@ return [
     'infolist' => [
         'sections' => [
             'general' => [
-                'title'   => 'عام',
+                'title' => 'عام',
 
                 'entries' => [
                     'name'             => 'الاسم',
                     'background-color' => 'لون الخلفية',
-                    'configs'          => 'نقطة البيع',
                     'company-name'     => 'الشركة',
+                    'configs'          => 'نقطة البيع',
                 ],
             ],
         ],
@@ -41,8 +41,8 @@ return [
     'table' => [
         'columns' => [
             'name'             => 'الاسم',
-            'configs'          => 'نقطة البيع',
             'tables'           => 'الطاولات',
+            'configs'          => 'نقطة البيع',
             'background-color' => 'لون الخلفية',
             'company'          => 'الشركة',
         ],
