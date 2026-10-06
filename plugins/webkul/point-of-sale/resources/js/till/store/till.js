@@ -1172,10 +1172,32 @@ export class Till {
 
     selectFloor(floorId) {
         if (this.state.planEditing) {
+            this.switchPlanFloor(floorId)
+
             return
         }
 
         this.state.floorId = floorId
+    }
+
+    async switchPlanFloor(floorId) {
+        if (floorId === this.state.planDraft?.id || !(await this.savePlanBeforeLeaving())) {
+            return
+        }
+
+        this.state.floorId = floorId
+
+        this.startPlanEdit()
+    }
+
+    async savePlanBeforeLeaving() {
+        if (!this.state.planEditing) {
+            return true
+        }
+
+        await this.savePlan()
+
+        return !this.state.planEditing
     }
 
     indexTables() {
@@ -1410,6 +1432,10 @@ export class Till {
 
     async addFloor() {
         if (!this.config.floor_plan?.can_create || this.state.planSaving) {
+            return
+        }
+
+        if (!(await this.savePlanBeforeLeaving())) {
             return
         }
 
