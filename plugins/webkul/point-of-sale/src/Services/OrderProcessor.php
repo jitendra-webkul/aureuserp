@@ -13,6 +13,7 @@ use Webkul\Account\Enums\TypeTaxUse;
 use Webkul\Account\Models\Product as AccountProduct;
 use Webkul\Account\Models\Tax;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Enums\PriceType;
 use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
 use Webkul\PointOfSale\Exceptions\OrderNotRefundableException;
 use Webkul\PointOfSale\Exceptions\PosConfigurationException;
@@ -146,6 +147,8 @@ class OrderProcessor
             if ($order->state !== OrderState::DRAFT) {
                 return $order;
             }
+
+            $this->assertLineRules($order, $payload['lines'] ?? []);
 
             $this->syncLines($order, $payload['lines'] ?? []);
 
@@ -435,6 +438,8 @@ class OrderProcessor
 
         $priceLocked = $config->enable_price_control && ! Auth::user()?->can('update', $config);
 
+        $storedPrices = $priceLocked ? $order->lines()->pluck('price_unit', 'uuid') : collect();
+
         foreach ($lines as $line) {
             $productId = (int) ($line['product_id'] ?? 0);
 
@@ -447,6 +452,12 @@ class OrderProcessor
             }
 
             if (! $priceLocked || ! array_key_exists('price_unit', $line)) {
+                continue;
+            }
+
+            $stored = $storedPrices->get($line['uuid'] ?? '');
+
+            if ($stored !== null && float_compare((float) $line['price_unit'], (float) $stored, precisionDigits: 4) === 0) {
                 continue;
             }
 
@@ -493,7 +504,10 @@ class OrderProcessor
             $model = OrderLine::updateOrCreate(
                 ['uuid' => $line['uuid'] ?? Str::uuid()->toString()],
                 array_merge(
-                    ['price_unit' => $this->resolvePrice($order, $line)],
+                    [
+                        'price_unit' => $this->resolvePrice($order, $line),
+                        'price_type' => array_key_exists('price_unit', $line) ? PriceType::MANUAL : PriceType::ORIGINAL,
+                    ],
                     Arr::only($line, [
                         'product_id',
                         'uom_id',

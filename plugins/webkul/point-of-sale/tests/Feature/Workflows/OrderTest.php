@@ -1,10 +1,12 @@
 <?php
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Enums\OrderState;
+use Webkul\PointOfSale\Enums\PriceType;
 use Webkul\PointOfSale\Events\OrderPaid;
 use Webkul\PointOfSale\Exceptions\InsufficientPaymentException;
 use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
@@ -283,6 +285,56 @@ it('rejects a changed price from a cashier on a price controlled register', func
         [PosHelper::line($this->product->id, 1, 1.0)],
         [PosHelper::payment($this->cash, 1.0)],
     )))->toThrow(PosConfigurationException::class);
+});
+
+it('lets a cashier pay a price a manager already set on a shared draft', function () {
+    $this->product->update(['price' => 100.0]);
+
+    $this->config->forceFill(['enable_price_control' => true])->save();
+
+    $line = PosHelper::line($this->product->id, 1, 80.0, ['price_type' => PriceType::MANUAL->value]);
+
+    $draft = PosHelper::orderPayload($this->config->refresh(), $this->session, [$line]);
+
+    unset($draft['payments']);
+
+    PointOfSale::saveDraftOrders([$draft]);
+
+    Gate::before(fn (): ?bool => false);
+
+    $order = PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [$line],
+        [PosHelper::payment($this->cash, 80.0)],
+        ['uuid' => $draft['uuid']],
+    ));
+
+    expect($order->refresh()->state)->not->toBe(OrderState::DRAFT)
+        ->and((float) $order->lines->first()->price_unit)->toBe(80.0);
+
+    expect(fn () => PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 70.0)],
+        [PosHelper::payment($this->cash, 70.0)],
+    )))->toThrow(PosConfigurationException::class);
+});
+
+it('puts a line back on the list price once the till stops sending a manual price', function () {
+    $line = PosHelper::line($this->product->id, 1, 80.0);
+
+    $draft = PosHelper::orderPayload($this->config->refresh(), $this->session, [$line]);
+
+    unset($draft['payments']);
+
+    PointOfSale::saveDraftOrders([$draft]);
+
+    $draft['lines'] = [Arr::except($line, ['price_unit'])];
+
+    PointOfSale::saveDraftOrders([$draft]);
+
+    expect(Order::where('uuid', $draft['uuid'])->firstOrFail()->lines->first()->price_type)->toBe(PriceType::ORIGINAL);
 });
 
 it('drops a fiscal position the register does not allow', function () {
