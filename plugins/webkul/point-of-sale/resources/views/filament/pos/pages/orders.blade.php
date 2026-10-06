@@ -135,10 +135,21 @@
                         quantities: @js((object) $this->refundQuantities($selected)),
                         select(lineId) {
                             if (! this.quantities[lineId]) return
-                            this.active = this.active === lineId ? null : lineId
-                            this.buffer = this.active === lineId && this.quantities[lineId].qty > 0
-                                ? String(this.quantities[lineId].qty)
-                                : ''
+                            this.active = lineId
+                            this.buffer = ''
+                        },
+                        typed(event) {
+                            if (this.active === null || event.ctrlKey || event.metaKey || event.altKey) return
+
+                            if (event.target.closest('input, textarea, select, [contenteditable]')) return
+
+                            const key = { Backspace: 'backspace', Delete: 'clear', ',': '.' }[event.key] ?? event.key
+
+                            if (! /^[0-9.]$/.test(key) && ! ['backspace', 'clear'].includes(key)) return
+
+                            event.preventDefault()
+
+                            this.press(key)
                         },
                         press(key) {
                             const line = this.quantities[this.active]
@@ -169,7 +180,6 @@
                                 }
 
                                 this.buffer = ''
-                                line.qty = 0
 
                                 return
                             }
@@ -190,6 +200,7 @@
                         },
                     }"
                     x-on:pos-refund-lines.window="quantities = $event.detail.quantities ?? {}; active = null; buffer = ''"
+                    x-on:keydown.window="typed($event)"
                 >
                     @if ($canRefund)
                         <p class="flex-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm text-danger-600 dark:border-gray-700 dark:bg-gray-900 dark:text-danger-400">
