@@ -11,9 +11,28 @@ const draft = computed(() => state.planDraft)
 
 const selected = computed(() => till.planSelectedTable)
 
-const palette = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899', '#78716c']
+const palette = [
+    { value: '#ef4444', name: 'red' },
+    { value: '#f97316', name: 'orange' },
+    { value: '#eab308', name: 'yellow' },
+    { value: '#22c55e', name: 'green' },
+    { value: '#14b8a6', name: 'teal' },
+    { value: '#3b82f6', name: 'blue' },
+    { value: '#8b5cf6', name: 'violet' },
+    { value: '#ec4899', name: 'pink' },
+    { value: '#78716c', name: 'stone' },
+]
 
-const backgrounds = ['#ffffff', '#f5f5f4', '#fef3c7', '#dcfce7', '#dbeafe', '#ede9fe', '#fce7f3', '#e7e5e4']
+const backgrounds = [
+    { value: '#ffffff', name: 'white' },
+    { value: '#f5f5f4', name: 'light-grey' },
+    { value: '#fef3c7', name: 'cream' },
+    { value: '#dcfce7', name: 'mint' },
+    { value: '#dbeafe', name: 'sky' },
+    { value: '#ede9fe', name: 'lavender' },
+    { value: '#fce7f3', name: 'blush' },
+    { value: '#e7e5e4', name: 'warm-grey' },
+]
 
 const scroller = ref(null)
 
@@ -142,14 +161,16 @@ function release() {
             <div class="flex items-center gap-1" :title="till.t('floor-plan.background')">
                 <button
                     v-for="colour in backgrounds"
-                    :key="colour"
+                    :key="colour.value"
                     type="button"
                     class="size-7 rounded-md border-2 transition-transform hover:scale-110"
-                    :class="draft.background_color === colour ? 'border-primary-600' : 'border-gray-200 dark:border-gray-700'"
-                    :style="{ backgroundColor: colour }"
-                    :aria-label="colour"
+                    :class="draft.background_color === colour.value ? 'border-primary-600' : 'border-gray-200 dark:border-gray-700'"
+                    :style="{ backgroundColor: colour.value }"
+                    :title="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-label="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-pressed="draft.background_color === colour.value"
                     :disabled="state.planSaving"
-                    @click="draft.background_color = colour"
+                    @click="draft.background_color = colour.value"
                 />
 
                 <button
@@ -259,13 +280,15 @@ function release() {
             <div class="flex items-center gap-1">
                 <button
                     v-for="colour in palette"
-                    :key="colour"
+                    :key="colour.value"
                     type="button"
                     class="size-7 rounded-full border-2 transition-transform hover:scale-110"
-                    :class="selected.color === colour ? 'border-gray-950 dark:border-white' : 'border-transparent'"
-                    :style="{ backgroundColor: colour }"
-                    :aria-label="colour"
-                    @click="till.updatePlanTable({ color: colour })"
+                    :class="selected.color === colour.value ? 'border-gray-950 dark:border-white' : 'border-transparent'"
+                    :style="{ backgroundColor: colour.value }"
+                    :title="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-label="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-pressed="selected.color === colour.value"
+                    @click="till.updatePlanTable({ color: colour.value })"
                 />
 
                 <button
