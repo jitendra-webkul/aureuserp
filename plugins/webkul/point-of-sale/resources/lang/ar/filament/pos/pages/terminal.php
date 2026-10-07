@@ -2,6 +2,7 @@
 
 return [
     'common' => [
+        'ok'      => 'موافق',
         'close'   => 'إغلاق',
         'cancel'  => 'إلغاء',
         'save'    => 'حفظ',
@@ -237,13 +238,16 @@ return [
     ],
 
     'payment' => [
-        'ship-later'         => 'الشحن لاحقاً',
-        'ship-later-heading' => 'حدد تاريخ الشحن',
-        'select-method'      => 'يرجى اختيار طريقة دفع',
-        'invoice'            => 'فاتورة',
-        'change'             => 'الباقي',
-        'remove'             => 'إزالة دفعة :method',
-        'validate'           => 'تأكيد',
+        'ship-later'               => 'الشحن لاحقاً',
+        'ship-later-heading'       => 'حدد تاريخ الشحن',
+        'ship-later-error-heading' => 'عنوان الشحن غير صحيح',
+        'ship-later-no-customer'   => 'اختر عميلاً قبل شحن هذا الطلب لاحقاً.',
+        'ship-later-no-address'    => 'يحتاج العميل المحدد إلى عنوان.',
+        'select-method'            => 'يرجى اختيار طريقة دفع',
+        'invoice'                  => 'فاتورة',
+        'change'                   => 'الباقي',
+        'remove'                   => 'إزالة دفعة :method',
+        'validate'                 => 'تأكيد',
     ],
 
     'floor' => [

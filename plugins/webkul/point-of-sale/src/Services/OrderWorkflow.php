@@ -5,6 +5,7 @@ namespace Webkul\PointOfSale\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Webkul\Inventory\Models\Operation;
+use Webkul\Partner\Enums\AddressType;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Enums\StockUpdateMode;
@@ -48,6 +49,16 @@ class OrderWorkflow
 
     public function customerRequirement(Order $order, bool $settlementOnly = false): ?string
     {
+        if (filled($order->shipped_at)) {
+            if (! $order->partner_id) {
+                return 'required-to-ship';
+            }
+
+            if (! $order->partner?->addresses()->where('sub_type', AddressType::DELIVERY)->exists()) {
+                return 'shipping-address-required';
+            }
+        }
+
         if ($order->partner_id) {
             return null;
         }
@@ -62,10 +73,6 @@ class OrderWorkflow
 
         if ($settlementOnly) {
             return null;
-        }
-
-        if (filled($order->shipped_at)) {
-            return 'required-to-ship';
         }
 
         $splitPayment = $order->payments->contains(

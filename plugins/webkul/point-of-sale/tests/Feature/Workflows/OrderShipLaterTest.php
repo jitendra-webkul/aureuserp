@@ -4,8 +4,12 @@ use Webkul\Inventory\Enums\DeliveryStep;
 use Webkul\Inventory\Enums\OperationState;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Inventory\Models\Rule;
+use Webkul\Partner\Enums\AccountType;
+use Webkul\Partner\Enums\AddressType;
+use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Enums\OrderState;
 use Webkul\PointOfSale\Enums\StockUpdateMode;
+use Webkul\PointOfSale\Exceptions\CustomerRequiredException;
 use Webkul\PointOfSale\Facades\PointOfSale;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
@@ -29,6 +33,22 @@ beforeEach(function () {
     $this->product = InventoryHelper::product();
 
     InventoryHelper::stockUp($this->product, $this->warehouse->lotStockLocation, 30);
+
+    $this->partner = Partner::factory()->create([
+        'account_type' => AccountType::INDIVIDUAL,
+        'company_id'   => null,
+        'title_id'     => null,
+        'industry_id'  => null,
+    ]);
+
+    Partner::factory()->create([
+        'account_type' => AccountType::ADDRESS,
+        'sub_type'     => AddressType::DELIVERY,
+        'parent_id'    => $this->partner->id,
+        'company_id'   => null,
+        'title_id'     => null,
+        'industry_id'  => null,
+    ]);
 });
 
 it('creates a procurement group instead of an immediate operation', function () {
@@ -37,7 +57,7 @@ it('creates a procurement group instead of an immediate operation', function () 
         $this->session,
         [PosHelper::line($this->product->id, 2, 100.0)],
         [PosHelper::payment($this->cash, 200.0)],
-        ['shipped_at' => now()->addWeek()->toDateString()],
+        ['shipped_at' => now()->addWeek()->toDateString(), 'partner_id' => $this->partner->id],
     ));
 
     expect($order->state)->toBe(OrderState::PAID)
@@ -51,7 +71,7 @@ it('leaves the delivery open for the back office', function () {
         $this->session,
         [PosHelper::line($this->product->id, 1, 100.0)],
         [PosHelper::payment($this->cash, 100.0)],
-        ['shipped_at' => now()->addDays(3)->toDateString()],
+        ['shipped_at' => now()->addDays(3)->toDateString(), 'partner_id' => $this->partner->id],
     ));
 
     $operations = Operation::query()
@@ -70,7 +90,7 @@ it('keeps stock on hand until the delivery is validated', function () {
         $this->session,
         [PosHelper::line($this->product->id, 2, 100.0)],
         [PosHelper::payment($this->cash, 200.0)],
-        ['shipped_at' => now()->addWeek()->toDateString()],
+        ['shipped_at' => now()->addWeek()->toDateString(), 'partner_id' => $this->partner->id],
     ));
 
     expect(PosHelper::quantityOnHand($this->product->id, $this->warehouse->lotStockLocation))->toBe($before);
@@ -84,11 +104,38 @@ it('stamps the shipping date on the order', function () {
         $this->session,
         [PosHelper::line($this->product->id, 1, 100.0)],
         [PosHelper::payment($this->cash, 100.0)],
-        ['shipped_at' => $date],
+        ['shipped_at' => $date, 'partner_id' => $this->partner->id],
     ));
 
     expect($order->shipped_at->toDateString())->toBe($date);
 });
+
+it('refuses to settle a ship later order without a customer', function () {
+    PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+        ['shipped_at' => now()->addWeek()->toDateString()],
+    ));
+})->throws(CustomerRequiredException::class, __('point-of-sale::system.order-workflow.customer.required-to-ship'));
+
+it('refuses to settle a ship later order for a customer without a delivery address', function () {
+    $partnerWithoutAddress = Partner::factory()->create([
+        'account_type' => AccountType::INDIVIDUAL,
+        'company_id'   => null,
+        'title_id'     => null,
+        'industry_id'  => null,
+    ]);
+
+    PointOfSale::syncOrder(PosHelper::orderPayload(
+        $this->config->refresh(),
+        $this->session,
+        [PosHelper::line($this->product->id, 1, 100.0)],
+        [PosHelper::payment($this->cash, 100.0)],
+        ['shipped_at' => now()->addWeek()->toDateString(), 'partner_id' => $partnerWithoutAddress->id],
+    ));
+})->throws(CustomerRequiredException::class, __('point-of-sale::system.order-workflow.customer.shipping-address-required'));
 
 it('still delivers immediately when no shipping date is set', function () {
     $order = PointOfSale::syncOrder(PosHelper::orderPayload(
@@ -116,7 +163,7 @@ it('runs the ship later procurement on the route configured for the terminal', f
         $this->session,
         [PosHelper::line($this->product->id, 1, 100.0)],
         [PosHelper::payment($this->cash, 100.0)],
-        ['shipped_at' => now()->addWeek()->toDateString()],
+        ['shipped_at' => now()->addWeek()->toDateString(), 'partner_id' => $this->partner->id],
     ));
 
     $operations = Operation::query()

@@ -21,6 +21,7 @@ return [
             'required-by-terminal'       => 'Este punto de venta exige un cliente en cada pedido.',
             'required-to-invoice'        => 'Selecciona un cliente antes de facturar este pedido.',
             'required-to-ship'           => 'Selecciona un cliente antes de enviar este pedido más tarde.',
+            'shipping-address-required'  => 'El cliente seleccionado necesita una dirección de entrega antes de enviar este pedido más tarde.',
             'required-by-payment-method' => 'El método de pago seleccionado exige un cliente.',
         ],
 

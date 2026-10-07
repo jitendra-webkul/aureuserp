@@ -173,6 +173,7 @@ export class Till {
             priceListModalOpen: false,
             shipLaterModalOpen: false,
             shipLaterDraft: '',
+            shipLaterError: null,
             productSaving: false,
             productError: null,
             rememberedOrderUnavailable: false,
@@ -3653,6 +3654,7 @@ export class Till {
 
         if (order && !this.isCustomerLocked) {
             order.partner_id = partnerId
+            this.state.shipLaterError = null
         }
     }
 
@@ -4089,6 +4091,10 @@ export class Till {
         this.state.shipLaterModalOpen = false
     }
 
+    dismissShipLaterError() {
+        this.state.shipLaterError = null
+    }
+
     confirmShipLater() {
         const order = this.activeOrder
 
@@ -4189,7 +4195,7 @@ export class Till {
             return false
         }
 
-        if ((order.to_invoice || order.shipped_at) && !order.partner_id) {
+        if (order.to_invoice && !order.partner_id) {
             return false
         }
 
@@ -4270,6 +4276,20 @@ export class Till {
 
         if (!order || !this.canValidate(order)) {
             return null
+        }
+
+        if (order.shipped_at) {
+            if (!order.partner_id) {
+                this.state.shipLaterError = this.t('payment.ship-later-no-customer')
+
+                return null
+            }
+
+            if (!this.master.partners.get(order.partner_id)?.has_delivery_address) {
+                this.state.shipLaterError = this.t('payment.ship-later-no-address')
+
+                return null
+            }
         }
 
         const totals = this.orderTotals(order)

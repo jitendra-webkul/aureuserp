@@ -17,6 +17,7 @@ use Webkul\Inventory\Enums\ProductTracking;
 use Webkul\Inventory\Models\Location;
 use Webkul\Inventory\Models\ProductQuantity;
 use Webkul\Inventory\Settings\TraceabilitySettings;
+use Webkul\Partner\Enums\AddressType;
 use Webkul\Partner\Models\Partner;
 use Webkul\PointOfSale\Enums\PriceType;
 use Webkul\PointOfSale\Filament\Pos\Pages\Registers;
@@ -754,18 +755,20 @@ class BootLoader
         return Partner::query()
             ->orderBy('name')
             ->limit(static::PARTNER_LIMIT)
+            ->withExists(['addresses as has_delivery_address' => fn ($query) => $query->where('sub_type', AddressType::DELIVERY)])
             ->get()
             ->map(fn (Partner $partner): array => [
-                'id'      => $partner->id,
-                'name'    => $partner->name,
-                'email'   => $partner->email,
-                'phone'   => $partner->phone,
-                'mobile'  => $partner->mobile,
-                'street1' => $partner->street1,
-                'street2' => $partner->street2,
-                'city'    => $partner->city,
-                'zip'     => $partner->zip,
-                'barcode' => $partner->barcode ?? null,
+                'id'                   => $partner->id,
+                'name'                 => $partner->name,
+                'email'                => $partner->email,
+                'phone'                => $partner->phone,
+                'mobile'               => $partner->mobile,
+                'street1'              => $partner->street1,
+                'street2'              => $partner->street2,
+                'city'                 => $partner->city,
+                'zip'                  => $partner->zip,
+                'barcode'              => $partner->barcode ?? null,
+                'has_delivery_address' => (bool) $partner->has_delivery_address,
             ])->values()->all();
     }
 

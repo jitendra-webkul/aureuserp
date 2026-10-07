@@ -21,6 +21,7 @@ return [
             'required-by-terminal'       => 'تتطلب نقطة البيع هذه عميلاً في كل طلب.',
             'required-to-invoice'        => 'اختر عميلاً قبل فوترة هذا الطلب.',
             'required-to-ship'           => 'اختر عميلاً قبل شحن هذا الطلب لاحقاً.',
+            'shipping-address-required'  => 'يحتاج العميل المحدد إلى عنوان تسليم قبل شحن هذا الطلب لاحقاً.',
             'required-by-payment-method' => 'طريقة الدفع المحددة تتطلب عميلاً.',
         ],
 

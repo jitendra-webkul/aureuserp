@@ -2,6 +2,7 @@
 
 return [
     'common' => [
+        'ok'      => 'Ok',
         'close'   => 'Fechar',
         'cancel'  => 'Cancelar',
         'save'    => 'Salvar',
@@ -237,13 +238,16 @@ return [
     ],
 
     'payment' => [
-        'ship-later'         => 'Enviar depois',
-        'ship-later-heading' => 'Selecione a data de envio',
-        'select-method'      => 'Selecione um método de pagamento',
-        'invoice'            => 'Fatura',
-        'change'             => 'troco',
-        'remove'             => 'Remover o pagamento :method',
-        'validate'           => 'Validar',
+        'ship-later'               => 'Enviar depois',
+        'ship-later-heading'       => 'Selecione a data de envio',
+        'ship-later-error-heading' => 'Endereço incorreto para envio',
+        'ship-later-no-customer'   => 'Selecione um cliente antes de enviar este pedido depois.',
+        'ship-later-no-address'    => 'O cliente selecionado precisa de um endereço.',
+        'select-method'            => 'Selecione um método de pagamento',
+        'invoice'                  => 'Fatura',
+        'change'                   => 'troco',
+        'remove'                   => 'Remover o pagamento :method',
+        'validate'                 => 'Validar',
     ],
 
     'floor' => [

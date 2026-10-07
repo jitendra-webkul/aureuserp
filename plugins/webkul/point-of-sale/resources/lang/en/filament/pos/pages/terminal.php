@@ -2,6 +2,7 @@
 
 return [
     'common' => [
+        'ok'      => 'Ok',
         'close'   => 'Close',
         'cancel'  => 'Cancel',
         'save'    => 'Save',
@@ -237,13 +238,16 @@ return [
     ],
 
     'payment' => [
-        'ship-later'         => 'Ship Later',
-        'ship-later-heading' => 'Select the shipping date',
-        'select-method'      => 'Please select a payment method',
-        'invoice'            => 'Invoice',
-        'change'             => 'change',
-        'remove'             => 'Remove :method payment',
-        'validate'           => 'Validate',
+        'ship-later'                => 'Ship Later',
+        'ship-later-heading'        => 'Select the shipping date',
+        'ship-later-error-heading'  => 'Incorrect address for shipping',
+        'ship-later-no-customer'    => 'Select a customer before shipping this order later.',
+        'ship-later-no-address'     => 'The selected customer needs an address.',
+        'select-method'             => 'Please select a payment method',
+        'invoice'                   => 'Invoice',
+        'change'                    => 'change',
+        'remove'                    => 'Remove :method payment',
+        'validate'                  => 'Validate',
     ],
 
     'floor' => [

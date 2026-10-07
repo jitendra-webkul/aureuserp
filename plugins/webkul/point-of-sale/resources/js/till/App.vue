@@ -26,6 +26,7 @@ import VariantModal from './components/VariantModal.vue'
 import LotModal from './components/LotModal.vue'
 import MissingLotsModal from './components/MissingLotsModal.vue'
 import ShipLaterModal from './components/ShipLaterModal.vue'
+import ShipLaterErrorModal from './components/ShipLaterErrorModal.vue'
 import RejectedOrderModal from './components/RejectedOrderModal.vue'
 import KitchenTicket from './components/KitchenTicket.vue'
 import StatusBar from './components/StatusBar.vue'
@@ -87,6 +88,8 @@ const state = till.state
         <MissingLotsModal />
 
         <ShipLaterModal />
+
+        <ShipLaterErrorModal />
 
         <GuestsModal />
 

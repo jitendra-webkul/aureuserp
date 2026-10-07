@@ -21,6 +21,7 @@ return [
             'required-by-terminal'       => 'This point of sale requires a customer on every order.',
             'required-to-invoice'        => 'Select a customer before invoicing this order.',
             'required-to-ship'           => 'Select a customer before shipping this order later.',
+            'shipping-address-required'  => 'The selected customer needs a delivery address before shipping this order later.',
             'required-by-payment-method' => 'The selected payment method requires a customer.',
         ],
 
