@@ -18,6 +18,7 @@ class EditPaymentMethod extends EditRecord
     {
         return [
             DeleteAction::make()
+                ->before(fn (DeleteAction $action) => PaymentMethodResource::haltWhenInOpenSession($action, [$this->getRecord()]))
                 ->successNotification(
                     Notification::make()
                         ->success()

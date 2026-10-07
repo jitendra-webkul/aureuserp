@@ -119,6 +119,7 @@ export class Till {
             autoPrintOrderUuid: null,
             globalDiscountModalOpen: false,
             transferOrderUuid: null,
+            transferWasBooked: false,
             sessionClosed: false,
             planEditing: false,
             planDraft: null,
@@ -451,6 +452,7 @@ export class Till {
             uuid: line.uuid ?? uuidv4(),
             order_uuid: orderUuid,
             product_id: line.product_id,
+            uom_id: line.uom_id ?? this.master.products.get(line.product_id)?.uom_id ?? null,
             qty: Number(line.qty ?? 1),
             price_unit: Number(line.price_unit ?? 0),
             price_overridden: Boolean(line.price_overridden),
@@ -707,6 +709,10 @@ export class Till {
         return this.boot.locale ?? { code: 'en', direction: 'ltr' }
     }
 
+    get intlLocale() {
+        return String(this.locale.code || document.documentElement.lang || 'en').replace('_', '-')
+    }
+
     get isRtl() {
         return this.locale.direction === 'rtl'
     }
@@ -768,7 +774,7 @@ export class Till {
 
         const value = Number(amount ?? 0)
 
-        const formatted = new Intl.NumberFormat(this.locale.code || document.documentElement.lang || 'en', {
+        const formatted = new Intl.NumberFormat(this.intlLocale, {
             minimumFractionDigits: decimalPlaces,
             maximumFractionDigits: decimalPlaces,
         }).format(Math.abs(value))
@@ -1230,6 +1236,10 @@ export class Till {
         return Boolean(this.isRestaurant && this.config.floor_plan?.can_update && !this.state.transferOrderUuid)
     }
 
+    get planLocked() {
+        return !this.state.planDraft || this.state.planSaving
+    }
+
     get planTables() {
         return this.state.planDraft?.tables ?? []
     }
@@ -1306,7 +1316,7 @@ export class Till {
     }
 
     addPlanTable(source = null) {
-        if (!this.state.planDraft) {
+        if (this.planLocked) {
             return
         }
 
@@ -1338,7 +1348,7 @@ export class Till {
     }
 
     removePlanTable() {
-        if (!this.state.planDraft || !this.state.planSelectedKey) {
+        if (this.planLocked || !this.state.planSelectedKey) {
             return
         }
 
@@ -1350,7 +1360,7 @@ export class Till {
     updatePlanTable(changes) {
         const table = this.planSelectedTable
 
-        if (!table) {
+        if (!table || this.planLocked) {
             return
         }
 
@@ -1362,7 +1372,7 @@ export class Till {
     movePlanTable(key, left, top) {
         const table = this.planTables.find((entry) => entry.key === key)
 
-        if (!table) {
+        if (!table || this.planLocked) {
             return
         }
 
@@ -1373,7 +1383,7 @@ export class Till {
     resizePlanTable(key, width, height) {
         const table = this.planTables.find((entry) => entry.key === key)
 
-        if (!table) {
+        if (!table || this.planLocked) {
             return
         }
 
@@ -1554,7 +1564,7 @@ export class Till {
 
         form.append('image', file)
 
-        const response = await fetch(this.backgroundEndpoint(floorId), {
+        const response = await this.reachPlanServer(this.backgroundEndpoint(floorId), {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -1572,8 +1582,16 @@ export class Till {
         return payload.data
     }
 
+    async reachPlanServer(url, options) {
+        try {
+            return await fetch(url, options)
+        } catch {
+            throw new Error(this.t('floor-plan.unreachable'))
+        }
+    }
+
     async requestPlan(url, method, body = null) {
-        const response = await fetch(url, {
+        const response = await this.reachPlanServer(url, {
             method,
             headers: {
                 'Content-Type': 'application/json',
@@ -1666,6 +1684,8 @@ export class Till {
 
         this.closeActions()
 
+        this.state.transferWasBooked = Boolean(order.is_booked)
+
         order.is_booked = true
 
         this.state.transferError = null
@@ -1676,6 +1696,24 @@ export class Till {
     }
 
     cancelTransfer() {
+        const order = this.transferOrder
+
+        this.endTransfer()
+
+        if (!order || this.state.transferWasBooked) {
+            return
+        }
+
+        order.is_booked = false
+
+        if (order.state === 'draft' && !this.orderHasContent(order)) {
+            this.dropOrder(order)
+        } else {
+            this.shareDrafts()
+        }
+    }
+
+    endTransfer() {
         this.state.transferOrderUuid = null
         this.state.transferError = null
     }
@@ -1700,7 +1738,7 @@ export class Till {
         const source = this.transferOrder
 
         if (!source) {
-            this.cancelTransfer()
+            this.endTransfer()
 
             return
         }
@@ -1708,7 +1746,7 @@ export class Till {
         const target = this.drafts.find((order) => order.table_id === tableId && order.uuid !== source.uuid)
 
         if (!target && source.table_id === tableId) {
-            this.cancelTransfer()
+            this.endTransfer()
 
             this.selectOrder(source.uuid)
 
@@ -1719,7 +1757,7 @@ export class Till {
             source.table_id = tableId
             source.floating_name = ''
 
-            this.cancelTransfer()
+            this.endTransfer()
 
             this.selectOrder(source.uuid)
 
@@ -1755,7 +1793,7 @@ export class Till {
 
         this.dropOrder(source)
 
-        this.cancelTransfer()
+        this.endTransfer()
 
         this.selectOrder(target.uuid)
 

@@ -144,7 +144,7 @@ class Session extends Model
     public function resolveCashJournal(): ?Journal
     {
         return $this->cashJournal
-            ?? $this->config?->paymentMethods->firstWhere('is_cash_count', true)?->journal;
+            ?? $this->config?->cashPaymentMethod()?->journal;
     }
 
     public function move(): BelongsTo
@@ -242,8 +242,7 @@ class Session extends Model
 
         $this->stock_update_mode ??= static::defaultStockUpdateMode();
 
-        $this->cash_journal_id ??= $config->paymentMethods
-            ->firstWhere('is_cash_count', true)?->journal_id;
+        $this->cash_journal_id ??= $config->cashPaymentMethod()?->journal_id;
 
         $this->has_cash_control = $config->enable_cash_control && filled($this->cash_journal_id);
     }

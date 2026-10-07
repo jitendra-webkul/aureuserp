@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Algo deu errado no servidor. Tente novamente e chame um gerente se continuar acontecendo.',
+
     'products' => [
         'tip'      => 'Gorjetas',
         'discount' => 'Desconto',
@@ -55,6 +57,10 @@ return [
     'terminal-product-creator' => [
         'name-required'    => 'Dê um nome ao produto.',
         'defaults-missing' => 'Configure uma unidade de medida e uma categoria de produto antes de criar produtos no caixa.',
+    ],
+
+    'payment-method' => [
+        'in-open-session' => 'Feche as sessões abertas :sessions antes de excluir esta forma de pagamento.',
     ],
 
     'payment-method-provisioner' => [

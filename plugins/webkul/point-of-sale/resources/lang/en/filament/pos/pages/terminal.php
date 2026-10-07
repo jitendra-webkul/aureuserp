@@ -233,6 +233,7 @@ return [
         'qty'       => 'Qty',
         'price'     => 'Price',
         'backspace' => 'Backspace',
+        'clear'     => 'C',
     ],
 
     'payment' => [
@@ -356,6 +357,27 @@ return [
         'zoom-in'              => 'Zoom in',
         'zoom-out'             => 'Zoom out',
         'fit'                  => 'Fit to screen',
+        'unreachable'          => 'The server could not be reached. Check the connection and try again.',
+
+        'colours' => [
+            'red'        => 'Red',
+            'orange'     => 'Orange',
+            'yellow'     => 'Yellow',
+            'green'      => 'Green',
+            'teal'       => 'Teal',
+            'blue'       => 'Blue',
+            'violet'     => 'Violet',
+            'pink'       => 'Pink',
+            'stone'      => 'Stone',
+            'white'      => 'White',
+            'light-grey' => 'Light grey',
+            'cream'      => 'Cream',
+            'mint'       => 'Mint',
+            'sky'        => 'Sky',
+            'lavender'   => 'Lavender',
+            'blush'      => 'Blush',
+            'warm-grey'  => 'Warm grey',
+        ],
     ],
 
     'receipt' => [

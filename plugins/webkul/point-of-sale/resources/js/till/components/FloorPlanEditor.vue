@@ -11,9 +11,28 @@ const draft = computed(() => state.planDraft)
 
 const selected = computed(() => till.planSelectedTable)
 
-const palette = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899', '#78716c']
+const palette = [
+    { value: '#ef4444', name: 'red' },
+    { value: '#f97316', name: 'orange' },
+    { value: '#eab308', name: 'yellow' },
+    { value: '#22c55e', name: 'green' },
+    { value: '#14b8a6', name: 'teal' },
+    { value: '#3b82f6', name: 'blue' },
+    { value: '#8b5cf6', name: 'violet' },
+    { value: '#ec4899', name: 'pink' },
+    { value: '#78716c', name: 'stone' },
+]
 
-const backgrounds = ['#ffffff', '#f5f5f4', '#fef3c7', '#dcfce7', '#dbeafe', '#ede9fe', '#fce7f3', '#e7e5e4']
+const backgrounds = [
+    { value: '#ffffff', name: 'white' },
+    { value: '#f5f5f4', name: 'light-grey' },
+    { value: '#fef3c7', name: 'cream' },
+    { value: '#dcfce7', name: 'mint' },
+    { value: '#dbeafe', name: 'sky' },
+    { value: '#ede9fe', name: 'lavender' },
+    { value: '#fce7f3', name: 'blush' },
+    { value: '#e7e5e4', name: 'warm-grey' },
+]
 
 const scroller = ref(null)
 
@@ -23,7 +42,11 @@ const tables = computed(() => till.planTables)
 
 const canvas = useFloorCanvas(scroller, draft, tables, { margin: 200 })
 
-const backdrop = computed(() => (draft.value?.background_color ? { backgroundColor: draft.value.background_color } : {}))
+const backdrop = computed(() => (draft.value?.background_color ? { '--floor-bg': draft.value.background_color } : {}))
+
+const backdropClass = computed(() => (draft.value?.background_color
+    ? 'bg-(--floor-bg) dark:bg-[oklch(from_var(--floor-bg)_0.32_calc(c*2)_h)]'
+    : 'bg-gray-50 dark:bg-gray-950'))
 
 function pickImage(event) {
     const [file] = event.target.files ?? []
@@ -54,8 +77,14 @@ function placement(table) {
     return style
 }
 
+function disarmDelete(event) {
+    if (!event.target.closest('[data-delete-floor]')) {
+        state.planConfirmDelete = false
+    }
+}
+
 function startMove(event, table) {
-    if (event.button !== 0) {
+    if (event.button !== 0 || till.planLocked) {
         return
     }
 
@@ -79,6 +108,10 @@ function startMove(event, table) {
 
 function startResize(event, table) {
     event.stopPropagation()
+
+    if (till.planLocked) {
+        return
+    }
 
     canvas.hold()
 
@@ -117,10 +150,11 @@ function release() {
 </script>
 
 <template>
-    <div class="flex min-h-0 flex-col gap-3">
+    <div class="flex min-h-0 flex-col gap-3" @pointerdown.capture="disarmDelete">
         <div class="flex flex-none flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
             <input
                 v-model="draft.name"
+                :disabled="state.planSaving"
                 type="text"
                 maxlength="255"
                 :aria-label="till.t('floor-plan.floor-name')"
@@ -131,19 +165,23 @@ function release() {
             <div class="flex items-center gap-1" :title="till.t('floor-plan.background')">
                 <button
                     v-for="colour in backgrounds"
-                    :key="colour"
+                    :key="colour.value"
                     type="button"
                     class="size-7 rounded-md border-2 transition-transform hover:scale-110"
-                    :class="draft.background_color === colour ? 'border-primary-600' : 'border-gray-200 dark:border-gray-700'"
-                    :style="{ backgroundColor: colour }"
-                    :aria-label="colour"
-                    @click="draft.background_color = colour"
+                    :class="draft.background_color === colour.value ? 'border-primary-600' : 'border-gray-200 dark:border-gray-700'"
+                    :style="{ backgroundColor: colour.value }"
+                    :title="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-label="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-pressed="draft.background_color === colour.value"
+                    :disabled="state.planSaving"
+                    @click="draft.background_color = colour.value"
                 />
 
                 <button
                     type="button"
                     class="flex size-7 items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400"
                     :aria-label="till.t('floor-plan.no-colour')"
+                    :disabled="state.planSaving"
                     @click="draft.background_color = ''"
                 >
                     &times;
@@ -184,6 +222,7 @@ function release() {
 
             <button
                 v-if="till.config.floor_plan?.can_delete"
+                data-delete-floor
                 type="button"
                 class="flex min-h-10 flex-none items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors disabled:opacity-50"
                 :class="state.planConfirmDelete
@@ -245,13 +284,15 @@ function release() {
             <div class="flex items-center gap-1">
                 <button
                     v-for="colour in palette"
-                    :key="colour"
+                    :key="colour.value"
                     type="button"
                     class="size-7 rounded-full border-2 transition-transform hover:scale-110"
-                    :class="selected.color === colour ? 'border-gray-950 dark:border-white' : 'border-transparent'"
-                    :style="{ backgroundColor: colour }"
-                    :aria-label="colour"
-                    @click="till.updatePlanTable({ color: colour })"
+                    :class="selected.color === colour.value ? 'border-gray-950 dark:border-white' : 'border-transparent'"
+                    :style="{ backgroundColor: colour.value }"
+                    :title="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-label="till.t(`floor-plan.colours.${colour.name}`)"
+                    :aria-pressed="selected.color === colour.value"
+                    @click="till.updatePlanTable({ color: colour.value })"
                 />
 
                 <button
@@ -285,7 +326,8 @@ function release() {
 
         <div
             ref="scroller"
-            class="min-h-0 flex-auto overflow-auto rounded-xl border-2 border-dashed border-primary-300 bg-gray-50 dark:border-primary-500/40 dark:bg-gray-950"
+            class="min-h-0 flex-auto overflow-auto rounded-xl border-2 border-dashed border-primary-300 dark:border-primary-500/40"
+            :class="backdropClass"
             :style="backdrop"
         >
             <div class="relative" :style="canvas.frameStyle.value">

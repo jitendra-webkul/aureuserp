@@ -233,6 +233,7 @@ return [
         'qty'       => 'Qté',
         'price'     => 'Prix',
         'backspace' => 'Retour arrière',
+        'clear'     => 'C',
     ],
 
     'payment' => [
@@ -356,6 +357,27 @@ return [
         'zoom-in'              => 'Zoomer',
         'zoom-out'             => 'Dézoomer',
         'fit'                  => 'Ajuster à l’écran',
+        'unreachable'          => 'Le serveur est injoignable. Vérifiez la connexion et réessayez.',
+
+        'colours' => [
+            'red'        => 'Rouge',
+            'orange'     => 'Orange',
+            'yellow'     => 'Jaune',
+            'green'      => 'Vert',
+            'teal'       => 'Bleu canard',
+            'blue'       => 'Bleu',
+            'violet'     => 'Violet',
+            'pink'       => 'Rose',
+            'stone'      => 'Pierre',
+            'white'      => 'Blanc',
+            'light-grey' => 'Gris clair',
+            'cream'      => 'Crème',
+            'mint'       => 'Menthe',
+            'sky'        => 'Ciel',
+            'lavender'   => 'Lavande',
+            'blush'      => 'Rose pâle',
+            'warm-grey'  => 'Gris chaud',
+        ],
     ],
 
     'receipt' => [

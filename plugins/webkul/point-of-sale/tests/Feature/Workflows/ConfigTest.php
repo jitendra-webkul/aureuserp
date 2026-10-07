@@ -5,8 +5,11 @@ use Webkul\Account\Enums\JournalType;
 use Webkul\Account\Models\Account;
 use Webkul\Inventory\Models\OperationType;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
+use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Enums\TaxDisplay;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Models\Config;
+use Webkul\PointOfSale\Models\PaymentMethod;
 use Webkul\PointOfSale\Models\Warehouse;
 use Webkul\PointOfSale\Services\SessionPreflight;
 use Webkul\PointOfSale\Settings\AccountSettings;
@@ -232,4 +235,20 @@ it('recreates the point of sale operation type when it was deleted from the ware
     expect($posWarehouse->pos_type_id)->not->toBeNull()
         ->and($config->operation_type_id)->toBe($posWarehouse->pos_type_id)
         ->and($config->return_operation_type_id)->toBe($posWarehouse->pos_return_type_id);
+});
+
+it('refuses to delete a payment method while a register using it has an open session', function () {
+    $session = PosHelper::openSession($this->warehouse);
+
+    $method = $session->config->paymentMethods->first();
+
+    expect(fn () => $method->delete())->toThrow(PosConfigurationException::class)
+        ->and(fn () => $method->forceDelete())->toThrow(PosConfigurationException::class)
+        ->and(PaymentMethod::withTrashed()->whereKey($method->id)->first()?->trashed())->toBeFalse();
+
+    $session->forceFill(['state' => SessionState::CLOSED])->save();
+
+    $method->refresh()->delete();
+
+    expect($method->trashed())->toBeTrue();
 });

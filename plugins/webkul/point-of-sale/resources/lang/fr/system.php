@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Une erreur est survenue sur le serveur. Réessayez et prévenez un responsable si cela continue.',
+
     'products' => [
         'tip'      => 'Pourboires',
         'discount' => 'Remise',
@@ -55,6 +57,10 @@ return [
     'terminal-product-creator' => [
         'name-required'    => 'Donnez un nom au produit.',
         'defaults-missing' => 'Configurez une unité de mesure et une catégorie de produits avant de créer des produits à la caisse.',
+    ],
+
+    'payment-method' => [
+        'in-open-session' => 'Fermez les sessions ouvertes :sessions avant de supprimer ce mode de paiement.',
     ],
 
     'payment-method-provisioner' => [

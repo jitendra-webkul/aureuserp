@@ -239,7 +239,7 @@
                                         <span class="block font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400">
                                             {{ $line->qty + 0 }} &times; {{ $this->money((float) $line->price_unit, $selected) }}
                                             @if ((float) $line->discount)
-                                                &middot; &minus;{{ $line->discount + 0 }}% discount
+                                                &middot; {{ __($prefix.'line-discount', ['discount' => $line->discount + 0]) }}
                                             @endif
                                         </span>
 

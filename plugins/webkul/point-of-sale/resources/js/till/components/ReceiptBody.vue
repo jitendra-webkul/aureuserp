@@ -31,7 +31,7 @@ const payments = computed(() =>
 const orderedAt = computed(() => {
     const value = order.value?.validated_at ?? order.value?.created_at
 
-    return value ? new Date(value).toLocaleString() : ''
+    return value ? new Date(value).toLocaleString(till.intlLocale) : ''
 })
 
 function productName(productId) {

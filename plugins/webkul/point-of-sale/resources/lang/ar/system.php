@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'حدث خطأ في الخادم. حاول مرة أخرى، واطلب من المدير المساعدة إذا تكرر ذلك.',
+
     'products' => [
         'tip'      => 'الإكراميات',
         'discount' => 'الخصم',
@@ -55,6 +57,10 @@ return [
     'terminal-product-creator' => [
         'name-required'    => 'أعطِ المنتج اسماً.',
         'defaults-missing' => 'جهّز وحدة قياس وفئة منتجات قبل إنشاء منتجات في نقطة البيع.',
+    ],
+
+    'payment-method' => [
+        'in-open-session' => 'أغلق الجلسات المفتوحة :sessions قبل حذف طريقة الدفع هذه.',
     ],
 
     'payment-method-provisioner' => [

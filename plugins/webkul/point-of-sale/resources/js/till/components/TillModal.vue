@@ -1,5 +1,5 @@
 <script setup>
-import { watch, onBeforeUnmount, useSlots, inject } from 'vue'
+import { watch, onBeforeUnmount, useSlots, inject, ref, nextTick } from 'vue'
 
 const props = defineProps({
     open: { type: Boolean, default: false },
@@ -16,6 +16,20 @@ const slots = useSlots()
 
 const till = inject('till')
 
+const content = ref(null)
+
+async function focusFirstField() {
+    await nextTick()
+
+    const field = content.value?.querySelector('input:not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled])')
+
+    field?.focus()
+
+    if (field && typeof field.select === 'function' && field.type !== 'file') {
+        field.select()
+    }
+}
+
 function onKeydown(event) {
     if (event.key === 'Escape') {
         emit('close')
@@ -25,6 +39,8 @@ function onKeydown(event) {
 watch(() => props.open, (open) => {
     if (open) {
         window.addEventListener('keydown', onKeydown)
+
+        focusFirstField()
     } else {
         window.removeEventListener('keydown', onKeydown)
     }
@@ -93,7 +109,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                             </slot>
                         </div>
 
-                        <div class="fi-modal-content" :class="contentClass">
+                        <div ref="content" class="fi-modal-content" :class="contentClass">
                             <slot />
                         </div>
 

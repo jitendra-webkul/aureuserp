@@ -12,6 +12,7 @@ use Webkul\PointOfSale\Http\Requests\FloorPlanRequest;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Floor;
 use Webkul\PointOfSale\Services\BootLoader;
+use Webkul\PointOfSale\Support\ClientMessage;
 use Webkul\PointOfSale\Support\PosAccess;
 
 class FloorPlanController extends Controller
@@ -38,7 +39,7 @@ class FloorPlanController extends Controller
         try {
             $floor = PointOfSale::saveFloor($floor, $request->validated());
         } catch (Throwable $exception) {
-            return response()->json(['message' => $exception->getMessage()], 422);
+            return response()->json(['message' => ClientMessage::for($exception)], 422);
         }
 
         return response()->json(['data' => $this->boot->floorPayload($floor)]);
@@ -73,7 +74,7 @@ class FloorPlanController extends Controller
         try {
             PointOfSale::deleteFloor($floor);
         } catch (Throwable $exception) {
-            return response()->json(['message' => $exception->getMessage()], 422);
+            return response()->json(['message' => ClientMessage::for($exception)], 422);
         }
 
         return response()->json(['data' => ['id' => $floor->id]]);

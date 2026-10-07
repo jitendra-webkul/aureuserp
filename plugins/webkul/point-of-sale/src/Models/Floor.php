@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Webkul\PointOfSale\Database\Factories\FloorFactory;
@@ -59,6 +60,12 @@ class Floor extends Model implements Sortable
 
         static::creating(function (Floor $floor) {
             $floor->computeCreatorId();
+        });
+
+        static::forceDeleted(function (Floor $floor) {
+            if ($floor->background_image) {
+                Storage::disk('public')->delete($floor->background_image);
+            }
         });
     }
 

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Algo salió mal en el servidor. Inténtelo de nuevo y avise a un responsable si sigue ocurriendo.',
+
     'products' => [
         'tip'      => 'Propinas',
         'discount' => 'Descuento',
@@ -55,6 +57,10 @@ return [
     'terminal-product-creator' => [
         'name-required'    => 'Dale un nombre al producto.',
         'defaults-missing' => 'Configura una unidad de medida y una categoría de producto antes de crear productos en la caja.',
+    ],
+
+    'payment-method' => [
+        'in-open-session' => 'Cierre las sesiones abiertas :sessions antes de eliminar este método de pago.',
     ],
 
     'payment-method-provisioner' => [

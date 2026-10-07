@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Something went wrong on the server. Try again, and ask a manager if it keeps happening.',
+
     'products' => [
         'tip'      => 'Tips',
         'discount' => 'Discount',
@@ -55,6 +57,10 @@ return [
     'terminal-product-creator' => [
         'name-required'    => 'Give the product a name.',
         'defaults-missing' => 'Set up a unit of measure and a product category before creating products at the till.',
+    ],
+
+    'payment-method' => [
+        'in-open-session' => 'Close the open sessions :sessions before deleting this payment method.',
     ],
 
     'payment-method-provisioner' => [

@@ -113,10 +113,6 @@ class FloorPlanEditor
 
             $floor->delete();
         });
-
-        if ($floor->background_image) {
-            Storage::disk('public')->delete($floor->background_image);
-        }
     }
 
     protected function assertTablesFree(array $tableIds): void
