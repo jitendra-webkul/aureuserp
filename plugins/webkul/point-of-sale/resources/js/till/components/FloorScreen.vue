@@ -13,7 +13,11 @@ const tables = computed(() => floor.value?.tables ?? [])
 const isMapped = computed(() => till.state.floorView === 'map'
     && (Boolean(floor.value?.background_image) || tables.value.some((table) => table.position_h > 0 || table.position_v > 0)))
 
-const backdrop = computed(() => (floor.value?.background_color ? { backgroundColor: floor.value.background_color } : {}))
+const backdrop = computed(() => (floor.value?.background_color ? { '--floor-bg': floor.value.background_color } : {}))
+
+const backdropClass = computed(() => (floor.value?.background_color
+    ? 'bg-(--floor-bg) dark:bg-[oklch(from_var(--floor-bg)_0.32_calc(c*2)_h)]'
+    : 'bg-gray-50 dark:bg-gray-950'))
 
 const scroller = ref(null)
 
@@ -150,7 +154,8 @@ function tileClass(table) {
         <div
             v-else
             ref="scroller"
-            class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950"
+            class="min-h-0 flex-auto overflow-auto rounded-xl border border-gray-200 dark:border-gray-700"
+            :class="backdropClass"
             :style="backdrop"
         >
             <p v-if="!floor" class="p-10 text-center text-sm text-gray-500 dark:text-gray-400">

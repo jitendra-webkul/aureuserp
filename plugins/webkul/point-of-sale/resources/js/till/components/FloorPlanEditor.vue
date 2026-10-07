@@ -42,7 +42,11 @@ const tables = computed(() => till.planTables)
 
 const canvas = useFloorCanvas(scroller, draft, tables, { margin: 200 })
 
-const backdrop = computed(() => (draft.value?.background_color ? { backgroundColor: draft.value.background_color } : {}))
+const backdrop = computed(() => (draft.value?.background_color ? { '--floor-bg': draft.value.background_color } : {}))
+
+const backdropClass = computed(() => (draft.value?.background_color
+    ? 'bg-(--floor-bg) dark:bg-[oklch(from_var(--floor-bg)_0.32_calc(c*2)_h)]'
+    : 'bg-gray-50 dark:bg-gray-950'))
 
 function pickImage(event) {
     const [file] = event.target.files ?? []
@@ -322,7 +326,8 @@ function release() {
 
         <div
             ref="scroller"
-            class="min-h-0 flex-auto overflow-auto rounded-xl border-2 border-dashed border-primary-300 bg-gray-50 dark:border-primary-500/40 dark:bg-gray-950"
+            class="min-h-0 flex-auto overflow-auto rounded-xl border-2 border-dashed border-primary-300 dark:border-primary-500/40"
+            :class="backdropClass"
             :style="backdrop"
         >
             <div class="relative" :style="canvas.frameStyle.value">
