@@ -61,6 +61,47 @@ const stylesheetsReady = (frameDocument) => {
     ])
 }
 
+const absoluteUrls = (cssText, base) => cssText.replace(
+    /url\((['"]?)([^'")]+)\1\)/g,
+    (match, quote, path) => (path.startsWith('data:') ? match : `url("${new URL(path, base).href}")`),
+)
+
+const copyStylesheets = (frameDocument) => {
+    for (const sheet of document.styleSheets) {
+        if (sheet.disabled) {
+            continue
+        }
+
+        let rules = null
+
+        try {
+            rules = sheet.cssRules
+        } catch {
+            rules = null
+        }
+
+        if (! rules) {
+            if (sheet.ownerNode) {
+                frameDocument.head.appendChild(sheet.ownerNode.cloneNode(true))
+            }
+
+            continue
+        }
+
+        const base = sheet.href ?? document.baseURI
+
+        const cssText = [...rules].map((rule) => absoluteUrls(rule.cssText, base)).join('\n')
+
+        const media = sheet.media?.mediaText
+
+        const style = frameDocument.createElement('style')
+
+        style.textContent = media ? `@media ${media}{${cssText}}` : cssText
+
+        frameDocument.head.appendChild(style)
+    }
+}
+
 window.pointOfSaleReceipt = {
     async print(target) {
         const source = typeof target === 'string' ? document.querySelector(target) : target
@@ -90,9 +131,7 @@ window.pointOfSaleReceipt = {
         frameDocument.write(`<!doctype html><html dir="${dir}" lang="${lang}"><head><meta charset="utf-8"></head><body></body></html>`)
         frameDocument.close()
 
-        for (const node of document.querySelectorAll('link[rel="stylesheet"], style')) {
-            frameDocument.head.appendChild(node.cloneNode(true))
-        }
+        copyStylesheets(frameDocument)
 
         const overrides = frameDocument.createElement('style')
 
