@@ -119,6 +119,7 @@ export class Till {
             autoPrintOrderUuid: null,
             globalDiscountModalOpen: false,
             transferOrderUuid: null,
+            transferWasBooked: false,
             sessionClosed: false,
             planEditing: false,
             planDraft: null,
@@ -1666,6 +1667,8 @@ export class Till {
 
         this.closeActions()
 
+        this.state.transferWasBooked = Boolean(order.is_booked)
+
         order.is_booked = true
 
         this.state.transferError = null
@@ -1676,6 +1679,24 @@ export class Till {
     }
 
     cancelTransfer() {
+        const order = this.transferOrder
+
+        this.endTransfer()
+
+        if (!order || this.state.transferWasBooked) {
+            return
+        }
+
+        order.is_booked = false
+
+        if (order.state === 'draft' && !this.orderHasContent(order)) {
+            this.dropOrder(order)
+        } else {
+            this.shareDrafts()
+        }
+    }
+
+    endTransfer() {
         this.state.transferOrderUuid = null
         this.state.transferError = null
     }
@@ -1700,7 +1721,7 @@ export class Till {
         const source = this.transferOrder
 
         if (!source) {
-            this.cancelTransfer()
+            this.endTransfer()
 
             return
         }
@@ -1708,7 +1729,7 @@ export class Till {
         const target = this.drafts.find((order) => order.table_id === tableId && order.uuid !== source.uuid)
 
         if (!target && source.table_id === tableId) {
-            this.cancelTransfer()
+            this.endTransfer()
 
             this.selectOrder(source.uuid)
 
@@ -1719,7 +1740,7 @@ export class Till {
             source.table_id = tableId
             source.floating_name = ''
 
-            this.cancelTransfer()
+            this.endTransfer()
 
             this.selectOrder(source.uuid)
 
@@ -1755,7 +1776,7 @@ export class Till {
 
         this.dropOrder(source)
 
-        this.cancelTransfer()
+        this.endTransfer()
 
         this.selectOrder(target.uuid)
 
