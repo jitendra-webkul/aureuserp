@@ -295,6 +295,15 @@ class Config extends Model implements Sortable
             ->latest('stopped_at');
     }
 
+    public function cashPaymentMethod(): ?PaymentMethod
+    {
+        return $this->paymentMethods()
+            ->where('is_cash_count', true)
+            ->orderBy('pos_payment_methods.sort')
+            ->orderBy('pos_payment_methods.id')
+            ->first();
+    }
+
     public function paymentMethods(): BelongsToMany
     {
         return $this->belongsToMany(PaymentMethod::class, 'pos_config_payment_methods', 'config_id', 'payment_method_id');
