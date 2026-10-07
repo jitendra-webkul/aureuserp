@@ -54,6 +54,12 @@ function placement(table) {
     return style
 }
 
+function disarmDelete(event) {
+    if (!event.target.closest('[data-delete-floor]')) {
+        state.planConfirmDelete = false
+    }
+}
+
 function startMove(event, table) {
     if (event.button !== 0) {
         return
@@ -117,7 +123,7 @@ function release() {
 </script>
 
 <template>
-    <div class="flex min-h-0 flex-col gap-3">
+    <div class="flex min-h-0 flex-col gap-3" @pointerdown.capture="disarmDelete">
         <div class="flex flex-none flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
             <input
                 v-model="draft.name"
@@ -184,6 +190,7 @@ function release() {
 
             <button
                 v-if="till.config.floor_plan?.can_delete"
+                data-delete-floor
                 type="button"
                 class="flex min-h-10 flex-none items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors disabled:opacity-50"
                 :class="state.planConfirmDelete
