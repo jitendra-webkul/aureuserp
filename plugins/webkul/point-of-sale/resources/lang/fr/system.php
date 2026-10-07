@@ -57,6 +57,10 @@ return [
         'defaults-missing' => 'Configurez une unité de mesure et une catégorie de produits avant de créer des produits à la caisse.',
     ],
 
+    'payment-method' => [
+        'in-open-session' => 'Fermez les sessions ouvertes :sessions avant de supprimer ce mode de paiement.',
+    ],
+
     'payment-method-provisioner' => [
         'cash' => 'Espèces',
     ],

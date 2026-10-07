@@ -57,6 +57,10 @@ return [
         'defaults-missing' => 'Set up a unit of measure and a product category before creating products at the till.',
     ],
 
+    'payment-method' => [
+        'in-open-session' => 'Close the open sessions :sessions before deleting this payment method.',
+    ],
+
     'payment-method-provisioner' => [
         'cash' => 'Cash',
     ],

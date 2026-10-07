@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\PaymentMethodResource;
 use Webkul\PointOfSale\Models\PaymentMethod;
 
 class PaymentMethodsTable
@@ -87,6 +88,7 @@ class PaymentMethodsTable
                             ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.record-actions.restore.notification.success.body')),
                     ),
                 DeleteAction::make()
+                    ->before(fn (PaymentMethod $record, DeleteAction $action) => PaymentMethodResource::haltWhenInOpenSession($action, [$record]))
                     ->successNotification(
                         Notification::make()
                             ->success()
@@ -94,6 +96,7 @@ class PaymentMethodsTable
                             ->body(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.table.record-actions.delete.notification.success.body')),
                     ),
                 ForceDeleteAction::make()
+                    ->before(fn (PaymentMethod $record, ForceDeleteAction $action) => PaymentMethodResource::haltWhenInOpenSession($action, [$record]))
                     ->databaseTransaction(true)
                     ->action(function (PaymentMethod $record, ForceDeleteAction $action) {
                         try {
@@ -126,11 +129,12 @@ class PaymentMethodsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->before(fn (Collection $records, DeleteBulkAction $action) => PaymentMethodResource::haltWhenInOpenSession($action, $records)),
                     RestoreBulkAction::make()
                         ->hidden(false),
                     ForceDeleteBulkAction::make()
-                        ->hidden(false)
+                        ->before(fn (Collection $records, ForceDeleteBulkAction $action) => PaymentMethodResource::haltWhenInOpenSession($action, $records))
                         ->databaseTransaction(true)
                         ->action(function (Collection $records, ForceDeleteBulkAction $action) {
                             try {

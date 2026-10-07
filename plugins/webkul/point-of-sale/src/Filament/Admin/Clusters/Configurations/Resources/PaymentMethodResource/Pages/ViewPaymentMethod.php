@@ -18,7 +18,8 @@ class ViewPaymentMethod extends ViewRecord
     {
         return [
             EditAction::make(),
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->before(fn (DeleteAction $action) => PaymentMethodResource::haltWhenInOpenSession($action, [$this->getRecord()])),
         ];
     }
 }

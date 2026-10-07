@@ -57,6 +57,10 @@ return [
         'defaults-missing' => 'جهّز وحدة قياس وفئة منتجات قبل إنشاء منتجات في نقطة البيع.',
     ],
 
+    'payment-method' => [
+        'in-open-session' => 'أغلق الجلسات المفتوحة :sessions قبل حذف طريقة الدفع هذه.',
+    ],
+
     'payment-method-provisioner' => [
         'cash' => 'نقدي',
     ],

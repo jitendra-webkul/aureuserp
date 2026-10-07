@@ -3,12 +3,15 @@
 namespace Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources;
 
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\PaymentMethodResource\Pages\CreatePaymentMethod;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\PaymentMethodResource\Pages\EditPaymentMethod;
@@ -94,5 +97,22 @@ class PaymentMethodResource extends Resource
             'view'   => ViewPaymentMethod::route('/{record}'),
             'edit'   => EditPaymentMethod::route('/{record}/edit'),
         ];
+    }
+
+    public static function haltWhenInOpenSession(Action $action, iterable $records): void
+    {
+        foreach ($records as $record) {
+            try {
+                $record->assertNotInOpenSession();
+            } catch (PosConfigurationException $exception) {
+                Notification::make()
+                    ->danger()
+                    ->title(__('point-of-sale::filament/admin/clusters/configurations/resources/payment-method.in-open-session.title'))
+                    ->body($exception->getMessage())
+                    ->send();
+
+                $action->halt();
+            }
+        }
     }
 }

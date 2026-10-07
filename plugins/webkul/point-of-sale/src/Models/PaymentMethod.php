@@ -16,6 +16,8 @@ use Webkul\Account\Models\Journal;
 use Webkul\PointOfSale\Database\Factories\PaymentMethodFactory;
 use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Enums\PaymentTerminalType;
+use Webkul\PointOfSale\Enums\SessionState;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Traits\BelongsToCompany;
@@ -90,6 +92,28 @@ class PaymentMethod extends Model implements Sortable
         return $this->belongsTo(User::class);
     }
 
+    public function openSessionNames(): array
+    {
+        return Session::withoutGlobalScopes()
+            ->whereIn('config_id', $this->configs()->pluck('pos_configs.id'))
+            ->where('state', '!=', SessionState::CLOSED)
+            ->pluck('name')
+            ->all();
+    }
+
+    public function assertNotInOpenSession(): void
+    {
+        $sessions = $this->openSessionNames();
+
+        if ($sessions === []) {
+            return;
+        }
+
+        throw new PosConfigurationException(
+            __('point-of-sale::system.payment-method.in-open-session', ['sessions' => implode(', ', $sessions)])
+        );
+    }
+
     public function computeCreatorId(): void
     {
         $this->creator_id ??= Auth::id();
@@ -115,6 +139,10 @@ class PaymentMethod extends Model implements Sortable
 
         static::creating(function (PaymentMethod $paymentMethod) {
             $paymentMethod->computeCreatorId();
+        });
+
+        static::deleting(function (PaymentMethod $paymentMethod) {
+            $paymentMethod->assertNotInOpenSession();
         });
 
         static::saving(function (PaymentMethod $paymentMethod) {

@@ -57,6 +57,10 @@ return [
         'defaults-missing' => 'Configura una unidad de medida y una categoría de producto antes de crear productos en la caja.',
     ],
 
+    'payment-method' => [
+        'in-open-session' => 'Cierre las sesiones abiertas :sessions antes de eliminar este método de pago.',
+    ],
+
     'payment-method-provisioner' => [
         'cash' => 'Efectivo',
     ],

@@ -128,4 +128,8 @@ return [
             ],
         ],
     ],
+
+    'in-open-session' => [
+        'title' => 'Método de pago en uso',
+    ],
 ];
