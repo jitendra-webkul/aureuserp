@@ -1295,7 +1295,7 @@ export class Till {
                     time,
                     cashier: this.config.cashier_name ?? '',
                     table: table?.table_number ?? null,
-                    label: table ? null : this.orderLabel(order),
+                    label: table || this.orderLabel(order) === order.tracking_number ? null : this.orderLabel(order),
                     tracking_number: order.tracking_number,
                     takeaway: Boolean(order.is_takeaway),
                     mode_changed: changes.modeChanged,
