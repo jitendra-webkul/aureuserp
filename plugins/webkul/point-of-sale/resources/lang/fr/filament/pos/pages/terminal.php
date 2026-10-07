@@ -357,6 +357,7 @@ return [
         'zoom-in'              => 'Zoomer',
         'zoom-out'             => 'Dézoomer',
         'fit'                  => 'Ajuster à l’écran',
+        'unreachable'          => 'Le serveur est injoignable. Vérifiez la connexion et réessayez.',
     ],
 
     'receipt' => [

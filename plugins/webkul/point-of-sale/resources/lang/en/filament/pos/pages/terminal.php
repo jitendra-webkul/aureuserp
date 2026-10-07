@@ -357,6 +357,7 @@ return [
         'zoom-in'              => 'Zoom in',
         'zoom-out'             => 'Zoom out',
         'fit'                  => 'Fit to screen',
+        'unreachable'          => 'The server could not be reached. Check the connection and try again.',
     ],
 
     'receipt' => [

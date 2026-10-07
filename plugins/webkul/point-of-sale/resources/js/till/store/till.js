@@ -1563,7 +1563,7 @@ export class Till {
 
         form.append('image', file)
 
-        const response = await fetch(this.backgroundEndpoint(floorId), {
+        const response = await this.reachPlanServer(this.backgroundEndpoint(floorId), {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -1581,8 +1581,16 @@ export class Till {
         return payload.data
     }
 
+    async reachPlanServer(url, options) {
+        try {
+            return await fetch(url, options)
+        } catch {
+            throw new Error(this.t('floor-plan.unreachable'))
+        }
+    }
+
     async requestPlan(url, method, body = null) {
-        const response = await fetch(url, {
+        const response = await this.reachPlanServer(url, {
             method,
             headers: {
                 'Content-Type': 'application/json',

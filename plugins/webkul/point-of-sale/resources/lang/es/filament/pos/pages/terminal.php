@@ -357,6 +357,7 @@ return [
         'zoom-in'              => 'Acercar',
         'zoom-out'             => 'Alejar',
         'fit'                  => 'Ajustar a la pantalla',
+        'unreachable'          => 'No se pudo contactar con el servidor. Compruebe la conexión e inténtelo de nuevo.',
     ],
 
     'receipt' => [
