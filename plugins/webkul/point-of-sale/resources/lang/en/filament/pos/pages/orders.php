@@ -15,6 +15,8 @@ return [
 
     'select-order' => 'Select an order to see its lines.',
 
+    'line-discount' => '−:discount% discount',
+
     'taxes' => 'Taxes',
 
     'total' => 'Total',

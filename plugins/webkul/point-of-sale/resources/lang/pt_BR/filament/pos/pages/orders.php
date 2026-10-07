@@ -15,6 +15,8 @@ return [
 
     'select-order' => 'Selecione um pedido para ver suas linhas.',
 
+    'line-discount' => '−:discount% de desconto',
+
     'taxes' => 'Impostos',
 
     'total' => 'Total',

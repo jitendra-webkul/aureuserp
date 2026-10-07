@@ -15,6 +15,8 @@ return [
 
     'select-order' => 'اختر طلباً لعرض بنوده.',
 
+    'line-discount' => '−:discount% خصم',
+
     'taxes' => 'الضرائب',
 
     'total' => 'الإجمالي',
