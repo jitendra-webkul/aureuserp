@@ -41,11 +41,12 @@ return [
     ],
 
     'opening-control' => [
-        'heading'     => 'Opening Control',
-        'cash'        => 'Opening cash',
-        'note'        => 'Opening note',
-        'placeholder' => 'Add an opening note…',
-        'confirm'     => 'Open Register',
+        'heading'                  => 'Opening Control',
+        'cash'                     => 'Opening cash',
+        'previous-closing-balance' => 'Previous session closing balance: :amount',
+        'note'                     => 'Opening note',
+        'placeholder'              => 'Add an opening note…',
+        'confirm'                  => 'Open Register',
     ],
 
     'tabs' => [

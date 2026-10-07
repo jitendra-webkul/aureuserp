@@ -36,6 +36,8 @@ class RegisterControls extends Component
 
     public ?string $openingNote = null;
 
+    public ?float $previousClosingBalance = null;
+
     public array $moneyDetails = [];
 
     public string $moneyDetailsTarget = 'opening';
@@ -59,6 +61,12 @@ class RegisterControls extends Component
         $this->session = $session;
 
         $this->config = $session->config;
+
+        if ($this->needsOpeningControl()) {
+            $this->previousClosingBalance = $this->config->lastClosedSession?->cash_balance_end_real;
+
+            $this->openingCash = (float) ($this->previousClosingBalance ?? 0);
+        }
     }
 
     public function needsOpeningControl(): bool

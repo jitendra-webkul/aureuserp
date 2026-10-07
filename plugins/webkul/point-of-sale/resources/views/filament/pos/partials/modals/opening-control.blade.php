@@ -21,6 +21,12 @@
             {{ __('point-of-sale::filament/pos/pages/terminal.opening-control.cash') }}
         </label>
 
+        @if ($previousClosingBalance !== null)
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ __('point-of-sale::filament/pos/pages/terminal.opening-control.previous-closing-balance', ['amount' => $this->money($previousClosingBalance)]) }}
+            </p>
+        @endif
+
         <div class="flex items-center gap-2">
             <x-filament::input.wrapper class="flex-1">
                 <x-filament::input
