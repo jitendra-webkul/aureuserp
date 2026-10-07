@@ -1042,7 +1042,7 @@ export class Till {
     }
 
     goToPayment({ ignoreLots = false } = {}) {
-        if (!this.activeOrder?.lines.length) {
+        if (!this.activeOrder || !this.sellableLines(this.activeOrder).length) {
             return
         }
 
