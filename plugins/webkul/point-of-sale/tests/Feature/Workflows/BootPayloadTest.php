@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Gate;
 use Webkul\Account\Models\FiscalPosition;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Services\BootLoader;
+use Webkul\Product\Enums\PriceRuleType;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -66,6 +67,27 @@ it('resolves a price for every product it ships', function () {
     foreach ($payload['products'] as $product) {
         expect($payload['prices']['0'])->toHaveKey((string) $product['id']);
     }
+});
+
+it('ships quantity break prices so the terminal reprices a line as its quantity grows', function () {
+    $priceList = PosHelper::priceList();
+
+    PosHelper::priceListItem($priceList, $this->product, [
+        'type'         => PriceRuleType::FIXED,
+        'fixed_price'  => 20.0,
+        'min_quantity' => 5.0,
+    ]);
+
+    $this->config->update(['price_list_id' => $priceList->id]);
+
+    $payload = app(BootLoader::class)->load($this->config->refresh(), $this->session);
+
+    $tiers = $payload['price_tiers'][(string) $priceList->id][(string) $this->product->id] ?? [];
+
+    expect($payload['prices'][(string) $priceList->id][(string) $this->product->id])->toBe(29.0)
+        ->and($tiers)->toHaveCount(1)
+        ->and($tiers[0]['min_qty'])->toBe(5.0)
+        ->and($tiers[0]['price'])->toBe(20.0);
 });
 
 it('bounds the partner list so a large customer base cannot stall the boot', function () {

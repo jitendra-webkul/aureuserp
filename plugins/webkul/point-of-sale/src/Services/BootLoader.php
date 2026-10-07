@@ -34,6 +34,7 @@ use Webkul\PointOfSale\Models\Product;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Table;
 use Webkul\Product\Models\PriceList;
+use Webkul\Product\Models\PriceRuleItem;
 use Webkul\Support\Models\Currency;
 use Webkul\Support\Models\UOM;
 use Webkul\Support\SupportServiceProvider;
@@ -72,6 +73,7 @@ class BootLoader
             'fiscal_positions' => $this->fiscalPositions($config),
             'price_lists'      => $this->priceLists($config),
             'prices'           => $this->prices($config, $session),
+            'price_tiers'      => $this->priceTiers($config, $session),
             'payment_methods'  => $this->paymentMethods($config),
             'bills'            => $this->bills($config),
             'notes'            => $this->notes(),
@@ -709,6 +711,91 @@ class BootLoader
         }
 
         return $matrix;
+    }
+
+    protected function priceTiers(Config $config, ?Session $session = null): array
+    {
+        $tiers = [];
+
+        $products = null;
+
+        foreach ($this->availablePriceLists($config) as $priceList) {
+            $thresholds = $this->quantityThresholds($priceList);
+
+            if (! $thresholds) {
+                continue;
+            }
+
+            $products ??= $this->sellableProducts($config, $session);
+
+            foreach ($products as $product) {
+                $productTiers = $this->productPriceTiers($product, $priceList, $thresholds);
+
+                if ($productTiers) {
+                    $tiers[(string) $priceList->id][(string) $product->id] = $productTiers;
+                }
+            }
+        }
+
+        return $tiers;
+    }
+
+    protected function quantityThresholds(PriceList $priceList): array
+    {
+        $thresholds = [];
+
+        $visited = [$priceList->id];
+
+        $pending = [$priceList->id];
+
+        while ($pending) {
+            $items = PriceRuleItem::query()
+                ->whereIn('price_list_id', $pending)
+                ->get(['min_quantity', 'base_price_list_id']);
+
+            foreach ($items as $item) {
+                if (float_compare((float) $item->min_quantity, 1, precisionDigits: 4) > 0) {
+                    $thresholds[] = (float) $item->min_quantity;
+                }
+            }
+
+            $pending = $items->pluck('base_price_list_id')
+                ->filter()
+                ->unique()
+                ->diff($visited)
+                ->values()
+                ->all();
+
+            $visited = array_merge($visited, $pending);
+        }
+
+        $thresholds = array_values(array_unique($thresholds));
+
+        sort($thresholds);
+
+        return $thresholds;
+    }
+
+    protected function productPriceTiers(Product $product, PriceList $priceList, array $thresholds): array
+    {
+        $tiers = [];
+
+        $previous = $this->prices->resolve($product, $priceList);
+
+        foreach ($thresholds as $threshold) {
+            $price = $this->prices->resolve($product, $priceList, $threshold);
+
+            if (float_compare($price, $previous, precisionDigits: 4) !== 0) {
+                $tiers[] = [
+                    'min_qty' => $threshold,
+                    'price'   => $price,
+                ];
+            }
+
+            $previous = $price;
+        }
+
+        return $tiers;
     }
 
     protected function paymentMethods(Config $config): array
