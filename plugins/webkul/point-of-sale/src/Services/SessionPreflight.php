@@ -142,7 +142,7 @@ class SessionPreflight
 
         $cashMethod = $cashMethods->first();
 
-        if (! $cashMethod || ! $config->enable_cash_control) {
+        if (! $cashMethod) {
             return;
         }
 

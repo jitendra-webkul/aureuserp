@@ -26,7 +26,6 @@ class ConfigFactory extends Factory
             'tax_display'          => TaxDisplay::SUBTOTAL,
             'picking_policy'       => PickingPolicy::DIRECT,
             'is_active'            => true,
-            'enable_cash_control'  => true,
             'warehouse_id'         => Warehouse::query()->value('id') ?? Warehouse::factory(),
             'creator_id'           => User::query()->value('id') ?? User::factory(),
         ];
@@ -35,10 +34,5 @@ class ConfigFactory extends Factory
     public function restaurant(): static
     {
         return $this->state(fn () => ['is_restaurant' => true]);
-    }
-
-    public function withoutCashControl(): static
-    {
-        return $this->state(fn () => ['enable_cash_control' => false]);
     }
 }

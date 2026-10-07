@@ -75,6 +75,6 @@ class CashMovementAction extends Action
                     $this->halt(shouldRollBackDatabaseTransaction: true);
                 }
             })
-            ->visible(fn (Session $record): bool => $record->isLive() && $record->has_cash_control);
+            ->visible(fn (Session $record): bool => $record->isLive());
     }
 }

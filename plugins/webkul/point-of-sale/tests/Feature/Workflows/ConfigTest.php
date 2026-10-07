@@ -36,7 +36,6 @@ it('creates a terminal with the expected defaults', function () {
 
     expect($config->tax_display)->toBe(TaxDisplay::SUBTOTAL)
         ->and($config->is_active)->toBeTrue()
-        ->and($config->enable_cash_control)->toBeTrue()
         ->and($config->is_restaurant)->toBeFalse();
 });
 

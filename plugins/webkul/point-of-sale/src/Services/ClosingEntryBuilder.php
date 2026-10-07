@@ -383,7 +383,7 @@ class ClosingEntryBuilder
     {
         $difference = (float) ($session->cash_difference ?? 0);
 
-        if (! $session->has_cash_control || float_is_zero($difference, precisionDigits: 4)) {
+        if (float_is_zero($difference, precisionDigits: 4)) {
             return collect();
         }
 

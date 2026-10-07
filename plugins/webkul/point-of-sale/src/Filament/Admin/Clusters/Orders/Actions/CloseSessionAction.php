@@ -39,8 +39,7 @@ class CloseSessionAction extends Action
                         'expected' => $record->expectedCashBalance(),
                     ]))
                     ->numeric()
-                    ->default(fn (): float => $record->expectedCashBalance())
-                    ->visible($record->has_cash_control),
+                    ->default(fn (): float => $record->expectedCashBalance()),
 
                 Textarea::make('closing_notes')
                     ->label(__('point-of-sale::filament/admin/clusters/orders/actions/close-session.form.fields.closing-notes'))

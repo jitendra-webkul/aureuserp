@@ -150,10 +150,6 @@ class ConfigForm
                     ->hint(fn (?Config $record): ?string => static::lockedByOpenSessionHint($record))
                     ->columnSpanFull(),
 
-                Toggle::make('enable_cash_control')
-                    ->label(static::label('sections.configurations.tabs.payment.fields.enable-cash-control'))
-                    ->helperText(static::label('sections.configurations.tabs.payment.fields.enable-cash-control-helper-text')),
-
                 Toggle::make('enable_maximum_difference')
                     ->label(static::label('sections.configurations.tabs.payment.fields.enable-maximum-difference'))
                     ->helperText(static::label('sections.configurations.tabs.payment.fields.enable-maximum-difference-helper-text'))

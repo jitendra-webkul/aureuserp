@@ -51,7 +51,6 @@ class Session extends Model
         'order_count',
         'operation_count',
         'is_rescue',
-        'has_cash_control',
         'has_failed_operations',
         'config_id',
         'rescue_for_session_id',
@@ -77,7 +76,6 @@ class Session extends Model
         'cash_transaction_total' => 'decimal:4',
         'total_payments_amount'  => 'decimal:4',
         'is_rescue'              => 'boolean',
-        'has_cash_control'       => 'boolean',
         'has_failed_operations'  => 'boolean',
     ];
 
@@ -90,7 +88,6 @@ class Session extends Model
         'order_count'            => 0,
         'operation_count'        => 0,
         'is_rescue'              => false,
-        'has_cash_control'       => false,
         'has_failed_operations'  => false,
     ];
 
@@ -243,8 +240,6 @@ class Session extends Model
         $this->stock_update_mode ??= static::defaultStockUpdateMode();
 
         $this->cash_journal_id ??= $config->cashPaymentMethod()?->journal_id;
-
-        $this->has_cash_control = $config->enable_cash_control && filled($this->cash_journal_id);
     }
 
     public static function defaultStockUpdateMode(): StockUpdateMode
@@ -258,9 +253,7 @@ class Session extends Model
 
     public function computeState(): void
     {
-        $this->state ??= $this->has_cash_control
-            ? SessionState::OPENING_CONTROL
-            : SessionState::OPENED;
+        $this->state ??= SessionState::OPENING_CONTROL;
     }
 
     public function computeName(): void

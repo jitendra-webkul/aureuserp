@@ -22,7 +22,6 @@ class SessionResource extends JsonResource
             'cash_difference'       => $this->cash_difference,
             'order_count'           => $this->order_count,
             'total_payments_amount' => $this->total_payments_amount,
-            'has_cash_control'      => $this->has_cash_control,
             'has_failed_operations' => $this->has_failed_operations,
             'is_rescue'             => $this->is_rescue,
         ];

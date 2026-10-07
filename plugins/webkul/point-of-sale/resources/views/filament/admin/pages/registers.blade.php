@@ -76,14 +76,12 @@
                                     <span class="text-gray-950 dark:text-white">{{ $lastClosed->stopped_at->format('d/m/Y') }}</span>
                                 </div>
 
-                                @if ($register->enable_cash_control)
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="text-gray-500 dark:text-gray-400">{{ __($prefix.'balance') }}</span>
-                                        <span class="font-mono tabular-nums text-gray-950 dark:text-white">
-                                            {{ money((float) $lastClosed->cash_balance_end_real, $register->currency?->name) }}
-                                        </span>
-                                    </div>
-                                @endif
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-gray-500 dark:text-gray-400">{{ __($prefix.'balance') }}</span>
+                                    <span class="font-mono tabular-nums text-gray-950 dark:text-white">
+                                        {{ money((float) $lastClosed->cash_balance_end_real, $register->currency?->name) }}
+                                    </span>
+                                </div>
                             @endif
 
                             @if ($rescues > 0)

@@ -28,7 +28,6 @@ return new class extends Migration
             $table->boolean('is_active')->default(1);
             $table->boolean('is_restaurant')->default(0);
             $table->boolean('is_closing_entry_by_product')->default(0);
-            $table->boolean('enable_cash_control')->default(1);
             $table->boolean('enable_maximum_difference')->default(0);
             $table->boolean('enable_line_discount')->default(1);
             $table->boolean('enable_global_discount')->default(0);

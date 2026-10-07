@@ -383,7 +383,6 @@ it('leaves cash movements out of the closing entry drawer line', function () {
 
 it('refuses a cashier closing over the authorized difference', function () {
     $this->config->forceFill([
-        'enable_cash_control'       => true,
         'enable_maximum_difference' => true,
         'amount_authorized_diff'    => 5,
     ])->save();
@@ -398,8 +397,7 @@ it('refuses a cashier closing over the authorized difference', function () {
 
 it('closes with the cash method journal when the session opened without one', function () {
     $this->session->forceFill([
-        'cash_journal_id'  => null,
-        'has_cash_control' => false,
+        'cash_journal_id' => null,
     ])->save();
 
     PointOfSale::syncOrder(PosHelper::orderPayload(

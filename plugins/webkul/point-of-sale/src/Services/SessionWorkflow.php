@@ -102,18 +102,16 @@ class SessionWorkflow
 
             $expected = $session->expectedCashBalance();
 
-            $counted = $session->has_cash_control
-                ? ($cashBalanceEndReal ?? $expected)
-                : null;
+            $counted = $cashBalanceEndReal ?? $expected;
 
             $session->forceFill([
                 'state'                 => SessionState::CLOSED,
                 'stopped_at'            => $session->stopped_at ?? now(),
                 'closed_by_id'          => Auth::id(),
                 'closing_notes'         => $notes,
-                'cash_balance_end'      => $session->has_cash_control ? $expected : null,
+                'cash_balance_end'      => $expected,
                 'cash_balance_end_real' => $counted,
-                'cash_difference'       => $counted === null ? null : $counted - $expected,
+                'cash_difference'       => $counted - $expected,
             ])->save();
 
             SessionClosed::dispatch($session);

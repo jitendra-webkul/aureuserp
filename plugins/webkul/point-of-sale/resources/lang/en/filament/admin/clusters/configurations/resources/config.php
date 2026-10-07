@@ -47,8 +47,6 @@ return [
 
                         'fields' => [
                             'payment-methods'                        => 'Payment Methods',
-                            'enable-cash-control'                    => 'Cash Control',
-                            'enable-cash-control-helper-text'        => 'Check the amount of the cashbox at opening and closing.',
                             'enable-maximum-difference'              => 'Set Maximum Difference',
                             'enable-maximum-difference-helper-text'  => 'Set a maximum difference allowed between the expected and counted money during the closing of the session.',
                             'amount-authorized-diff'                 => 'Maximum Difference',

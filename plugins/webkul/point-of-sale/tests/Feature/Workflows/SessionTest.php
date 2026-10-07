@@ -31,24 +31,13 @@ beforeEach(function () {
     $this->warehouse = InventoryHelper::warehouse();
 });
 
-it('opens a session in opening control when cash control is on', function () {
+it('opens a session in opening control', function () {
     $config = PosHelper::configWithCashMethod($this->warehouse);
 
     $session = PointOfSale::openSession($config);
 
     expect($session->state)->toBe(SessionState::OPENING_CONTROL)
-        ->and($session->has_cash_control)->toBeTrue()
         ->and($session->cash_journal_id)->not->toBeNull();
-});
-
-it('opens straight into progress when cash control is off', function () {
-    $config = PosHelper::config($this->warehouse, ['enable_cash_control' => false]);
-
-    $session = PointOfSale::openSession($config);
-
-    expect($session->state)->toBe(SessionState::OPENED)
-        ->and($session->has_cash_control)->toBeFalse()
-        ->and($session->started_at)->not->toBeNull();
 });
 
 it('names the session from the terminal session sequence', function () {
@@ -139,16 +128,6 @@ it('closes the session with the counted balance and its difference', function ()
         ->and((float) $session->cash_difference)->toBe(20.0)
         ->and($session->closing_notes)->toBe('Counted twice')
         ->and($session->closed_by_id)->not->toBeNull();
-});
-
-it('closes a session without cash control and leaves the drawer figures empty', function () {
-    $config = PosHelper::config($this->warehouse, ['enable_cash_control' => false]);
-
-    $session = PointOfSale::closeSession(PointOfSale::openSession($config));
-
-    expect($session->state)->toBe(SessionState::CLOSED)
-        ->and($session->cash_balance_end)->toBeNull()
-        ->and($session->cash_difference)->toBeNull();
 });
 
 it('refuses to close a session twice', function () {

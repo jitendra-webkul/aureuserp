@@ -33,7 +33,6 @@ return new class extends Migration
             $table->unsignedInteger('order_count')->default(0);
             $table->unsignedInteger('operation_count')->default(0);
             $table->boolean('is_rescue')->default(0);
-            $table->boolean('has_cash_control')->default(0);
             $table->boolean('has_failed_operations')->default(0);
 
             $table->foreignId('config_id')
