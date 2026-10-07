@@ -708,6 +708,10 @@ export class Till {
         return this.boot.locale ?? { code: 'en', direction: 'ltr' }
     }
 
+    get intlLocale() {
+        return String(this.locale.code || document.documentElement.lang || 'en').replace('_', '-')
+    }
+
     get isRtl() {
         return this.locale.direction === 'rtl'
     }
@@ -769,7 +773,7 @@ export class Till {
 
         const value = Number(amount ?? 0)
 
-        const formatted = new Intl.NumberFormat(this.locale.code || document.documentElement.lang || 'en', {
+        const formatted = new Intl.NumberFormat(this.intlLocale, {
             minimumFractionDigits: decimalPlaces,
             maximumFractionDigits: decimalPlaces,
         }).format(Math.abs(value))
