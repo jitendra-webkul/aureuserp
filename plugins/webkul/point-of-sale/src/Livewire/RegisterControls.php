@@ -346,7 +346,10 @@ class RegisterControls extends Component
 
     public function ordersUrl(): string
     {
-        return Orders::getUrl(['session' => $this->session->getKey()]);
+        return Orders::getUrl([
+            'session' => $this->session->getKey(),
+            'status'  => OrderState::DRAFT->value,
+        ]);
     }
 
     public function cancelDraftOrders(): void
