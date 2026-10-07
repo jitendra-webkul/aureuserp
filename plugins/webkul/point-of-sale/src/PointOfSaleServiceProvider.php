@@ -81,7 +81,6 @@ class PointOfSaleServiceProvider extends PackageServiceProvider
             ])
             ->runsMigrations()
             ->hasSettings([
-                '2026_09_17_110001_create_point_of_sale_restaurant_settings',
                 '2026_09_17_110002_create_point_of_sale_account_settings',
                 '2026_09_17_110003_create_point_of_sale_inventory_settings',
             ])
