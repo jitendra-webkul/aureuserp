@@ -10,6 +10,8 @@ const till = inject('till')
 
 const order = computed(() => props.order)
 
+const lines = computed(() => till.sellableLines(order.value ?? { lines: [] }))
+
 const table = computed(() => till.orderTable(order.value))
 
 const totals = computed(() => till.orderTotals(order.value ?? undefined))
@@ -85,7 +87,7 @@ function uomName(line) {
         </p>
 
         <div class="mt-3 space-y-1">
-            <div v-for="line in order?.lines ?? []" :key="line.uuid">
+            <div v-for="line in lines" :key="line.uuid">
                 <div class="flex items-start justify-between gap-2 text-sm font-bold">
                     <span class="min-w-0 flex-1">{{ productName(line.product_id) }}</span>
                     <span class="flex-none tabular-nums">{{ till.money(till.displayLineTotal(line)) }}</span>

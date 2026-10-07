@@ -5,7 +5,7 @@ const till = inject('till')
 
 const state = till.state
 
-const canPay = computed(() => Boolean(till.activeOrder?.lines.length))
+const canPay = computed(() => Boolean(till.activeOrder && till.sellableLines(till.activeOrder).length))
 
 const hasActiveLine = computed(() => Boolean(till.activeLine))
 
