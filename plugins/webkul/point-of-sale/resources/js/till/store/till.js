@@ -206,6 +206,7 @@ export class Till {
 
         this.stock = { ...(boot.stock ?? {}) }
         this.prices = boot.prices ?? { 0: {} }
+        this.priceTiers = boot.price_tiers ?? {}
 
         this.floors = reactive(boot.floors ?? [])
 
@@ -884,6 +885,8 @@ export class Till {
 
         const quantity = this.cartQuantityByProduct().get(product.id) ?? 0
 
+        const cartPrice = quantity ? this.priceFor(product.id, quantity) : price
+
         return {
             id: product.id,
             name: product.name,
@@ -897,9 +900,9 @@ export class Till {
             margin: price - cost,
             margin_ratio: price ? ((price - cost) / price) * 100 : 0,
             quantity,
-            total_price: price * quantity,
+            total_price: cartPrice * quantity,
             total_cost: cost * quantity,
-            total_margin: (price - cost) * quantity,
+            total_margin: (cartPrice - cost) * quantity,
         }
     }
 
@@ -2022,6 +2025,8 @@ export class Till {
             if (adopting) {
                 adopting.qty = floatRound(adopting.qty + line.qty, { precisionDigits: 4 })
 
+                this.repriceLine(adopting)
+
                 continue
             }
 
@@ -2600,13 +2605,17 @@ export class Till {
         for (const line of moving) {
             const quantity = this.state.splitQuantities[line.uuid]
 
-            target.lines.push(reactive({
+            const moved = reactive({
                 ...line,
                 lots: [...(line.lots ?? [])],
                 uuid: uuidv4(),
                 order_uuid: target.uuid,
                 qty: quantity,
-            }))
+            })
+
+            target.lines.push(moved)
+
+            this.repriceLine(moved)
 
             const remaining = floatRound(line.qty - quantity, { precisionDigits: 4 })
 
@@ -2614,6 +2623,8 @@ export class Till {
                 emptied.push(line.uuid)
             } else {
                 line.qty = remaining
+
+                this.repriceLine(line)
             }
         }
 
@@ -2977,9 +2988,7 @@ export class Till {
             order.price_list_id = priceListId
 
             for (const line of order.lines) {
-                if (!line.price_overridden) {
-                    line.price_unit = this.priceFor(line.product_id)
-                }
+                this.repriceLine(line)
             }
         }
 
@@ -3061,18 +3070,36 @@ export class Till {
         }
     }
 
-    priceFor(productId) {
-        const listKey = String(this.state.priceListId ?? 0)
+    priceFor(productId, qty = 1, priceListId = this.state.priceListId) {
+        const listKey = String(priceListId ?? 0)
 
         const list = this.prices[listKey] ?? this.prices['0'] ?? {}
 
         const price = list[String(productId)]
 
-        if (price !== undefined) {
-            return Number(price)
+        let resolved = price !== undefined
+            ? Number(price)
+            : Number(this.master.products.get(productId)?.price ?? 0)
+
+        const tiers = this.priceTiers[listKey]?.[String(productId)] ?? []
+
+        for (const tier of tiers) {
+            if (floatCompare(qty, tier.min_qty, { precisionDigits: 4 }) >= 0) {
+                resolved = Number(tier.price)
+            }
         }
 
-        return Number(this.master.products.get(productId)?.price ?? 0)
+        return resolved
+    }
+
+    repriceLine(line) {
+        if (line.price_overridden || line.refunded_order_line_id) {
+            return
+        }
+
+        const order = this.state.orders.find((entry) => entry.uuid === line.order_uuid)
+
+        line.price_unit = this.priceFor(line.product_id, line.qty, order?.price_list_id ?? this.state.priceListId)
     }
 
     taxesFor(line) {
@@ -3333,6 +3360,8 @@ export class Till {
 
         if (serial && unique.length) {
             line.qty = line.qty < 0 ? -unique.length : unique.length
+
+            this.repriceLine(line)
         }
 
         const share = unique.length ? Math.abs(line.qty) / unique.length : 0
@@ -3510,6 +3539,8 @@ export class Till {
         if (existing) {
             existing.qty = floatRound(existing.qty + qty, { precisionDigits: 4 })
 
+            this.repriceLine(existing)
+
             this.state.activeLineUuid = existing.uuid
 
             return existing
@@ -3521,7 +3552,7 @@ export class Till {
             product_id: productId,
             uom_id: product.uom_id,
             qty,
-            price_unit: this.priceFor(productId),
+            price_unit: this.priceFor(productId, qty, order.price_list_id ?? this.state.priceListId),
             price_overridden: false,
             discount: 0,
             note: '',
@@ -3649,6 +3680,8 @@ export class Till {
     applyNumpad(line, value) {
         if (this.state.numpadMode === 'qty') {
             line.qty = value
+
+            this.repriceLine(line)
         } else if (this.state.numpadMode === 'discount') {
             line.discount = Math.min(Math.max(value, 0), 100)
         } else if (this.state.numpadMode === 'price') {
