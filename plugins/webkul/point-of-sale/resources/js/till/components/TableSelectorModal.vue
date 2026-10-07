@@ -58,7 +58,7 @@ function press(value) {
                     @click="press(entry)"
                 >
                     <template v-if="entry === 'Backspace'">&#9003;</template>
-                    <template v-else-if="entry === 'clear'">C</template>
+                    <template v-else-if="entry === 'clear'">{{ till.t('numpad.clear') }}</template>
                     <template v-else>{{ entry }}</template>
                 </button>
             </div>

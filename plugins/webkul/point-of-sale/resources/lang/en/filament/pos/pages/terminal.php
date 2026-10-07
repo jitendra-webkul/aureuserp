@@ -233,6 +233,7 @@ return [
         'qty'       => 'Qty',
         'price'     => 'Price',
         'backspace' => 'Backspace',
+        'clear'     => 'C',
     ],
 
     'payment' => [

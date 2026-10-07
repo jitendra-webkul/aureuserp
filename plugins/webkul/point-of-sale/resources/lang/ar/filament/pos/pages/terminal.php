@@ -233,6 +233,7 @@ return [
         'qty'       => 'الكمية',
         'price'     => 'السعر',
         'backspace' => 'مسح للخلف',
+        'clear'     => 'C',
     ],
 
     'payment' => [
