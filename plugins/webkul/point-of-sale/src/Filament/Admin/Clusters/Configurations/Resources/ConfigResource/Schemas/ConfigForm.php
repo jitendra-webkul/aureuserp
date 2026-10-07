@@ -45,11 +45,6 @@ class ConfigForm
                             ->required()
                             ->maxLength(16),
 
-                        Toggle::make('is_active')
-                            ->label(static::label('sections.general.fields.is-active'))
-                            ->default(true)
-                            ->columnSpanFull(),
-
                     ])
                     ->columns(2),
 
