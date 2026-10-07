@@ -452,6 +452,7 @@ export class Till {
             uuid: line.uuid ?? uuidv4(),
             order_uuid: orderUuid,
             product_id: line.product_id,
+            uom_id: line.uom_id ?? this.master.products.get(line.product_id)?.uom_id ?? null,
             qty: Number(line.qty ?? 1),
             price_unit: Number(line.price_unit ?? 0),
             price_overridden: Boolean(line.price_overridden),

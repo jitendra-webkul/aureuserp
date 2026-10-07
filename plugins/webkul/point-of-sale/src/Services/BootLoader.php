@@ -840,6 +840,7 @@ class BootLoader
                 'lines'              => $order->lines->map(fn ($line): array => [
                     'uuid'                   => $line->uuid,
                     'product_id'             => $line->product_id,
+                    'uom_id'                 => $line->uom_id,
                     'qty'                    => (float) $line->qty,
                     'price_unit'             => (float) $line->price_unit,
                     'price_overridden'       => $line->price_type === PriceType::MANUAL,
