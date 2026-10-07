@@ -1235,6 +1235,10 @@ export class Till {
         return Boolean(this.isRestaurant && this.config.floor_plan?.can_update && !this.state.transferOrderUuid)
     }
 
+    get planLocked() {
+        return !this.state.planDraft || this.state.planSaving
+    }
+
     get planTables() {
         return this.state.planDraft?.tables ?? []
     }
@@ -1311,7 +1315,7 @@ export class Till {
     }
 
     addPlanTable(source = null) {
-        if (!this.state.planDraft) {
+        if (this.planLocked) {
             return
         }
 
@@ -1343,7 +1347,7 @@ export class Till {
     }
 
     removePlanTable() {
-        if (!this.state.planDraft || !this.state.planSelectedKey) {
+        if (this.planLocked || !this.state.planSelectedKey) {
             return
         }
 
@@ -1355,7 +1359,7 @@ export class Till {
     updatePlanTable(changes) {
         const table = this.planSelectedTable
 
-        if (!table) {
+        if (!table || this.planLocked) {
             return
         }
 
@@ -1367,7 +1371,7 @@ export class Till {
     movePlanTable(key, left, top) {
         const table = this.planTables.find((entry) => entry.key === key)
 
-        if (!table) {
+        if (!table || this.planLocked) {
             return
         }
 
@@ -1378,7 +1382,7 @@ export class Till {
     resizePlanTable(key, width, height) {
         const table = this.planTables.find((entry) => entry.key === key)
 
-        if (!table) {
+        if (!table || this.planLocked) {
             return
         }
 

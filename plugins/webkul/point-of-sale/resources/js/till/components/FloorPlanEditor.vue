@@ -61,7 +61,7 @@ function disarmDelete(event) {
 }
 
 function startMove(event, table) {
-    if (event.button !== 0) {
+    if (event.button !== 0 || till.planLocked) {
         return
     }
 
@@ -85,6 +85,10 @@ function startMove(event, table) {
 
 function startResize(event, table) {
     event.stopPropagation()
+
+    if (till.planLocked) {
+        return
+    }
 
     canvas.hold()
 
@@ -127,6 +131,7 @@ function release() {
         <div class="flex flex-none flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
             <input
                 v-model="draft.name"
+                :disabled="state.planSaving"
                 type="text"
                 maxlength="255"
                 :aria-label="till.t('floor-plan.floor-name')"
@@ -143,6 +148,7 @@ function release() {
                     :class="draft.background_color === colour ? 'border-primary-600' : 'border-gray-200 dark:border-gray-700'"
                     :style="{ backgroundColor: colour }"
                     :aria-label="colour"
+                    :disabled="state.planSaving"
                     @click="draft.background_color = colour"
                 />
 
@@ -150,6 +156,7 @@ function release() {
                     type="button"
                     class="flex size-7 items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400"
                     :aria-label="till.t('floor-plan.no-colour')"
+                    :disabled="state.planSaving"
                     @click="draft.background_color = ''"
                 >
                     &times;
