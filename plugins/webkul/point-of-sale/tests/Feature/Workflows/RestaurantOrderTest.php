@@ -130,7 +130,7 @@ it('provisions a default floor with one table when a restaurant terminal has non
     $floors = $this->config->refresh()->floors;
 
     expect($floors)->toHaveCount(1)
-        ->and($floors->first()->name)->toBe($this->config->company->name)
+        ->and($floors->first()->name)->toBe($this->config->name)
         ->and($floors->first()->tables)->toHaveCount(1)
         ->and($floors->first()->tables->first()->table_number)->toBe('1')
         ->and($floors->first()->tables->first()->seats)->toBe(1);
@@ -142,13 +142,16 @@ it('keeps the chosen floors of a restaurant terminal', function () {
     expect($this->config->refresh()->floors->pluck('id')->all())->toBe([$this->floor->id]);
 });
 
-it('releases the floors when restaurant mode is turned off', function () {
+it('keeps the floors when restaurant mode is turned off and on again', function () {
     $this->config->update(['is_restaurant' => false]);
 
     $this->config->refresh()->syncRestaurantFloors();
 
-    expect($this->config->refresh()->floors)->toBeEmpty()
-        ->and($this->floor->refresh()->exists)->toBeTrue();
+    $this->config->update(['is_restaurant' => true]);
+
+    $this->config->refresh()->syncRestaurantFloors();
+
+    expect($this->config->refresh()->floors->pluck('id')->all())->toBe([$this->floor->id]);
 });
 
 it('drops a table that belongs to a floor the terminal does not use', function () {

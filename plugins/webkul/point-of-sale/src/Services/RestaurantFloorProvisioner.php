@@ -10,18 +10,12 @@ class RestaurantFloorProvisioner
 {
     public function syncFor(Config $config): void
     {
-        if (! $config->is_restaurant) {
-            $config->floors()->detach();
-
-            return;
-        }
-
-        if ($config->floors()->exists()) {
+        if (! $config->is_restaurant || $config->floors()->exists()) {
             return;
         }
 
         $floor = Floor::create([
-            'name' =>$config->name ?? $config->company?->name,
+            'name' => $config->name ?? $config->company?->name,
         ]);
 
         Table::create([
