@@ -26,6 +26,7 @@ use Webkul\PointOfSale\Models\OrderLineLot;
 use Webkul\PointOfSale\Models\Payment;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Table;
+use Webkul\PointOfSale\Support\ClientMessage;
 use Webkul\PointOfSale\Support\PosAccess;
 use Webkul\Product\Models\Product;
 
@@ -170,7 +171,7 @@ class OrderProcessor
             } catch (Throwable $exception) {
                 $errors[] = [
                     'uuid'    => $payload['uuid'] ?? null,
-                    'message' => $exception->getMessage(),
+                    'message' => ClientMessage::for($exception),
                 ];
             }
         }
@@ -296,7 +297,7 @@ class OrderProcessor
             } catch (Throwable $exception) {
                 $errors[] = [
                     'uuid'    => $payload['uuid'] ?? null,
-                    'message' => $exception->getMessage(),
+                    'message' => ClientMessage::for($exception),
                     'code'    => $exception instanceof OrderAlreadyPaidException ? 'already-settled' : null,
                 ];
             }

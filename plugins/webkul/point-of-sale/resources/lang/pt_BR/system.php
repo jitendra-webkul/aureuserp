@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Algo deu errado no servidor. Tente novamente e chame um gerente se continuar acontecendo.',
+
     'products' => [
         'tip'      => 'Gorjetas',
         'discount' => 'Desconto',

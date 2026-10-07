@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Une erreur est survenue sur le serveur. Réessayez et prévenez un responsable si cela continue.',
+
     'products' => [
         'tip'      => 'Pourboires',
         'discount' => 'Remise',

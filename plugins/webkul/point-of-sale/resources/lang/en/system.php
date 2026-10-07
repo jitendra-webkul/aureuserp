@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Something went wrong on the server. Try again, and ask a manager if it keeps happening.',
+
     'products' => [
         'tip'      => 'Tips',
         'discount' => 'Discount',

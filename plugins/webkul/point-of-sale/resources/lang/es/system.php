@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'unexpected-error' => 'Algo salió mal en el servidor. Inténtelo de nuevo y avise a un responsable si sigue ocurriendo.',
+
     'products' => [
         'tip'      => 'Propinas',
         'discount' => 'Descuento',
