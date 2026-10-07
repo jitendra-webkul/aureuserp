@@ -1080,6 +1080,10 @@ export class Till {
         return this.activeOrder?.lines.find((line) => line.uuid === this.state.activeLineUuid)
     }
 
+    isEditable(order = this.activeOrder) {
+        return order?.state === 'draft'
+    }
+
     get drafts() {
         return this.state.orders.filter((order) => order.state === 'draft')
     }
@@ -1295,7 +1299,7 @@ export class Till {
                     time,
                     cashier: this.config.cashier_name ?? '',
                     table: table?.table_number ?? null,
-                    label: table ? null : this.orderLabel(order),
+                    label: table || this.orderLabel(order) === order.tracking_number ? null : this.orderLabel(order),
                     tracking_number: order.tracking_number,
                     takeaway: Boolean(order.is_takeaway),
                     mode_changed: changes.modeChanged,
@@ -3269,7 +3273,7 @@ export class Till {
     openLots(lineUuid) {
         const line = this.activeOrder?.lines.find((entry) => entry.uuid === lineUuid)
 
-        if (!line) {
+        if (!line || !this.isEditable()) {
             return
         }
 
@@ -3533,6 +3537,10 @@ export class Till {
     }
 
     selectLine(uuid) {
+        if (!this.isEditable()) {
+            return
+        }
+
         this.state.activeLineUuid = this.state.activeLineUuid === uuid ? null : uuid
 
         this.resetNumpadBuffer()
@@ -3541,7 +3549,7 @@ export class Till {
     removeLine(uuid) {
         const order = this.activeOrder
 
-        if (!order) {
+        if (!this.isEditable(order)) {
             return
         }
 
@@ -3584,7 +3592,7 @@ export class Till {
     pressNumpad(key) {
         const line = this.activeLine
 
-        if (!line) {
+        if (!line || !this.isEditable()) {
             return
         }
 

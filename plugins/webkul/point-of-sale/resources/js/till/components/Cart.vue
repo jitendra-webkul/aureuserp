@@ -11,6 +11,8 @@ const totals = computed(() => till.orderTotals())
 
 const paying = computed(() => state.screen === 'payment')
 
+const editable = computed(() => till.isEditable(order.value))
+
 const methods = computed(() => till.master.payment_methods.all())
 
 function productName(productId) {
@@ -97,11 +99,13 @@ function productImage(productId) {
                 v-for="line in order?.lines ?? []"
                 :key="line.uuid"
                 class="flex w-full items-start gap-2 border-b border-gray-100 px-3 py-2.5 text-start transition-colors dark:border-gray-800"
-                :class="state.activeLineUuid === line.uuid ? 'bg-primary-50 dark:bg-primary-500/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
+                :class="editable && state.activeLineUuid === line.uuid ? 'bg-primary-50 dark:bg-primary-500/10' : (editable ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : '')"
             >
                 <button
                     type="button"
                     class="flex min-w-0 flex-1 items-start gap-3 text-start"
+                    :class="editable ? '' : 'cursor-default'"
+                    :disabled="!editable"
                     @click="till.selectLine(line.uuid)"
                 >
                 <span
@@ -158,6 +162,7 @@ function productImage(productId) {
                 </button>
 
                 <button
+                    v-if="editable"
                     type="button"
                     class="flex size-9 flex-none items-center justify-center rounded-lg text-gray-400 transition active:bg-danger-100 active:text-danger-700 hover:bg-danger-50 hover:text-danger-600 dark:hover:bg-danger-500/10 dark:hover:text-danger-400 dark:active:bg-danger-500/20"
                     :aria-label="till.t('cart.remove', { product: productName(line.product_id) })"
