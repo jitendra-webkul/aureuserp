@@ -8,6 +8,7 @@ use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -276,7 +277,7 @@ class RegisterControls extends Component
 
     public function exceedsAuthorizedDifference(array $control): bool
     {
-        if ($control['amount_authorized_diff'] === null) {
+        if ($control['amount_authorized_diff'] === null || Auth::user()?->can('update', $this->config)) {
             return false;
         }
 
