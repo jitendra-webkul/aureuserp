@@ -411,6 +411,22 @@ return [
         'rejected'   => 'Le serveur a refusé cette commande.',
     ],
 
+    'kitchen' => [
+        'order'        => 'Commander',
+        'new'          => 'Nouveau',
+        'cancelled'    => 'Annulé',
+        'note-changed' => 'Note modifiée',
+        'dine-in'      => 'Sur place',
+        'takeaway'     => 'À emporter',
+        'to-takeaway'  => 'Sur place → À emporter',
+        'to-dine-in'   => 'À emporter → Sur place',
+        'by'           => 'Par :name',
+        'table'        => 'Table :table',
+        'order-note'   => 'Note de commande',
+        'offline'      => 'L\'envoi en cuisine nécessite une connexion.',
+        'nothing'      => 'Rien de nouveau à envoyer en cuisine.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Payé sur une autre caisse',
         'failed-heading'  => 'Cette commande n\'a pas été enregistrée',

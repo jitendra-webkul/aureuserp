@@ -411,6 +411,22 @@ return [
         'rejected'   => 'The server refused this order.',
     ],
 
+    'kitchen' => [
+        'order'        => 'Order',
+        'new'          => 'New',
+        'cancelled'    => 'Cancelled',
+        'note-changed' => 'Note changed',
+        'dine-in'      => 'Dine in',
+        'takeaway'     => 'Take out',
+        'to-takeaway'  => 'Dine in → Take out',
+        'to-dine-in'   => 'Take out → Dine in',
+        'by'           => 'By :name',
+        'table'        => 'Table :table',
+        'order-note'   => 'Order note',
+        'offline'      => 'Sending to the kitchen needs a connection.',
+        'nothing'      => 'Nothing new to send to the kitchen.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Paid at another till',
         'failed-heading'  => 'This order was not saved',

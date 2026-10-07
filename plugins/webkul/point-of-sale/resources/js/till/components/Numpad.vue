@@ -7,6 +7,10 @@ const state = till.state
 
 const canPay = computed(() => Boolean(till.activeOrder?.lines.length))
 
+const showsKitchen = computed(() => till.isRestaurant && till.sendsToKitchen)
+
+const kitchen = computed(() => till.preparationSummary())
+
 const hasActiveLine = computed(() => Boolean(till.activeLine))
 
 const partnerName = computed(() => {
@@ -138,13 +142,32 @@ function modeClass(mode, index) {
             </button>
         </div>
 
-        <button
-            type="button"
-            class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] items-center justify-center rounded-lg bg-primary-600 text-base font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-800"
-            :disabled="!canPay"
-            @click="till.goToPayment()"
-        >
-            {{ till.t('actions.payment') }}
-        </button>
+        <div class="flex gap-2">
+            <button
+                v-if="showsKitchen"
+                type="button"
+                class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] flex-1 flex-col items-center justify-center rounded-lg px-2 text-base font-semibold transition-colors disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-800"
+                :class="kitchen.count
+                    ? 'bg-warning-500 text-white hover:bg-warning-600'
+                    : 'border border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'"
+                :disabled="!kitchen.count"
+                @click="till.sendToKitchen()"
+            >
+                <span>{{ till.t('kitchen.order') }}</span>
+
+                <span v-if="kitchen.categories.length" class="flex max-w-full gap-2 truncate text-[0.625rem] font-medium leading-tight">
+                    <span v-for="category in kitchen.categories.slice(0, 3)" :key="category.name">{{ category.name }} {{ category.qty }}</span>
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="flex min-h-[clamp(2.6rem,5.5vh,3.5rem)] flex-1 items-center justify-center rounded-lg bg-primary-600 text-base font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 dark:disabled:bg-gray-800"
+                :disabled="!canPay"
+                @click="till.goToPayment()"
+            >
+                {{ till.t('actions.payment') }}
+            </button>
+        </div>
     </div>
 </template>

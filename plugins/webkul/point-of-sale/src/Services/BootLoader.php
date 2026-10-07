@@ -28,6 +28,7 @@ use Webkul\PointOfSale\Models\Note;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
 use Webkul\PointOfSale\Models\PaymentMethod;
+use Webkul\PointOfSale\Models\Printer;
 use Webkul\PointOfSale\Models\Product;
 use Webkul\PointOfSale\Models\Session;
 use Webkul\PointOfSale\Models\Table;
@@ -156,10 +157,27 @@ class BootLoader
             'order_cancel_endpoint'         => route('point-of-sale.till.orders.cancel'),
             'draft_endpoint'                => route('point-of-sale.till.orders.drafts.store'),
             'floor_plan'                    => $this->floorPlanAccess($config),
+            'preparation_printers'          => $this->preparationPrinters($config),
+            'cashier_name'                  => Auth::user()?->name,
             'tracking_options'              => $this->trackingOptions(),
             'use_create_lots'               => (bool) $config->operationType?->use_create_lots,
             'use_existing_lots'             => (bool) $config->operationType?->use_existing_lots,
         ];
+    }
+
+    protected function preparationPrinters(Config $config): array
+    {
+        return $config->printers()
+            ->with('categories')
+            ->orderBy('pos_printers.id')
+            ->get()
+            ->map(fn (Printer $printer): array => [
+                'id'           => $printer->id,
+                'name'         => $printer->name,
+                'category_ids' => $printer->categories->pluck('id')->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     protected function trackingOptions(): array
@@ -830,6 +848,7 @@ class BootLoader
                 'table_id'           => $order->table_id,
                 'floating_name'      => $order->floating_name,
                 'is_booked'          => (bool) $order->is_booked,
+                'preparation_state'  => $order->preparation_state,
                 'customer_count'     => (int) $order->customer_count,
                 'price_list_id'      => $order->price_list_id,
                 'fiscal_position_id' => $order->fiscal_position_id,

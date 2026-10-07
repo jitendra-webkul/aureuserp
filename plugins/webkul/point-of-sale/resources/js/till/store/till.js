@@ -1,4 +1,4 @@
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, nextTick } from 'vue'
 import { computeAll } from '../tax/computer.js'
 import { floatRound, floatCompare, floatIsZero } from '../tax/float.js'
 import { TillDatabase } from './indexed-db.js'
@@ -120,6 +120,7 @@ export class Till {
             globalDiscountModalOpen: false,
             transferOrderUuid: null,
             transferWasBooked: false,
+            kitchenTicket: null,
             sessionClosed: false,
             planEditing: false,
             planDraft: null,
@@ -425,6 +426,7 @@ export class Till {
             customer_count: Number(order.customer_count ?? 0),
             floating_name: order.floating_name ?? '',
             is_booked: Boolean(order.is_booked),
+            preparation_state: order.preparation_state ?? null,
             last_screen: order.last_screen ?? 'products',
             synced_signature: order.synced_signature ?? null,
             rejected_signature: order.rejected_signature ?? null,
@@ -526,6 +528,7 @@ export class Till {
                 customer_count: order.customer_count ?? 0,
                 floating_name: order.floating_name ?? '',
                 is_booked: Boolean(order.is_booked),
+                preparation_state: order.preparation_state ?? null,
                 last_screen: order.last_screen ?? 'products',
                 synced_signature: order.synced_signature ?? null,
                 rejected_signature: order.rejected_signature ?? null,
@@ -1128,6 +1131,242 @@ export class Till {
         this.flushDeferredEvictions()
 
         return order
+    }
+
+    get preparationPrinters() {
+        return this.config.preparation_printers ?? []
+    }
+
+    get sendsToKitchen() {
+        return this.preparationPrinters.length > 0
+    }
+
+    preparationCategoryIds(productId) {
+        const ids = new Set()
+
+        for (const categoryId of this.master.products.get(productId)?.category_ids ?? []) {
+            let current = categoryId
+
+            while (current && !ids.has(current)) {
+                ids.add(current)
+
+                current = this.master.categories.get(current)?.parent_id ?? null
+            }
+        }
+
+        return ids
+    }
+
+    printerTakes(printer, productId) {
+        if (!printer.category_ids?.length) {
+            return true
+        }
+
+        const ids = this.preparationCategoryIds(productId)
+
+        return printer.category_ids.some((id) => ids.has(id))
+    }
+
+    preparesLine(line) {
+        return !this.isLockedLine(line)
+            && this.preparationPrinters.some((printer) => this.printerTakes(printer, line.product_id))
+    }
+
+    preparationState(order) {
+        return order?.preparation_state ?? { lines: {}, note: '', takeaway: false }
+    }
+
+    preparationEntry(line, qty) {
+        return {
+            uuid: line.uuid,
+            product_id: line.product_id,
+            name: this.master.products.get(line.product_id)?.name ?? line.name ?? '',
+            note: line.note ?? '',
+            qty,
+        }
+    }
+
+    preparationChanges(order) {
+        const state = this.preparationState(order)
+
+        const added = []
+        const cancelled = []
+        const noted = []
+        const seen = new Set()
+
+        for (const line of order.lines) {
+            if (!this.preparesLine(line)) {
+                continue
+            }
+
+            seen.add(line.uuid)
+
+            const before = state.lines[line.uuid]
+
+            const difference = floatRound(line.qty - (before?.qty ?? 0), { precisionDigits: 4 })
+
+            if (difference > 0) {
+                added.push(this.preparationEntry(line, difference))
+            } else if (difference < 0) {
+                cancelled.push(this.preparationEntry(line, -difference))
+            }
+
+            if (before && (before.note ?? '') !== (line.note ?? '')) {
+                noted.push(this.preparationEntry(line, line.qty))
+            }
+        }
+
+        for (const [uuid, before] of Object.entries(state.lines)) {
+            if (!seen.has(uuid)) {
+                cancelled.push({ ...before, uuid })
+            }
+        }
+
+        const wasSent = Object.keys(state.lines).length > 0
+
+        return {
+            added,
+            cancelled,
+            noted,
+            modeChanged: wasSent && Boolean(state.takeaway) !== Boolean(order.is_takeaway),
+            noteChanged: (state.note ?? '') !== (order.note ?? ''),
+        }
+    }
+
+    cancellationChanges(order) {
+        return {
+            added: [],
+            cancelled: Object.entries(this.preparationState(order).lines).map(([uuid, before]) => ({ ...before, uuid })),
+            noted: [],
+            modeChanged: false,
+            noteChanged: false,
+        }
+    }
+
+    preparationSummary(order = this.activeOrder) {
+        if (!order || !this.sendsToKitchen) {
+            return { count: 0, categories: [] }
+        }
+
+        const changes = this.preparationChanges(order)
+
+        const categories = new Map()
+
+        for (const entry of changes.added) {
+            const categoryId = this.master.products.get(entry.product_id)?.category_ids?.[0] ?? 0
+
+            const name = this.master.categories.get(categoryId)?.name ?? ''
+
+            categories.set(name, (categories.get(name) ?? 0) + entry.qty)
+        }
+
+        const count = [...changes.added, ...changes.cancelled].reduce((carry, entry) => carry + entry.qty, 0)
+            + changes.noted.length
+
+        return {
+            count,
+            categories: [...categories].map(([name, qty]) => ({ name, qty })).filter((entry) => entry.name),
+        }
+    }
+
+    preparationTickets(order, changes) {
+        const table = this.orderTable(order)
+
+        const time = new Date().toLocaleTimeString(this.intlLocale, { hour: '2-digit', minute: '2-digit' })
+
+        return this.preparationPrinters
+            .map((printer) => {
+                const take = (entries) => entries.filter((entry) => this.printerTakes(printer, entry.product_id))
+
+                const added = take(changes.added)
+                const cancelled = take(changes.cancelled)
+                const noted = take(changes.noted)
+
+                const hasLines = added.length + cancelled.length + noted.length > 0
+
+                if (!hasLines && !changes.modeChanged) {
+                    return null
+                }
+
+                return {
+                    printer: printer.name,
+                    register: this.config.name,
+                    time,
+                    cashier: this.config.cashier_name ?? '',
+                    table: table?.table_number ?? null,
+                    label: table ? null : this.orderLabel(order),
+                    tracking_number: order.tracking_number,
+                    takeaway: Boolean(order.is_takeaway),
+                    mode_changed: changes.modeChanged,
+                    added,
+                    cancelled,
+                    noted,
+                    note: hasLines && (changes.noteChanged || added.length) ? (order.note ?? '') : '',
+                }
+            })
+            .filter(Boolean)
+    }
+
+    markPreparationSent(order) {
+        const lines = {}
+
+        for (const line of order.lines) {
+            if (this.preparesLine(line) && line.qty > 0) {
+                lines[line.uuid] = this.preparationEntry(line, line.qty)
+            }
+        }
+
+        order.preparation_state = {
+            lines,
+            note: order.note ?? '',
+            takeaway: Boolean(order.is_takeaway),
+        }
+    }
+
+    async sendToKitchen(order = this.activeOrder) {
+        if (!order || !this.sendsToKitchen || order.state !== 'draft') {
+            return
+        }
+
+        if (this.isRestaurant && !navigator.onLine) {
+            this.notifyKitchen(this.t('kitchen.offline'))
+
+            return
+        }
+
+        const tickets = this.preparationTickets(order, this.preparationChanges(order))
+
+        if (!tickets.length) {
+            this.notifyKitchen(this.t('kitchen.nothing'))
+
+            return
+        }
+
+        this.markPreparationSent(order)
+
+        if (this.isRestaurant) {
+            this.shareDrafts()
+        }
+
+        await this.printKitchenTickets(tickets)
+    }
+
+    async printKitchenTickets(tickets) {
+        for (const ticket of tickets) {
+            this.state.kitchenTicket = ticket
+
+            await nextTick()
+
+            await window.pointOfSaleReceipt?.print('#pos-kitchen-ticket')
+        }
+
+        this.state.kitchenTicket = null
+    }
+
+    notifyKitchen(message) {
+        if (window.FilamentNotification) {
+            new window.FilamentNotification().title(message).warning().send()
+        }
     }
 
     get isRestaurant() {
@@ -2800,6 +3039,10 @@ export class Till {
             return
         }
 
+        if (this.sendsToKitchen && Object.keys(this.preparationState(order).lines).length) {
+            this.printKitchenTickets(this.preparationTickets(order, this.cancellationChanges(order)))
+        }
+
         this.removeDraftOnServer(order)
 
         this.database.remove('pos.order.line', order.lines.map((line) => line.uuid))
@@ -3976,6 +4219,7 @@ export class Till {
             partner_id: partnerDraft ? null : order.partner_id,
             floating_name: order.floating_name || null,
             is_booked: Boolean(order.is_booked),
+            ...(order.preparation_state ? { preparation_state: order.preparation_state } : {}),
             partner: partnerDraft,
             price_list_id: order.price_list_id,
             fiscal_position_id: order.fiscal_position_id,
@@ -4040,10 +4284,20 @@ export class Till {
             }))
         }
 
+        const kitchenTickets = this.sendsToKitchen && !this.isRestaurant
+            ? this.preparationTickets(order, this.preparationChanges(order))
+            : []
+
+        if (kitchenTickets.length) {
+            this.markPreparationSent(order)
+        }
+
         order.state = 'paid'
         order.validated_at = new Date().toISOString()
 
         this.queue.push({ uuid: order.uuid, payload: this.orderPayload(order) })
+
+        this.printKitchenTickets(kitchenTickets)
 
         this.state.autoPrintOrderUuid = this.printsReceiptAutomatically ? order.uuid : null
 

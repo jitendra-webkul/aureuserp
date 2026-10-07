@@ -411,6 +411,22 @@ return [
         'rejected'   => 'O servidor recusou este pedido.',
     ],
 
+    'kitchen' => [
+        'order'        => 'Pedido',
+        'new'          => 'Novo',
+        'cancelled'    => 'Cancelado',
+        'note-changed' => 'Observação alterada',
+        'dine-in'      => 'Comer aqui',
+        'takeaway'     => 'Para viagem',
+        'to-takeaway'  => 'Comer aqui → Para viagem',
+        'to-dine-in'   => 'Para viagem → Comer aqui',
+        'by'           => 'Por :name',
+        'table'        => 'Mesa :table',
+        'order-note'   => 'Observação do pedido',
+        'offline'      => 'Enviar para a cozinha requer conexão.',
+        'nothing'      => 'Nada novo para enviar à cozinha.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Pago em outro caixa',
         'failed-heading'  => 'Este pedido não foi salvo',

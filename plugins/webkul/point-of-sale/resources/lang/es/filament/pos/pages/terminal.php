@@ -411,6 +411,22 @@ return [
         'rejected'   => 'El servidor rechazó este pedido.',
     ],
 
+    'kitchen' => [
+        'order'        => 'Pedido',
+        'new'          => 'Nuevo',
+        'cancelled'    => 'Cancelado',
+        'note-changed' => 'Nota cambiada',
+        'dine-in'      => 'Para comer aquí',
+        'takeaway'     => 'Para llevar',
+        'to-takeaway'  => 'Comer aquí → Para llevar',
+        'to-dine-in'   => 'Para llevar → Comer aquí',
+        'by'           => 'Por :name',
+        'table'        => 'Mesa :table',
+        'order-note'   => 'Nota del pedido',
+        'offline'      => 'Enviar a cocina requiere conexión.',
+        'nothing'      => 'No hay nada nuevo para enviar a cocina.',
+    ],
+
     'rejected' => [
         'settled-heading' => 'Pagado en otra caja',
         'failed-heading'  => 'Este pedido no se guardó',

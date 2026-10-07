@@ -52,6 +52,7 @@ class OrderSyncRequest extends FormRequest
             'orders.*.customer_count'                 => ['nullable', 'integer', 'min:0'],
             'orders.*.floating_name'                  => ['nullable', 'string', 'max:64'],
             'orders.*.is_booked'                      => ['nullable', 'boolean'],
+            'orders.*.preparation_state'              => ['nullable', 'array'],
             'orders.*.note'                           => ['nullable', 'string'],
             'orders.*.email'                          => ['nullable', 'email', 'max:255'],
             'orders.*.mobile'                         => ['nullable', 'string', 'max:64'],

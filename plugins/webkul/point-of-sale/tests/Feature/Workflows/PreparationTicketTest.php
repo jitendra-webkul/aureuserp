@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Event;
 use Webkul\PointOfSale\Events\PreparationTicketsRouted;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Models\Printer;
+use Webkul\PointOfSale\Services\BootLoader;
 
 require_once __DIR__.'/../../../../support/tests/Helpers/TestBootstrapHelper.php';
 require_once __DIR__.'/../../../../inventories/tests/Helpers/InventoryHelper.php';
@@ -121,4 +122,32 @@ it('routes nothing for a retail terminal', function () {
     ));
 
     expect(PointOfSale::routePreparationTickets($order->refresh()))->toHaveCount(0);
+});
+
+it('ships the preparation printers of the register to the till', function () {
+    $printers = app(BootLoader::class)->load($this->config->refresh(), $this->session)['config']['preparation_printers'];
+
+    expect($printers)->toHaveCount(1)
+        ->and($printers[0]['name'])->toBe('Kitchen')
+        ->and($printers[0]['category_ids'])->toBe([]);
+});
+
+it('keeps what was sent to the kitchen on a shared draft', function () {
+    $line = PosHelper::line($this->product->id, 2, 100.0);
+
+    $state = [
+        'lines'    => [$line['uuid'] => ['product_id' => $this->product->id, 'name' => 'Burger', 'note' => '', 'qty' => 2]],
+        'note'     => '',
+        'takeaway' => false,
+    ];
+
+    $payload = PosHelper::orderPayload($this->config->refresh(), $this->session, [$line], [], ['preparation_state' => $state]);
+
+    unset($payload['payments']);
+
+    PointOfSale::saveDraftOrders([$payload]);
+
+    $draft = collect(app(BootLoader::class)->drafts($this->session))->firstWhere('uuid', $payload['uuid']);
+
+    expect($draft['preparation_state'])->toEqual($state);
 });

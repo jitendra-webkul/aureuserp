@@ -249,6 +249,7 @@ class OrderProcessor
             'is_booked'          => (bool) ($payload['is_booked'] ?? false),
             'floating_name'      => filled($payload['floating_name'] ?? null) ? $payload['floating_name'] : null,
             ...Arr::only($payload, [
+                'preparation_state',
                 'email',
                 'mobile',
                 'shipped_at',
@@ -358,6 +359,7 @@ class OrderProcessor
                 'customer_count',
                 'is_takeaway',
                 'is_booked',
+                'preparation_state',
                 'floating_name',
                 'table_id',
                 'refunded_order_id',
