@@ -77,7 +77,7 @@ window.pointOfSaleReceipt = {
 
         frame.setAttribute('aria-hidden', 'true')
         frame.setAttribute('title', 'receipt')
-        frame.style.cssText = 'position:fixed;inset-block-start:0;inset-inline-start:-10000px;width:210mm;height:297mm;border:0'
+        frame.style.cssText = 'position:fixed;inset-block-start:0;inset-inline-start:-10000px;width:80mm;height:297mm;border:0'
 
         document.body.appendChild(frame)
 
@@ -96,12 +96,24 @@ window.pointOfSaleReceipt = {
 
         const overrides = frameDocument.createElement('style')
 
-        overrides.textContent = '@page{margin:6mm}html,body{margin:0;padding:0;background:#fff;color:#000;color-scheme:light}.pos-receipt{display:block;margin:0;color:#000;background:#fff}.pos-receipt *{color:inherit;background:transparent;border-color:currentColor}'
+        overrides.textContent = 'html,body{margin:0;padding:0;background:#fff;color:#000;color-scheme:light}.pos-receipt{display:block;margin:0;color:#000;background:#fff}.pos-receipt *{color:inherit;background:transparent;border-color:currentColor}'
 
         frameDocument.head.appendChild(overrides)
         frameDocument.body.appendChild(receipt)
 
         await stylesheetsReady(frameDocument)
+
+        await frameDocument.fonts?.ready
+
+        await new Promise((resolve) => frame.contentWindow.requestAnimationFrame(resolve))
+
+        const page = frameDocument.createElement('style')
+
+        const height = Math.ceil(frameDocument.body.scrollHeight * 25.4 / 96) + 8
+
+        page.textContent = `@page{size:80mm ${height}mm;margin:0}`
+
+        frameDocument.head.appendChild(page)
 
         frame.contentWindow.focus()
         frame.contentWindow.print()
