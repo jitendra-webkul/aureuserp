@@ -2,8 +2,11 @@
 
 namespace Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources;
 
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\Page;
 use Filament\Resources\ParentResourceRegistration;
+use Illuminate\Database\Eloquent\Builder;
+use Webkul\Account\Enums\MoveType;
 use Webkul\Invoice\Filament\Clusters\Customers\Resources\InvoiceResource as BaseInvoiceResource;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\OrderInvoiceResource\Pages\EditInvoice;
@@ -30,6 +33,23 @@ class OrderInvoiceResource extends BaseInvoiceResource
         $parentResource = static::$parentResource;
 
         return $parentResource::canAccess();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = static::getModel()::query();
+
+        if (! static::isScopedToTenant()) {
+            $panel = Filament::getCurrentOrDefaultPanel();
+
+            if ($panel?->hasTenancy()) {
+                $query->withoutGlobalScope($panel->getTenancyScopeName());
+            }
+        }
+
+        return $query
+            ->whereIn('move_type', [MoveType::OUT_INVOICE, MoveType::OUT_REFUND])
+            ->orderByDesc('id');
     }
 
     public static function getParentResourceRegistration(): ?ParentResourceRegistration
