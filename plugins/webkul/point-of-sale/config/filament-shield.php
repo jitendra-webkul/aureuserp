@@ -22,7 +22,6 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\SalesDetails;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\SessionReport;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageAccounts;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageInventory;
-use Webkul\PointOfSale\Filament\Admin\Clusters\Settings\Pages\ManageRestaurant;
 use Webkul\PointOfSale\Filament\Admin\Pages\Dashboard;
 
 $basic = ['view_any', 'view', 'create', 'update'];
@@ -53,7 +52,6 @@ return [
     'pages' => [
         'manage' => [
             Dashboard::class,
-            ManageRestaurant::class,
             ManageAccounts::class,
             ManageInventory::class,
             OrderReport::class,

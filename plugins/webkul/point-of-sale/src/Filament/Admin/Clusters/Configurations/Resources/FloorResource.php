@@ -19,7 +19,6 @@ use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\FloorRes
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\FloorResource\Schemas\FloorInfolist;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\FloorResource\Tables\FloorsTable;
 use Webkul\PointOfSale\Models\Floor;
-use Webkul\PointOfSale\Settings\RestaurantSettings;
 
 class FloorResource extends Resource
 {
@@ -32,15 +31,6 @@ class FloorResource extends Resource
     protected static ?string $cluster = Configurations::class;
 
     protected static ?string $recordTitleAttribute = 'name';
-
-    public static function isDiscovered(): bool
-    {
-        if (app()->runningInConsole()) {
-            return true;
-        }
-
-        return settings(RestaurantSettings::class)->enable_restaurant;
-    }
 
     public static function getModelLabel(): string
     {
