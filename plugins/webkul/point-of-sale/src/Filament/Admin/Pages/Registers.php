@@ -154,12 +154,12 @@ class Registers extends Page
         return SessionResource::getUrl('index', ['tableFilters' => ['config_id' => ['value' => $config->getKey()]]]);
     }
 
-    public function openRegister(int $configId): void
+    public function openRegister(int $configId, bool $newTab = false): ?string
     {
         $config = Config::find($configId);
 
         if (! $config) {
-            return;
+            return null;
         }
 
         try {
@@ -170,9 +170,17 @@ class Registers extends Page
                 ->body($exception->getMessage())
                 ->send();
 
-            return;
+            return null;
         }
 
-        $this->redirect(Home::getUrl(['session' => $session->getKey()], panel: 'pos'));
+        $url = Home::getUrl(['session' => $session->getKey()], panel: 'pos');
+
+        if ($newTab) {
+            return $url;
+        }
+
+        $this->redirect($url);
+
+        return null;
     }
 }

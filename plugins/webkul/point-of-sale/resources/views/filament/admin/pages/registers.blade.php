@@ -61,7 +61,29 @@
                                     {{ __($prefix.'actions.close') }}
                                 </x-filament::button>
                             @else
-                                <x-filament::button wire:click="openRegister({{ $register->getKey() }})">
+                                <x-filament::button
+                                    x-data="{
+                                        open(event) {
+                                            if (event.ctrlKey || event.metaKey || event.button === 1) {
+                                                const tab = window.open('', '_blank')
+
+                                                $wire.openRegister({{ $register->getKey() }}, true).then((url) => {
+                                                    if (url) {
+                                                        tab.location.href = url
+                                                    } else {
+                                                        tab.close()
+                                                    }
+                                                })
+
+                                                return
+                                            }
+
+                                            $wire.openRegister({{ $register->getKey() }})
+                                        },
+                                    }"
+                                    x-on:click="open($event)"
+                                    x-on:auxclick.prevent="open($event)"
+                                >
                                     {{ $session
                                         ? __($prefix.'actions.continue')
                                         : __($prefix.'actions.open') }}
