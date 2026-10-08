@@ -230,15 +230,26 @@ class RegisterControls extends Component
     public function recordCashMovement(): void
     {
         try {
+            $amount = $this->roundAmount((float) $this->cashMovementAmount);
+
             $this->cashMovementType === 'in'
-                ? PointOfSale::cashIn($this->session, (float) $this->cashMovementAmount, $this->cashMovementReason)
-                : PointOfSale::cashOut($this->session, (float) $this->cashMovementAmount, $this->cashMovementReason);
+                ? PointOfSale::cashIn($this->session, $amount, $this->cashMovementReason)
+                : PointOfSale::cashOut($this->session, $amount, $this->cashMovementReason);
+
+            if ($this->closingCash !== null) {
+                $this->closingCash = $this->roundAmount(
+                    (float) $this->closingCash + ($this->cashMovementType === 'in' ? $amount : -$amount)
+                );
+            }
 
             $this->dispatch('close-modal', id: 'pos-cash-movement');
 
             Notification::make()
                 ->success()
                 ->title(__('point-of-sale::filament/pos/pages/terminal.cash-movement.notification.title'))
+                ->body(__('point-of-sale::filament/pos/pages/terminal.cash-movement.notification.body.'.$this->cashMovementType, [
+                    'amount' => $this->money($amount),
+                ]))
                 ->send();
         } catch (Throwable $exception) {
             Notification::make()

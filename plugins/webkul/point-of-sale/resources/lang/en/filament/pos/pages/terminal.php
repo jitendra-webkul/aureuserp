@@ -75,6 +75,11 @@ return [
 
         'notification' => [
             'title' => 'Cash movement recorded',
+
+            'body' => [
+                'in'  => ':amount added to the cash drawer.',
+                'out' => ':amount taken out of the cash drawer.',
+            ],
         ],
     ],
 

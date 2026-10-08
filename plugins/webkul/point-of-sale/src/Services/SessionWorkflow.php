@@ -64,12 +64,16 @@ class SessionWorkflow
         return DB::transaction(function () use ($session, $cashBalanceStart, $notes): Session {
             $this->assertState($session, [SessionState::OPENING_CONTROL]);
 
+            $expectedOpening = (float) ($session->config->lastClosedSession?->cash_balance_end_real ?? 0);
+
             $session->forceFill([
                 'state'              => SessionState::OPENED,
                 'started_at'         => now(),
                 'cash_balance_start' => $cashBalanceStart,
                 'opening_notes'      => $notes,
             ])->save();
+
+            $this->logControl($session, 'opening', $expectedOpening, $cashBalanceStart, $notes);
 
             SessionOpened::dispatch($session);
 
@@ -113,6 +117,8 @@ class SessionWorkflow
                 'cash_balance_end_real' => $counted,
                 'cash_difference'       => $counted - $expected,
             ])->save();
+
+            $this->logControl($session, 'closing', $expected, $counted, $notes);
 
             SessionClosed::dispatch($session);
 
@@ -226,10 +232,52 @@ class SessionWorkflow
 
             $this->cashMovements->post($cashMovement);
 
+            $this->logCashMovement($session, $cashMovement);
+
             CashMovementRecorded::dispatch($cashMovement);
 
             return $cashMovement->refresh();
         });
+    }
+
+    protected function logControl(Session $session, string $stage, float $expected, float $counted, ?string $notes): void
+    {
+        $currency = $session->currency?->name;
+
+        $lines = [
+            e(__("point-of-sale::models/session.chatter.{$stage}.difference", ['amount' => money($counted - $expected, $currency)])),
+            e(__("point-of-sale::models/session.chatter.{$stage}.expected", ['amount' => money($expected, $currency)])),
+            e(__("point-of-sale::models/session.chatter.{$stage}.counted", ['amount' => money($counted, $currency)])),
+        ];
+
+        if (filled($notes)) {
+            $lines[] = nl2br(e(__("point-of-sale::models/session.chatter.{$stage}.message", ['message' => trim($notes)])));
+        }
+
+        $session->addMessage([
+            'body' => implode('<br>', $lines),
+            'type' => 'comment',
+        ]);
+    }
+
+    protected function logCashMovement(Session $session, CashMovement $cashMovement): void
+    {
+        $key = $cashMovement->type === CashMovementType::IN ? 'in' : 'out';
+
+        $lines = [
+            e(__("point-of-sale::models/session.chatter.cash-movement.{$key}", [
+                'amount' => money((float) $cashMovement->amount, $session->currency?->name),
+            ])),
+        ];
+
+        if (filled($cashMovement->reason)) {
+            $lines[] = e(__('point-of-sale::models/session.chatter.cash-movement.reason', ['reason' => $cashMovement->reason]));
+        }
+
+        $session->addMessage([
+            'body' => implode('<br>', $lines),
+            'type' => 'comment',
+        ]);
     }
 
     protected function assertState(Session $session, array $states): void
