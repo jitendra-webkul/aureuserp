@@ -98,12 +98,12 @@ class Registers extends Page
             });
     }
 
-    public function openRegister(int $configId): void
+    public function openRegister(int $configId, bool $newTab = false): ?string
     {
         $config = Config::find($configId);
 
         if (! $config) {
-            return;
+            return null;
         }
 
         try {
@@ -114,10 +114,18 @@ class Registers extends Page
                 ->body($exception->getMessage())
                 ->send();
 
-            return;
+            return null;
         }
 
-        $this->redirect(Home::getUrl(['session' => $session->getKey()]), navigate: FilamentView::hasSpaMode());
+        $url = Home::getUrl(['session' => $session->getKey()]);
+
+        if ($newTab) {
+            return $url;
+        }
+
+        $this->redirect($url, navigate: FilamentView::hasSpaMode());
+
+        return null;
     }
 
     public static function currentSession(): ?Session

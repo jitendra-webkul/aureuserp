@@ -24,7 +24,30 @@
                             {{ ($this->discardSessionAction)(['session' => $liveSession->getKey()]) }}
                         @endif
 
-                        <x-filament::button icon="heroicon-m-play" wire:click="openRegister({{ $register->getKey() }})">
+                        <x-filament::button
+                            icon="heroicon-m-play"
+                            x-data="{
+                                open(event) {
+                                    if (event.ctrlKey || event.metaKey || event.button === 1) {
+                                        const tab = window.open('', '_blank')
+
+                                        $wire.openRegister({{ $register->getKey() }}, true).then((url) => {
+                                            if (url) {
+                                                tab.location.href = url
+                                            } else {
+                                                tab.close()
+                                            }
+                                        })
+
+                                        return
+                                    }
+
+                                    $wire.openRegister({{ $register->getKey() }})
+                                },
+                            }"
+                            x-on:click="open($event)"
+                            x-on:auxclick.prevent="open($event)"
+                        >
                             {{ $liveSession
                                 ? __('point-of-sale::filament/pos/pages/registers.actions.resume')
                                 : __('point-of-sale::filament/pos/pages/registers.actions.open') }}
