@@ -74,6 +74,11 @@ class RegisterControls extends Component
         return $this->session->state === SessionState::OPENING_CONTROL;
     }
 
+    public function hasCashPaymentMethod(): bool
+    {
+        return $this->config->cashPaymentMethod() !== null;
+    }
+
     public function money(float $amount): string
     {
         return money($amount, $this->config->currency?->name ?? $this->config->company?->currency?->name);

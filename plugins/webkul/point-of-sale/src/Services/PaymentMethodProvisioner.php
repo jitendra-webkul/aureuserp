@@ -18,8 +18,12 @@ class PaymentMethodProvisioner
 
         $methods = $this->defaultsFor($config);
 
-        if ($methods->isEmpty()) {
-            $methods = collect([$this->provisionCashMethod($config)])->filter();
+        if (! $methods->contains(fn (PaymentMethod $method): bool => $method->is_cash_count)) {
+            $cash = $this->cashMethodFor($config) ?? $this->provisionCashMethod($config);
+
+            if ($cash) {
+                $methods->push($cash);
+            }
         }
 
         if ($methods->isEmpty()) {
@@ -31,22 +35,21 @@ class PaymentMethodProvisioner
 
     public function defaultsFor(Config $config): Collection
     {
-        $nonCash = PaymentMethod::query()
+        return PaymentMethod::query()
             ->where(owned_by_company($config->company_id))
             ->where('is_cash_count', false)
             ->where('is_split_transaction', false)
             ->get();
+    }
 
-        $cash = PaymentMethod::query()
+    public function cashMethodFor(Config $config): ?PaymentMethod
+    {
+        return PaymentMethod::query()
             ->where(owned_by_company($config->company_id))
             ->where('is_cash_count', true)
             ->whereDoesntHave('configs')
             ->orderBy('id')
             ->first();
-
-        return $cash
-            ? $nonCash->push($cash)
-            : $nonCash;
     }
 
     public function provisionCashMethod(Config $config): ?PaymentMethod
@@ -66,10 +69,20 @@ class PaymentMethodProvisioner
 
     protected function cashJournalFor(Config $config): ?Journal
     {
-        return Journal::query()
+        $journal = Journal::query()
             ->where('type', JournalType::CASH)
             ->where(owned_by_company($config->company_id))
             ->orderBy('id')
             ->first();
+
+        if ($journal || ! $config->company_id) {
+            return $journal;
+        }
+
+        return Journal::create([
+            'name'       => __('point-of-sale::system.payment-method-provisioner.cash-journal'),
+            'type'       => JournalType::CASH,
+            'company_id' => $config->company_id,
+        ]);
     }
 }

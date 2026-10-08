@@ -249,6 +249,8 @@ return [
         'change'                    => 'change',
         'remove'                    => 'Remove :method payment',
         'validate'                  => 'Validate',
+        'max-value-title'           => 'Maximum value reached',
+        'max-value-body'            => "The amount cannot be higher than the due amount if you don't have a cash payment method configured.",
     ],
 
     'floor' => [

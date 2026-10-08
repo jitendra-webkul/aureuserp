@@ -65,7 +65,8 @@ class ConfigForm
                             ->vertical()
                             ->columnSpanFull(),
                     ])
-                    ->columns(1),
+                    ->columns(1)
+                    ->hidden(fn (string $operation): bool => $operation === 'create'),
             ])
             ->columns(1);
     }

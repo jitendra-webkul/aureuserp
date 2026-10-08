@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Schema;
 use Webkul\Inventory\Models\Operation;
 use Webkul\Partner\Enums\AddressType;
 use Webkul\PointOfSale\Enums\OrderState;
-use Webkul\PointOfSale\Enums\PaymentMethodType;
 use Webkul\PointOfSale\Enums\StockUpdateMode;
 use Webkul\PointOfSale\Events\OrderCanceled;
 use Webkul\PointOfSale\Events\OrderDone;
@@ -15,6 +14,7 @@ use Webkul\PointOfSale\Events\OrderPaid;
 use Webkul\PointOfSale\Exceptions\CustomerRequiredException;
 use Webkul\PointOfSale\Exceptions\InsufficientPaymentException;
 use Webkul\PointOfSale\Exceptions\OrderAlreadyPaidException;
+use Webkul\PointOfSale\Exceptions\PosConfigurationException;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Order;
 use Webkul\PointOfSale\Models\OrderLine;
@@ -122,6 +122,14 @@ class OrderWorkflow
             $change = $isRefund ? 0.0 : float_round($paid - $total, precisionDigits: 2);
 
             if (float_compare($change, 0, precisionDigits: 2) > 0) {
+                if (! $this->cashMethodFor($order->config)) {
+                    throw new PosConfigurationException(
+                        __('point-of-sale::system.order-workflow.mark-paid.cash-method-required', [
+                            'order' => $order->reference,
+                        ])
+                    );
+                }
+
                 $this->registerChange($order, $change);
             }
 
@@ -269,6 +277,7 @@ class OrderWorkflow
 
         $payments = Payment::withoutGlobalScopes()
             ->where('session_id', $session->id)
+            ->whereIn('order_id', $orders->pluck('id'))
             ->get();
 
         $session->forceFill([
@@ -288,9 +297,7 @@ class OrderWorkflow
             return null;
         }
 
-        return $config->paymentMethods
-            ->firstWhere('type', PaymentMethodType::CASH)
-            ?? $config->paymentMethods->first();
+        return $config->paymentMethods->firstWhere('is_cash_count', true);
     }
 
     protected function assignName(Order $order): void

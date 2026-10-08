@@ -26,8 +26,9 @@ return [
         ],
 
         'mark-paid' => [
-            'already-settled'      => 'Order :order has already been settled.',
-            'insufficient-payment' => 'Order :order is not fully paid.',
+            'already-settled'          => 'Order :order has already been settled.',
+            'insufficient-payment'     => 'Order :order is not fully paid.',
+            'cash-method-required'     => 'Order :order cannot be overpaid because this terminal has no cash payment method configured.',
         ],
 
         'cancel' => [
@@ -65,7 +66,8 @@ return [
     ],
 
     'payment-method-provisioner' => [
-        'cash' => 'Cash',
+        'cash'         => 'Cash',
+        'cash-journal' => 'Cash',
     ],
 
     'order-sync' => [

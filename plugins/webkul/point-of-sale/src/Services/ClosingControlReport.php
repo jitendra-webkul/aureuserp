@@ -24,6 +24,7 @@ class ClosingControlReport
 
         $payments = Payment::withoutGlobalScopes()
             ->where('session_id', $session->id)
+            ->whereIn('order_id', $orders->pluck('id'))
             ->get();
 
         $settled = $payments->where('is_change', false);

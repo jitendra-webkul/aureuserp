@@ -4187,10 +4187,43 @@ export class Till {
 
         const buffer = nextBuffer(this.state.paymentBuffer, key, this.state.paymentFresh)
 
+        let amount = this.bufferAmount(buffer ?? '')
+
+        if (!this.hasCashPaymentMethod) {
+            const cap = this.orderTotals(order).due + payment.amount
+
+            if (floatCompare(amount, cap, { precisionRounding: this.currency.rounding }) > 0) {
+                amount = cap
+
+                this.state.paymentBuffer = this.paymentAmountBuffer({ amount })
+                this.state.paymentFresh = false
+
+                payment.amount = amount
+
+                this.notifyMaxPaymentValue()
+
+                return
+            }
+        }
+
         this.state.paymentBuffer = buffer ?? ''
         this.state.paymentFresh = false
 
-        payment.amount = this.bufferAmount(buffer ?? '')
+        payment.amount = amount
+    }
+
+    get hasCashPaymentMethod() {
+        return this.master.payment_methods.all().some((method) => method.is_cash_count)
+    }
+
+    notifyMaxPaymentValue() {
+        if (window.FilamentNotification) {
+            new window.FilamentNotification()
+                .title(this.t('payment.max-value-title'))
+                .body(this.t('payment.max-value-body'))
+                .danger()
+                .send()
+        }
     }
 
     startsPaymentLine(key) {

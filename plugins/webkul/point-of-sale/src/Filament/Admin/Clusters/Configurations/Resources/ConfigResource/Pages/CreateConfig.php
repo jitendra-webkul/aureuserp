@@ -32,6 +32,11 @@ class CreateConfig extends CreateRecord
         $this->getRecord()->syncRestaurantFloors();
     }
 
+    protected function getRedirectUrl(): string
+    {
+        return static::getResource()::getUrl('edit', ['record' => $this->getRecord()]);
+    }
+
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()
