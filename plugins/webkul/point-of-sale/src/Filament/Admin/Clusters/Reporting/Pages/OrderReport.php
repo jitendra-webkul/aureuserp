@@ -6,6 +6,7 @@ use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Url;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Services\OrderAnalysisReport;
@@ -28,6 +29,7 @@ class OrderReport extends Page
 
     public ?string $endDate = null;
 
+    #[Url]
     public ?int $configId = null;
 
     public string $groupBy = 'day';

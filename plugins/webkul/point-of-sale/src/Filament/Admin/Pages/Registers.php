@@ -13,7 +13,9 @@ use UnitEnum;
 use Webkul\PointOfSale\Enums\SessionState;
 use Webkul\PointOfSale\Facades\PointOfSale;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Configurations\Resources\ConfigResource;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\OrderResource;
 use Webkul\PointOfSale\Filament\Admin\Clusters\Orders\Resources\SessionResource;
+use Webkul\PointOfSale\Filament\Admin\Clusters\Reporting\Pages\OrderReport;
 use Webkul\PointOfSale\Filament\Pos\Pages\Home;
 use Webkul\PointOfSale\Models\Config;
 use Webkul\PointOfSale\Models\Session;
@@ -152,6 +154,16 @@ class Registers extends Page
     public function sessionsUrl(Config $config): string
     {
         return SessionResource::getUrl('index', ['filters' => ['config_id' => ['value' => $config->getKey()]]]);
+    }
+
+    public function ordersUrl(Config $config): string
+    {
+        return OrderResource::getUrl('index', ['filters' => ['config_id' => ['value' => $config->getKey()]]]);
+    }
+
+    public function reportingUrl(Config $config): string
+    {
+        return OrderReport::getUrl(['configId' => $config->getKey()]);
     }
 
     public function openRegister(int $configId, bool $newTab = false): ?string

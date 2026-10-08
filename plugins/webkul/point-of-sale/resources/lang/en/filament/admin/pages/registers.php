@@ -25,9 +25,15 @@ return [
         'open'     => 'Open Register',
         'continue' => 'Continue Selling',
         'close'    => 'Close',
+        'orders'   => 'Orders',
         'sessions' => 'Sessions',
         'edit'     => 'Edit',
         'more'     => 'More',
+    ],
+
+    'dropdown' => [
+        'view'      => 'View',
+        'reporting' => 'Reporting',
     ],
 
     'empty' => [

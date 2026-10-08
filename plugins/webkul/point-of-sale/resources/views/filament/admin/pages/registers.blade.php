@@ -30,17 +30,47 @@
                                 />
                             </x-slot>
 
+                            <div class="grid min-w-64 grid-cols-2 gap-x-2">
+                                <div>
+                                    <x-filament::dropdown.header>
+                                        {{ __($prefix.'dropdown.view') }}
+                                    </x-filament::dropdown.header>
+
+                                    <x-filament::dropdown.list>
+                                        <x-filament::dropdown.list.item
+                                            tag="a"
+                                            :href="$this->ordersUrl($register)"
+                                        >
+                                            {{ __($prefix.'actions.orders') }}
+                                        </x-filament::dropdown.list.item>
+
+                                        <x-filament::dropdown.list.item
+                                            tag="a"
+                                            :href="$this->sessionsUrl($register)"
+                                        >
+                                            {{ __($prefix.'actions.sessions') }}
+                                        </x-filament::dropdown.list.item>
+                                    </x-filament::dropdown.list>
+                                </div>
+
+                                <div>
+                                    <x-filament::dropdown.header>
+                                        {{ __($prefix.'dropdown.reporting') }}
+                                    </x-filament::dropdown.header>
+
+                                    <x-filament::dropdown.list>
+                                        <x-filament::dropdown.list.item
+                                            tag="a"
+                                            :href="$this->reportingUrl($register)"
+                                        >
+                                            {{ __($prefix.'actions.orders') }}
+                                        </x-filament::dropdown.list.item>
+                                    </x-filament::dropdown.list>
+                                </div>
+                            </div>
+
                             <x-filament::dropdown.list>
                                 <x-filament::dropdown.list.item
-                                    icon="heroicon-m-clipboard-document-list"
-                                    tag="a"
-                                    :href="$this->sessionsUrl($register)"
-                                >
-                                    {{ __($prefix.'actions.sessions') }}
-                                </x-filament::dropdown.list.item>
-
-                                <x-filament::dropdown.list.item
-                                    icon="heroicon-m-pencil-square"
                                     tag="a"
                                     :href="$this->configUrl($register)"
                                 >
