@@ -4265,15 +4265,33 @@ export class Till {
             return false
         }
 
-        if (this.config.enable_customer_required && !order.partner_id) {
-            return false
-        }
-
-        if (order.to_invoice && !order.partner_id) {
-            return false
-        }
-
         return this.orderTotals(order).covered
+    }
+
+    customerRequiredReason(order) {
+        if (this.config.enable_customer_required) {
+            return 'terminal'
+        }
+
+        if (order.payments.some((payment) => this.master.payment_methods.get(payment.payment_method_id)?.split_transactions)) {
+            return 'payment-method'
+        }
+
+        if (order.to_invoice) {
+            return 'invoice'
+        }
+
+        return null
+    }
+
+    notifyCustomerRequired(reason) {
+        if (window.FilamentNotification) {
+            new window.FilamentNotification()
+                .title(this.t('payment.customer-required-title'))
+                .body(this.t(`payment.customer-required-body-${reason}`))
+                .danger()
+                .send()
+        }
     }
 
     orderPayload(order) {
@@ -4350,6 +4368,16 @@ export class Till {
 
         if (!order || !this.canValidate(order)) {
             return null
+        }
+
+        if (!order.partner_id) {
+            const reason = this.customerRequiredReason(order)
+
+            if (reason) {
+                this.notifyCustomerRequired(reason)
+
+                return null
+            }
         }
 
         if (order.shipped_at) {
