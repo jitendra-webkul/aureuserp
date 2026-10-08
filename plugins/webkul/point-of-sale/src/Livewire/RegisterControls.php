@@ -65,8 +65,18 @@ class RegisterControls extends Component
         if ($this->needsOpeningControl()) {
             $this->previousClosingBalance = $this->config->lastClosedSession?->cash_balance_end_real;
 
-            $this->openingCash = (float) ($this->previousClosingBalance ?? 0);
+            $this->openingCash = $this->roundAmount((float) ($this->previousClosingBalance ?? 0));
         }
+    }
+
+    public function updatedOpeningCash($value): void
+    {
+        $this->openingCash = $this->roundAmount((float) $value);
+    }
+
+    public function roundAmount(float $amount): float
+    {
+        return round(float_round($amount, precisionDigits: 2), 2);
     }
 
     public function needsOpeningControl(): bool
@@ -131,11 +141,11 @@ class RegisterControls extends Component
     {
         $bills = $this->getBills()->keyBy('id');
 
-        return float_round(collect($this->moneyDetails)->reduce(
+        return $this->roundAmount(collect($this->moneyDetails)->reduce(
             fn (float $total, $quantity, $billId): float => $total
                 + ((float) ($bills->get((int) $billId)?->value ?? 0) * (int) $quantity),
             0.0,
-        ), precisionDigits: 2);
+        ));
     }
 
     public function confirmMoneyDetails(): void
@@ -185,7 +195,7 @@ class RegisterControls extends Component
         try {
             $this->session = PointOfSale::confirmSessionOpeningControl(
                 $this->session,
-                (float) $this->openingCash,
+                $this->roundAmount((float) $this->openingCash),
                 $this->openingNote,
             );
         } catch (Throwable $exception) {
@@ -275,17 +285,17 @@ class RegisterControls extends Component
 
         return $counted === null || $counted === ''
             ? 0.0
-            : float_round((float) $counted - $method['amount'], precisionDigits: 2);
+            : $this->roundAmount((float) $counted - $method['amount']);
     }
 
     public function copyExpectedCash(): void
     {
-        $this->closingCash = float_round((float) $this->session->expectedCashBalance(), precisionDigits: 2);
+        $this->closingCash = $this->roundAmount((float) $this->session->expectedCashBalance());
     }
 
     public function copyExpectedPayment(int $methodId, float $amount): void
     {
-        $this->paymentCounted[$methodId] = float_round($amount, precisionDigits: 2);
+        $this->paymentCounted[$methodId] = $this->roundAmount($amount);
     }
 
     public function exceedsAuthorizedDifference(array $control): bool
@@ -308,7 +318,7 @@ class RegisterControls extends Component
     {
         return $this->closingCash === null
             ? 0.0
-            : float_round((float) $this->closingCash - $cash['amount'], precisionDigits: 2);
+            : $this->roundAmount((float) $this->closingCash - $cash['amount']);
     }
 
     protected function paymentDifferences(): array
@@ -320,7 +330,7 @@ class RegisterControls extends Component
             ->mapWithKeys(function ($counted, $methodId) use ($methods): array {
                 $amount = (float) ($methods->firstWhere('id', (int) $methodId)['amount'] ?? 0);
 
-                return [(int) $methodId => float_round((float) $counted - $amount, precisionDigits: 2)];
+                return [(int) $methodId => $this->roundAmount((float) $counted - $amount)];
             })
             ->all();
     }
@@ -330,7 +340,7 @@ class RegisterControls extends Component
         try {
             PointOfSale::closeSessionWithAccounting(
                 $this->session,
-                $this->closingCash === null ? null : (float) $this->closingCash,
+                $this->closingCash === null ? null : $this->roundAmount((float) $this->closingCash),
                 $this->closingNote,
                 null,
                 $this->paymentDifferences(),
