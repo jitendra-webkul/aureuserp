@@ -248,6 +248,8 @@ return [
         'change'                   => 'monnaie',
         'remove'                   => 'Retirer le paiement :method',
         'validate'                 => 'Valider',
+        'incomplete-title'         => 'Mode de paiement requis',
+        'incomplete-body'          => 'Sélectionnez un mode de paiement qui couvre le total avant de valider cette commande.',
     ],
 
     'floor' => [

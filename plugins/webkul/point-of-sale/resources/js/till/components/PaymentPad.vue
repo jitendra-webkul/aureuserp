@@ -3,7 +3,7 @@ import { inject, computed } from 'vue'
 
 const till = inject('till')
 
-const canValidate = computed(() => till.canValidate())
+const canValidate = computed(() => till.canAttemptValidate())
 
 const order = computed(() => till.activeOrder)
 

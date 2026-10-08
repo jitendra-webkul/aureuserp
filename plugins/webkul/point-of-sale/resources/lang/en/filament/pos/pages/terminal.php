@@ -255,6 +255,8 @@ return [
         'customer-required-body-terminal'       => 'Select a customer before validating this order; this terminal requires one.',
         'customer-required-body-payment-method' => 'Select a customer before validating this order; the selected payment method requires one.',
         'customer-required-body-invoice'        => 'Select a customer before validating this order to generate an invoice.',
+        'incomplete-title'                      => 'Payment method required',
+        'incomplete-body'                       => 'Select a payment method that covers the total before validating this order.',
     ],
 
     'floor' => [

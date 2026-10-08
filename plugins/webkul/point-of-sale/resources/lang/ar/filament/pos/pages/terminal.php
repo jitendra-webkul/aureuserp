@@ -248,6 +248,8 @@ return [
         'change'                   => 'الباقي',
         'remove'                   => 'إزالة دفعة :method',
         'validate'                 => 'تأكيد',
+        'incomplete-title'         => 'طريقة الدفع مطلوبة',
+        'incomplete-body'          => 'اختر طريقة دفع تغطي الإجمالي قبل تأكيد هذا الطلب.',
     ],
 
     'floor' => [

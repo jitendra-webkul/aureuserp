@@ -248,6 +248,8 @@ return [
         'change'                   => 'cambio',
         'remove'                   => 'Quitar el pago de :method',
         'validate'                 => 'Validar',
+        'incomplete-title'         => 'Método de pago requerido',
+        'incomplete-body'          => 'Seleccione un método de pago que cubra el total antes de validar este pedido.',
     ],
 
     'floor' => [

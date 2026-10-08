@@ -4268,6 +4268,20 @@ export class Till {
         return this.orderTotals(order).covered
     }
 
+    canAttemptValidate(order = this.activeOrder) {
+        return Boolean(order && this.sellableLines(order).length)
+    }
+
+    notifyIncompletePayment() {
+        if (window.FilamentNotification) {
+            new window.FilamentNotification()
+                .title(this.t('payment.incomplete-title'))
+                .body(this.t('payment.incomplete-body'))
+                .danger()
+                .send()
+        }
+    }
+
     customerRequiredReason(order) {
         if (this.config.enable_customer_required) {
             return 'terminal'
@@ -4366,7 +4380,13 @@ export class Till {
     validate() {
         const order = this.activeOrder
 
-        if (!order || !this.canValidate(order)) {
+        if (!order || !this.sellableLines(order).length) {
+            return null
+        }
+
+        if (!this.canValidate(order)) {
+            this.notifyIncompletePayment()
+
             return null
         }
 
