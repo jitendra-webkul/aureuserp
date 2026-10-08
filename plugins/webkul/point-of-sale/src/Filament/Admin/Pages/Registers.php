@@ -151,7 +151,7 @@ class Registers extends Page
 
     public function sessionsUrl(Config $config): string
     {
-        return SessionResource::getUrl('index', ['tableFilters' => ['config_id' => ['value' => $config->getKey()]]]);
+        return SessionResource::getUrl('index', ['filters' => ['config_id' => ['value' => $config->getKey()]]]);
     }
 
     public function openRegister(int $configId, bool $newTab = false): ?string
